@@ -1,0 +1,32 @@
+speakeasyVersion: 1.548.3
+sources:
+    Cribl Control Plane and Management API:
+        sourceNamespace: cribl-control-plane-and-management-api
+        sourceRevisionDigest: sha256:8656c595d51c163d4ed8013d84dd169a3bcb33af0457b91173bf064e96debc6d
+        sourceBlobDigest: sha256:54620ba66586bdb5fb33781782b909dbf95b2098791c70993a3bd4be3e92dd8c
+        tags:
+            - latest
+            - 1.0.0
+targets:
+    cribl-io:
+        source: Cribl Control Plane and Management API
+        sourceNamespace: cribl-control-plane-and-management-api
+        sourceRevisionDigest: sha256:8656c595d51c163d4ed8013d84dd169a3bcb33af0457b91173bf064e96debc6d
+        sourceBlobDigest: sha256:54620ba66586bdb5fb33781782b909dbf95b2098791c70993a3bd4be3e92dd8c
+workflow:
+    workflowVersion: 1.0.0
+    speakeasyVersion: latest
+    sources:
+        Cribl Control Plane and Management API:
+            inputs:
+                - location: openapi.yml
+            registry:
+                location: registry.speakeasyapi.dev/cribl/cribl/cribl-control-plane-and-management-api
+    targets:
+        cribl-io:
+            target: terraform
+            source: Cribl Control Plane and Management API
+            publish:
+                terraform:
+                    gpgPrivateKey: $terraform_gpg_private_key
+                    gpgPassPhrase: $terraform_gpg_passphrase
