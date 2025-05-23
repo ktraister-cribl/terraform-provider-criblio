@@ -223,6 +223,19 @@ func (r *GroupResourceModel) ToOperationsCreateProductsGroupsByProductRequest(ct
 	return &out, diags
 }
 
+func (r *GroupResourceModel) ToOperationsGetGroupsByIDRequest(ctx context.Context) (*operations.GetGroupsByIDRequest, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var id string
+	id = r.ID.ValueString()
+
+	out := operations.GetGroupsByIDRequest{
+		ID: id,
+	}
+
+	return &out, diags
+}
+
 func (r *GroupResourceModel) RefreshFromSharedConfigGroup(ctx context.Context, resp *shared.ConfigGroup) diag.Diagnostics {
 	var diags diag.Diagnostics
 

@@ -9,16 +9,7 @@ import (
 
 // CreateVersionCommitResponseBody - a list of GitCommitSummary objects
 type CreateVersionCommitResponseBody struct {
-	// number of items present in the items array
-	Count *int64                    `json:"count,omitempty"`
 	Items []shared.GitCommitSummary `json:"items,omitempty"`
-}
-
-func (o *CreateVersionCommitResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *CreateVersionCommitResponseBody) GetItems() []shared.GitCommitSummary {

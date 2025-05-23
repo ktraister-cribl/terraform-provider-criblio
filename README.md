@@ -141,18 +141,24 @@ terraform plan
 
 ### Resources
 
-* [criblio_destination](docs/resources/destination.md) - Manage Cribl destinations
-* [criblio_group](docs/resources/group.md) - Manage Cribl groups
-* [criblio_pack](docs/resources/pack.md) - Manage Cribl packs
-* [criblio_pack_pipeline](docs/resources/pack_pipeline.md) - Manage Cribl pack pipelines
-* [criblio_pipeline](docs/resources/pipeline.md) - Manage Cribl pipelines
-* [criblio_source](docs/resources/source.md) - Manage Cribl sources
-
+* [criblio_commit](docs/resources/commit.md)
+* [criblio_deploy](docs/resources/deploy.md)
+* [criblio_destination](docs/resources/destination.md)
+* [criblio_group](docs/resources/group.md)
+* [criblio_pack](docs/resources/pack.md)
+* [criblio_pack_pipeline](docs/resources/pack_pipeline.md)
+* [criblio_pipeline](docs/resources/pipeline.md)
+* [criblio_source](docs/resources/source.md)
 ### Data Sources
 
-* [criblio_pack](docs/data-sources/pack.md) - Query Cribl packs
-* [criblio_pack_pipeline](docs/data-sources/pack_pipeline.md) - Query Cribl pack pipelines
-* [criblio_pipeline](docs/data-sources/pipeline.md) - Query Cribl pipelines
+* [criblio_config_version](docs/data-sources/config_version.md)
+* [criblio_destination](docs/data-sources/destination.md)
+* [criblio_group](docs/data-sources/group.md)
+* [criblio_pack](docs/data-sources/pack.md)
+* [criblio_pack_pipeline](docs/data-sources/pack_pipeline.md)
+* [criblio_pipeline](docs/data-sources/pipeline.md)
+* [criblio_source](docs/data-sources/source.md)
+
 
 ## Development
 
