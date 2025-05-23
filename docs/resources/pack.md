@@ -14,9 +14,14 @@ Pack Resource
 
 ```terraform
 resource "criblio_pack" "my_pack" {
-  filename = "...my_filename..."
-  group_id = "...my_group_id..."
-  id       = "...my_id..."
+  description  = "...my_description..."
+  disabled     = true
+  display_name = "...my_display_name..."
+  filename     = "...my_filename..."
+  group_id     = "...my_group_id..."
+  id           = "...my_id..."
+  source       = "...my_source..."
+  version      = "...my_version..."
 }
 ```
 
@@ -30,7 +35,12 @@ resource "criblio_pack" "my_pack" {
 
 ### Optional
 
+- `description` (String) Requires replacement if changed.
+- `disabled` (Boolean) Requires replacement if changed.
+- `display_name` (String) Requires replacement if changed.
 - `filename` (String) the file to upload. Requires replacement if changed.
+- `source` (String) body string required Pack source
+- `version` (String) Requires replacement if changed.
 
 ### Read-Only
 

@@ -19,6 +19,26 @@ components:
           tokenUrl: https://login.cribl.cloud/oauth/token
           scopes: {}
   schemas:
+    Pack:
+      x-speakeasy-entity: Pack
+      type: object
+      properties:
+        displayName:
+          type: string
+        id:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        source:
+          type: string
+          x-speakeasy-xor-with:
+            - filename
+        disabled:
+          type: boolean
+      required:
+        - id
     Error:
       type: object
       properties:
@@ -57043,6 +57063,7 @@ paths:
       - inputs
       summary: Get a list of Input objects
       description: Get a list of Input objects
+      x-speakeasy-entity-operation: Source#read
       parameters:
       - name: groupId
         in: path
@@ -57057,9 +57078,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -57371,6 +57393,7 @@ paths:
       - outputs
       summary: Get a list of Output objects
       description: Get a list of Output objects
+      x-speakeasy-entity-operation: Destination#read
       parameters:
       - name: groupId
         in: path
@@ -57386,9 +57409,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -62608,7 +62632,7 @@ paths:
           application/json:
             schema:
               allOf:
-              - $ref: '#/components/schemas/CrudEntityBase'
+              - $ref: '#/components/schemas/Pack'
               type: object
     get:
       operationId: getPacks
@@ -64313,6 +64337,7 @@ paths:
         describing the changes.
       description: create a new commit containing the current configs the given log
         message describing the changes.
+      x-speakeasy-entity-operation: Commit#create
       responses:
         '200':
           description: a list of GitCommitSummary objects
@@ -64321,9 +64346,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -66212,6 +66238,7 @@ paths:
       - groups
       summary: Get effective bundle version for given Group
       description: Get effective bundle version for given Group
+      x-speakeasy-entity-operation: ConfigVersion#read
       responses:
         '200':
           description: a list of string objects
@@ -66220,9 +66247,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -66343,6 +66371,7 @@ paths:
       - groups
       summary: Deploy commits for a Fleet or Worker Group
       description: Deploy commits for a Fleet or Worker Group
+      x-speakeasy-entity-operation: Deploy#create
       responses:
         '200':
           description: a list of ConfigGroup objects
@@ -66388,6 +66417,7 @@ paths:
       - groups
       summary: Get a specific ConfigGroup object
       description: Get a specific ConfigGroup object
+      x-speakeasy-entity-operation: Group#read
       responses:
         '200':
           description: a list of ConfigGroup objects
@@ -66396,9 +66426,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:

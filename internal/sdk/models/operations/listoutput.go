@@ -21,16 +21,7 @@ func (o *ListOutputRequest) GetGroupID() string {
 
 // ListOutputResponseBody - a list of Output objects
 type ListOutputResponseBody struct {
-	// number of items present in the items array
-	Count *int64          `json:"count,omitempty"`
 	Items []shared.Output `json:"items,omitempty"`
-}
-
-func (o *ListOutputResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *ListOutputResponseBody) GetItems() []shared.Output {

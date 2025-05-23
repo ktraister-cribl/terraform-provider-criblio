@@ -6,9 +6,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -34,10 +36,15 @@ type PackResource struct {
 
 // PackResourceModel describes the resource data model.
 type PackResourceModel struct {
-	Filename types.String       `queryParam:"style=form,explode=true,name=filename" tfsdk:"filename"`
-	GroupID  types.String       `tfsdk:"group_id"`
-	ID       types.String       `tfsdk:"id"`
-	Items    []tfTypes.PackInfo `tfsdk:"items"`
+	Description types.String       `tfsdk:"description"`
+	Disabled    types.Bool         `tfsdk:"disabled"`
+	DisplayName types.String       `tfsdk:"display_name"`
+	Filename    types.String       `queryParam:"style=form,explode=true,name=filename" tfsdk:"filename"`
+	GroupID     types.String       `tfsdk:"group_id"`
+	ID          types.String       `tfsdk:"id"`
+	Items       []tfTypes.PackInfo `tfsdk:"items"`
+	Source      types.String       `tfsdk:"source"`
+	Version     types.String       `tfsdk:"version"`
 }
 
 func (r *PackResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -48,6 +55,27 @@ func (r *PackResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Pack Resource",
 		Attributes: map[string]schema.Attribute{
+			"description": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"disabled": schema.BoolAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"display_name": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
 			"filename": schema.StringAttribute{
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
@@ -135,6 +163,22 @@ func (r *PackResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 						},
 					},
 				},
+			},
+			"source": schema.StringAttribute{
+				Optional:    true,
+				Description: `body string required Pack source`,
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.Expressions{
+						path.MatchRelative().AtParent().AtName("filename"),
+					}...),
+				},
+			},
+			"version": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
 			},
 		},
 	}

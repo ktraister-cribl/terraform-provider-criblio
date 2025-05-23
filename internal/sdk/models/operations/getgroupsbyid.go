@@ -30,16 +30,7 @@ func (o *GetGroupsByIDRequest) GetFields() *string {
 
 // GetGroupsByIDResponseBody - a list of ConfigGroup objects
 type GetGroupsByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64               `json:"count,omitempty"`
 	Items []shared.ConfigGroup `json:"items,omitempty"`
-}
-
-func (o *GetGroupsByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *GetGroupsByIDResponseBody) GetItems() []shared.ConfigGroup {

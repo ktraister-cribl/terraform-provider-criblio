@@ -113,3 +113,11 @@ Optional:
 - `hash` (String) Not Null; Requires replacement if changed.
 - `message` (String) Not Null; Requires replacement if changed.
 - `short` (String) Not Null; Requires replacement if changed.
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+terraform import criblio_group.my_criblio_group ""
+```

@@ -10222,3 +10222,11 @@ Optional:
 
 - `url` (String) Not Null; Parsed as JSON.
 - `weight` (Number) Assign a weight (>0) to each endpoint to indicate its traffic-handling capability. Default: 1
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+terraform import criblio_destination.my_criblio_destination ""
+```

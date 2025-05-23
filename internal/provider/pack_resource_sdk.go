@@ -14,11 +14,46 @@ import (
 func (r *PackResourceModel) ToOperationsCreatePacksRequestBody(ctx context.Context) (*operations.CreatePacksRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	displayName := new(string)
+	if !r.DisplayName.IsUnknown() && !r.DisplayName.IsNull() {
+		*displayName = r.DisplayName.ValueString()
+	} else {
+		displayName = nil
+	}
 	var id string
 	id = r.ID.ValueString()
 
+	description := new(string)
+	if !r.Description.IsUnknown() && !r.Description.IsNull() {
+		*description = r.Description.ValueString()
+	} else {
+		description = nil
+	}
+	version := new(string)
+	if !r.Version.IsUnknown() && !r.Version.IsNull() {
+		*version = r.Version.ValueString()
+	} else {
+		version = nil
+	}
+	source := new(string)
+	if !r.Source.IsUnknown() && !r.Source.IsNull() {
+		*source = r.Source.ValueString()
+	} else {
+		source = nil
+	}
+	disabled := new(bool)
+	if !r.Disabled.IsUnknown() && !r.Disabled.IsNull() {
+		*disabled = r.Disabled.ValueBool()
+	} else {
+		disabled = nil
+	}
 	out := operations.CreatePacksRequestBody{
-		ID: id,
+		DisplayName: displayName,
+		ID:          id,
+		Description: description,
+		Version:     version,
+		Source:      source,
+		Disabled:    disabled,
 	}
 
 	return &out, diags
@@ -74,9 +109,16 @@ func (r *PackResourceModel) ToOperationsUpdatePacksByIDRequest(ctx context.Conte
 	var groupID string
 	groupID = r.GroupID.ValueString()
 
+	source := new(string)
+	if !r.Source.IsUnknown() && !r.Source.IsNull() {
+		*source = r.Source.ValueString()
+	} else {
+		source = nil
+	}
 	out := operations.UpdatePacksByIDRequest{
 		ID:      id,
 		GroupID: groupID,
+		Source:  source,
 	}
 
 	return &out, diags

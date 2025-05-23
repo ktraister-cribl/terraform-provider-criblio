@@ -22141,6 +22141,19 @@ func (r *DestinationResourceModel) ToOperationsUpdateOutputByIDRequest(ctx conte
 	return &out, diags
 }
 
+func (r *DestinationResourceModel) ToOperationsListOutputRequest(ctx context.Context) (*operations.ListOutputRequest, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var groupID string
+	groupID = r.GroupID.ValueString()
+
+	out := operations.ListOutputRequest{
+		GroupID: groupID,
+	}
+
+	return &out, diags
+}
+
 func (r *DestinationResourceModel) ToOperationsDeleteOutputByIDRequest(ctx context.Context) (*operations.DeleteOutputByIDRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 

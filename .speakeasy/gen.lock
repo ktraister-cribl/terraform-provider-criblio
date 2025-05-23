@@ -1,19 +1,19 @@
 lockVersion: 2.0.0
 id: 1efe501f-0805-447e-ab12-75eb7c79386e
 management:
-  docChecksum: 5f173e53aa7701ed8dc8c3fb7be691c1
+  docChecksum: ac33d0d702ce639d1a81c80237c3a953
   docVersion: 1.0.0
-  speakeasyVersion: 1.548.4
-  generationVersion: 2.605.6
-  releaseVersion: 1.0.3
-  configChecksum: ef8bc7b930990c538f23af779dc14881
+  speakeasyVersion: 1.550.0
+  generationVersion: 2.610.0
+  releaseVersion: 1.0.8
+  configChecksum: ccd81ab08363316d0ed35a9cdc3bf17f
   published: true
 features:
   terraform:
     additionalDependencies: 0.1.0
     additionalProperties: 0.1.2
     constsAndDefaults: 0.2.1
-    core: 3.41.9
+    core: 3.41.10
     deprecations: 2.82.0
     globalSecurity: 2.81.12
     globalServerURLs: 2.82.2
@@ -28,11 +28,19 @@ generatedFiles:
   - .gitattributes
   - USAGE.md
   - examples/README.md
+  - examples/data-sources/criblio_config_version/data-source.tf
+  - examples/data-sources/criblio_destination/data-source.tf
+  - examples/data-sources/criblio_group/data-source.tf
   - examples/data-sources/criblio_pack/data-source.tf
   - examples/data-sources/criblio_pack_pipeline/data-source.tf
   - examples/data-sources/criblio_pipeline/data-source.tf
+  - examples/data-sources/criblio_source/data-source.tf
   - examples/provider/provider.tf
+  - examples/resources/criblio_commit/resource.tf
+  - examples/resources/criblio_deploy/resource.tf
+  - examples/resources/criblio_destination/import.sh
   - examples/resources/criblio_destination/resource.tf
+  - examples/resources/criblio_group/import.sh
   - examples/resources/criblio_group/resource.tf
   - examples/resources/criblio_pack/import.sh
   - examples/resources/criblio_pack/resource.tf
@@ -40,6 +48,7 @@ generatedFiles:
   - examples/resources/criblio_pack_pipeline/resource.tf
   - examples/resources/criblio_pipeline/import.sh
   - examples/resources/criblio_pipeline/resource.tf
+  - examples/resources/criblio_source/import.sh
   - examples/resources/criblio_source/resource.tf
   - go.mod
   - go.sum
@@ -55,8 +64,18 @@ generatedFiles:
   - internal/planmodifiers/setplanmodifier/suppress_diff.go
   - internal/planmodifiers/stringplanmodifier/suppress_diff.go
   - internal/planmodifiers/utils/state_check.go
+  - internal/provider/commit_resource.go
+  - internal/provider/commit_resource_sdk.go
+  - internal/provider/configversion_data_source.go
+  - internal/provider/configversion_data_source_sdk.go
+  - internal/provider/deploy_resource.go
+  - internal/provider/deploy_resource_sdk.go
+  - internal/provider/destination_data_source.go
+  - internal/provider/destination_data_source_sdk.go
   - internal/provider/destination_resource.go
   - internal/provider/destination_resource_sdk.go
+  - internal/provider/group_data_source.go
+  - internal/provider/group_data_source_sdk.go
   - internal/provider/group_resource.go
   - internal/provider/group_resource_sdk.go
   - internal/provider/pack_data_source.go
@@ -86,6 +105,8 @@ generatedFiles:
   - internal/provider/reflect/primitive.go
   - internal/provider/reflect/slice.go
   - internal/provider/reflect/struct.go
+  - internal/provider/source_data_source.go
+  - internal/provider/source_data_source_sdk.go
   - internal/provider/source_resource.go
   - internal/provider/source_resource_sdk.go
   - internal/provider/typeconvert/date.go
@@ -106,6 +127,7 @@ generatedFiles:
   - internal/provider/types/auth_tokens_ext_metadatum_http_raw.go
   - internal/provider/types/authentication_azure_eventhub.go
   - internal/provider/types/authentication_eventhub.go
+  - internal/provider/types/author.go
   - internal/provider/types/cert_options.go
   - internal/provider/types/certificate_azure_data_explorer.go
   - internal/provider/types/checkpointing_crowdstrike.go
@@ -114,6 +136,7 @@ generatedFiles:
   - internal/provider/types/checkpointing_security_lake.go
   - internal/provider/types/collectors.go
   - internal/provider/types/commit.go
+  - internal/provider/types/config_group.go
   - internal/provider/types/config_group_cloud.go
   - internal/provider/types/connection_appscope.go
   - internal/provider/types/connection_azure_blob.go
@@ -217,6 +240,8 @@ generatedFiles:
   - internal/provider/types/filter_appscope.go
   - internal/provider/types/firewall.go
   - internal/provider/types/git.go
+  - internal/provider/types/git_commit_summary.go
+  - internal/provider/types/git_commit_summary_files.go
   - internal/provider/types/host_cribl_tcp.go
   - internal/provider/types/host_info.go
   - internal/provider/types/host_netflow.go
@@ -700,6 +725,7 @@ generatedFiles:
   - internal/provider/types/set_windows_metrics.go
   - internal/provider/types/snm_pv3_authentication.go
   - internal/provider/types/subscription_metadatum.go
+  - internal/provider/types/summary.go
   - internal/provider/types/system_system_metrics.go
   - internal/provider/types/system_windows_metrics.go
   - internal/provider/types/target.go

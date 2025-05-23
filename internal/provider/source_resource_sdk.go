@@ -22057,6 +22057,19 @@ func (r *SourceResourceModel) ToOperationsUpdateInputByIDRequest(ctx context.Con
 	return &out, diags
 }
 
+func (r *SourceResourceModel) ToOperationsListInputRequest(ctx context.Context) (*operations.ListInputRequest, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var groupID string
+	groupID = r.GroupID.ValueString()
+
+	out := operations.ListInputRequest{
+		GroupID: groupID,
+	}
+
+	return &out, diags
+}
+
 func (r *SourceResourceModel) ToOperationsDeleteInputByIDRequest(ctx context.Context) (*operations.DeleteInputByIDRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 

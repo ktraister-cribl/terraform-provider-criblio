@@ -20,16 +20,7 @@ func (o *ListInputRequest) GetGroupID() string {
 
 // ListInputResponseBody - a list of Input objects
 type ListInputResponseBody struct {
-	// number of items present in the items array
-	Count *int64         `json:"count,omitempty"`
 	Items []shared.Input `json:"items,omitempty"`
-}
-
-func (o *ListInputResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *ListInputResponseBody) GetItems() []shared.Input {

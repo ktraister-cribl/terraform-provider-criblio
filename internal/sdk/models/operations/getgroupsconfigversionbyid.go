@@ -21,16 +21,7 @@ func (o *GetGroupsConfigVersionByIDRequest) GetID() string {
 
 // GetGroupsConfigVersionByIDResponseBody - a list of string objects
 type GetGroupsConfigVersionByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64   `json:"count,omitempty"`
 	Items []string `json:"items,omitempty"`
-}
-
-func (o *GetGroupsConfigVersionByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *GetGroupsConfigVersionByIDResponseBody) GetItems() []string {

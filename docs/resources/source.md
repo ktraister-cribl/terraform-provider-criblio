@@ -10895,3 +10895,11 @@ Optional:
 - `priv_key_path` (String) Path on server containing the private key to use. PEM format. Can reference $ENV_VARS.
 - `reject_unauthorized` (String) Parsed as JSON.
 - `request_cert` (Boolean) Require clients to present their certificates. Used to perform client authentication using SSL certs. Default: false
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+terraform import criblio_source.my_criblio_source ""
+```

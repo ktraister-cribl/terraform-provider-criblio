@@ -9,7 +9,19 @@ import (
 
 // CreatePacksRequestBody - CrudEntityBase object
 type CreatePacksRequestBody struct {
-	ID string `json:"id"`
+	DisplayName *string `json:"displayName,omitempty"`
+	ID          string  `json:"id"`
+	Description *string `json:"description,omitempty"`
+	Version     *string `json:"version,omitempty"`
+	Source      *string `json:"source,omitempty"`
+	Disabled    *bool   `json:"disabled,omitempty"`
+}
+
+func (o *CreatePacksRequestBody) GetDisplayName() *string {
+	if o == nil {
+		return nil
+	}
+	return o.DisplayName
 }
 
 func (o *CreatePacksRequestBody) GetID() string {
@@ -17,6 +29,34 @@ func (o *CreatePacksRequestBody) GetID() string {
 		return ""
 	}
 	return o.ID
+}
+
+func (o *CreatePacksRequestBody) GetDescription() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Description
+}
+
+func (o *CreatePacksRequestBody) GetVersion() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Version
+}
+
+func (o *CreatePacksRequestBody) GetSource() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Source
+}
+
+func (o *CreatePacksRequestBody) GetDisabled() *bool {
+	if o == nil {
+		return nil
+	}
+	return o.Disabled
 }
 
 type CreatePacksRequest struct {

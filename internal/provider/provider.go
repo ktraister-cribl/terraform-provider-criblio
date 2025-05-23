@@ -166,6 +166,8 @@ func (p *CriblioProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 func (p *CriblioProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewCommitResource,
+		NewDeployResource,
 		NewDestinationResource,
 		NewGroupResource,
 		NewPackResource,
@@ -177,9 +179,13 @@ func (p *CriblioProvider) Resources(ctx context.Context) []func() resource.Resou
 
 func (p *CriblioProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		NewConfigVersionDataSource,
+		NewDestinationDataSource,
+		NewGroupDataSource,
 		NewPackDataSource,
 		NewPackPipelineDataSource,
 		NewPipelineDataSource,
+		NewSourceDataSource,
 	}
 }
 
