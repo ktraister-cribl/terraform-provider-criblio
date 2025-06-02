@@ -236,6 +236,19 @@ func (r *GroupResourceModel) ToOperationsGetGroupsByIDRequest(ctx context.Contex
 	return &out, diags
 }
 
+func (r *GroupResourceModel) ToOperationsDeleteGroupsByIDRequest(ctx context.Context) (*operations.DeleteGroupsByIDRequest, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var id string
+	id = r.ID.ValueString()
+
+	out := operations.DeleteGroupsByIDRequest{
+		ID: id,
+	}
+
+	return &out, diags
+}
+
 func (r *GroupResourceModel) RefreshFromSharedConfigGroup(ctx context.Context, resp *shared.ConfigGroup) diag.Diagnostics {
 	var diags diag.Diagnostics
 

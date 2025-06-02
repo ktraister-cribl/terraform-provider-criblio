@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -22,8 +23,7 @@ var (
 
 // NewCriblTerraformURLHook creates a new URL hook for Cribl Terraform
 func NewCriblTerraformURLHook() *CriblTerraformURLHook {
-	hook := &CriblTerraformURLHook{}
-	return hook
+	return &CriblTerraformURLHook{}
 }
 
 // SetServerURL sets the server URL for the hook
@@ -34,13 +34,26 @@ func (o *CriblTerraformURLHook) SetServerURL(url string) {
 // SDKInit implements the sdkInitHook interface
 func (o *CriblTerraformURLHook) SDKInit(baseURL string, client HTTPClient) (string, HTTPClient) {
 	o.serverURL = baseURL
+
+	// Get credentials from config or environment
+	config, err := GetCredentials()
+	if err != nil {
+		log.Printf("[ERROR] URL Hook: Failed to get credentials: %v", err)
+		return baseURL, client
+	}
+
+	if config != nil {
+		o.orgID = config.OrganizationID
+		o.workspaceID = config.Workspace
+	}
+
 	return baseURL, client
 }
 
 // BeforeRequest implements the beforeRequestHook interface
 // It updates the request URL with organization and workspace IDs
 func (o *CriblTerraformURLHook) BeforeRequest(ctx BeforeRequestContext, req *http.Request) (*http.Request, error) {
-	// Get org and workspace IDs from security source
+	// Get org and workspace IDs from security source if available
 	if ctx.SecuritySource != nil {
 		if security, err := ctx.SecuritySource(ctx.Context); err == nil {
 			if s, ok := security.(shared.Security); ok {
@@ -66,6 +79,7 @@ func (o *CriblTerraformURLHook) BeforeRequest(ctx BeforeRequestContext, req *htt
 
 	parsedURL, err := url.Parse(newURL)
 	if err != nil {
+		log.Printf("[ERROR] URL Hook: Failed to parse URL: %v", err)
 		return req, err
 	}
 

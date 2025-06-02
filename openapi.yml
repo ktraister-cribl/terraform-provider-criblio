@@ -66455,6 +66455,44 @@ paths:
         schema:
           type: string
         description: 'fields to add to results: git.commit, git.localChanges, git.log'
+    delete:
+      operationId: deleteGroupsById
+      tags:
+      - groups
+      summary: Delete a specific ConfigGroup object
+      description: Delete a specific ConfigGroup object
+      x-speakeasy-entity-operation: Group#delete
+      responses:
+        '200':
+          description: a list of ConfigGroup objects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count_total:
+                    type: integer
+                    description: number of items present in the items array
+                    x-speakeasy-ignore: true
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConfigGroup'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group id
   /products/{product}/groups/{id}/acl/teams:
     get:
       operationId: getProductsGroupsAclTeamsByProductAndId

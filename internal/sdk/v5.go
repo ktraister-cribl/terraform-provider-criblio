@@ -2,15 +2,24 @@
 
 package sdk
 
+import (
+	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/internal/config"
+	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/internal/hooks"
+)
+
 type V5 struct {
 	Billing *V5Billing
 
-	sdkConfiguration sdkConfiguration
+	rootSDK          *CriblIo
+	sdkConfiguration config.SDKConfiguration
+	hooks            *hooks.Hooks
 }
 
-func newV5(sdkConfig sdkConfiguration) *V5 {
+func newV5(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, hooks *hooks.Hooks) *V5 {
 	return &V5{
+		rootSDK:          rootSDK,
 		sdkConfiguration: sdkConfig,
-		Billing:          newV5Billing(sdkConfig),
+		hooks:            hooks,
+		Billing:          newV5Billing(rootSDK, sdkConfig, hooks),
 	}
 }
