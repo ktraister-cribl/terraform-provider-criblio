@@ -268,7 +268,7 @@ func (r *GroupResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
 				},
-				Description: `Requires replacement if changed.`,
+				Description: `Group id. Requires replacement if changed.`,
 			},
 			"incompatible_worker_count": schema.Float64Attribute{
 				Computed: true,
@@ -609,7 +609,29 @@ func (r *GroupResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	// Not Implemented; entity does not have a configured DELETE operation
+	request, requestDiags := data.ToOperationsDeleteGroupsByIDRequest(ctx)
+	resp.Diagnostics.Append(requestDiags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	res, err := r.client.Groups.DeleteGroupsByID(ctx, *request)
+	if err != nil {
+		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		if res != nil && res.RawResponse != nil {
+			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
+		}
+		return
+	}
+	if res == nil {
+		resp.Diagnostics.AddError("unexpected response from API", fmt.Sprintf("%v", res))
+		return
+	}
+	if res.StatusCode != 200 {
+		resp.Diagnostics.AddError(fmt.Sprintf("unexpected response from API. Got an unexpected response code %v", res.StatusCode), debugResponse(res.RawResponse))
+		return
+	}
+
 }
 
 func (r *GroupResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

@@ -40,7 +40,7 @@ resource "criblio_source" "syslog_source" {
       allow_non_standard_app_name = false
       connections = [
         {
-          output   = "cribl-lake-2"
+          output   = criblio_destination.cribl_lake.id
           pipeline = "palo_alto_traffic"
         }
       ]
@@ -94,6 +94,7 @@ resource "criblio_source" "syslog_source" {
       udp_socket_rx_buf_size = 262144
     }
   }
+  depends_on = [criblio_destination.cribl_lake]
 }
 
 # Cribl Lake Destination Configuration

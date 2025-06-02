@@ -61,7 +61,7 @@ resource "criblio_group" "my_group" {
 ### Required
 
 - `config_version` (String) Requires replacement if changed.
-- `id` (String) Requires replacement if changed.
+- `id` (String) Group id. Requires replacement if changed.
 - `product` (String) Cribl Product. must be one of ["stream", "edge"]; Requires replacement if changed.
 
 ### Optional

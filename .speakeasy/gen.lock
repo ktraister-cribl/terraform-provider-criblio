@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: 1efe501f-0805-447e-ab12-75eb7c79386e
 management:
-  docChecksum: ac33d0d702ce639d1a81c80237c3a953
+  docChecksum: 9212a15c7dbd1643b8e076a44cead0df
   docVersion: 1.0.0
-  speakeasyVersion: 1.550.0
-  generationVersion: 2.610.0
-  releaseVersion: 1.0.8
-  configChecksum: ccd81ab08363316d0ed35a9cdc3bf17f
+  speakeasyVersion: 1.554.1
+  generationVersion: 2.616.1
+  releaseVersion: 1.0.12
+  configChecksum: 3a0611eee5c6fd4e483a19b9001e9f71
   published: true
 features:
   terraform:
@@ -841,6 +841,7 @@ generatedFiles:
   - internal/sdk/hmacfunctions.go
   - internal/sdk/ingest.go
   - internal/sdk/inputs.go
+  - internal/sdk/internal/config/sdkconfiguration.go
   - internal/sdk/internal/hooks/clientcredentials.go
   - internal/sdk/internal/hooks/hooks.go
   - internal/sdk/internal/utils/contenttype.go
@@ -984,6 +985,7 @@ generatedFiles:
   - internal/sdk/models/operations/deleteglobalvariablebyid.go
   - internal/sdk/models/operations/deleteglobalvariablelibvarsbypackandid.go
   - internal/sdk/models/operations/deletegrokfilebyid.go
+  - internal/sdk/models/operations/deletegroupsbyid.go
   - internal/sdk/models/operations/deletehmacfunctionbyid.go
   - internal/sdk/models/operations/deleteinputbyid.go
   - internal/sdk/models/operations/deletejobsbyid.go
@@ -6103,6 +6105,16 @@ examples:
         path:
           id: "<id>"
         query: {}
+      responses:
+        "200":
+          application/json: {}
+        "500":
+          application/json: {}
+  deleteGroupsById:
+    speakeasy-default-delete-groups-by-id:
+      parameters:
+        path:
+          id: "<id>"
       responses:
         "200":
           application/json: {}

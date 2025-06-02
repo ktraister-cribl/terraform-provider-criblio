@@ -2,9 +2,12 @@
 
 package sdk
 
+// Generated from OpenAPI doc version 1.0.0 and generator version 2.616.1
+
 import (
 	"context"
 	"fmt"
+	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/internal/config"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/internal/hooks"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/internal/utils"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
@@ -28,7 +31,7 @@ var ServerList = map[string]string{
 	ServerManagedGroup: "https://{hostname}:{port}/api/v1/m/{groupName}",
 }
 
-// HTTPClient provides an interface for suplying the SDK with a custom HTTP client
+// HTTPClient provides an interface for supplying the SDK with a custom HTTP client
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -54,35 +57,8 @@ func Float64(f float64) *float64 { return &f }
 // Pointer provides a helper function to return a pointer to a type
 func Pointer[T any](v T) *T { return &v }
 
-type sdkConfiguration struct {
-	Client            HTTPClient
-	Security          func(context.Context) (interface{}, error)
-	ServerURL         string
-	Server            string
-	ServerDefaults    map[string]map[string]string
-	Language          string
-	OpenAPIDocVersion string
-	SDKVersion        string
-	GenVersion        string
-	UserAgent         string
-	RetryConfig       *retry.Config
-	Hooks             *hooks.Hooks
-	Timeout           *time.Duration
-}
-
-func (c *sdkConfiguration) GetServerDetails() (string, map[string]string) {
-	if c.ServerURL != "" {
-		return c.ServerURL, nil
-	}
-
-	if c.Server == "" {
-		c.Server = "cloud"
-	}
-
-	return ServerList[c.Server], c.ServerDefaults[c.Server]
-}
-
 type CriblIo struct {
+	SDKVersion string
 	V5         *V5
 	Billing    *Billing
 	Workspaces *Workspaces
@@ -262,7 +238,8 @@ type CriblIo struct {
 	// Actions related to Groups
 	Groups *Groups
 
-	sdkConfiguration sdkConfiguration
+	sdkConfiguration config.SDKConfiguration
+	hooks            *hooks.Hooks
 }
 
 type SDKOption func(*CriblIo)
@@ -300,12 +277,12 @@ func WithServer(server string) SDKOption {
 // WithWorkspaceName allows setting the workspaceName variable for url substitution
 func WithWorkspaceName(workspaceName string) SDKOption {
 	return func(sdk *CriblIo) {
-		for server := range sdk.sdkConfiguration.ServerDefaults {
-			if _, ok := sdk.sdkConfiguration.ServerDefaults[server]["workspaceName"]; !ok {
+		for server := range sdk.sdkConfiguration.ServerVariables {
+			if _, ok := sdk.sdkConfiguration.ServerVariables[server]["workspaceName"]; !ok {
 				continue
 			}
 
-			sdk.sdkConfiguration.ServerDefaults[server]["workspaceName"] = fmt.Sprintf("%v", workspaceName)
+			sdk.sdkConfiguration.ServerVariables[server]["workspaceName"] = fmt.Sprintf("%v", workspaceName)
 		}
 	}
 }
@@ -313,12 +290,12 @@ func WithWorkspaceName(workspaceName string) SDKOption {
 // WithOrganizationID allows setting the organizationId variable for url substitution
 func WithOrganizationID(organizationID string) SDKOption {
 	return func(sdk *CriblIo) {
-		for server := range sdk.sdkConfiguration.ServerDefaults {
-			if _, ok := sdk.sdkConfiguration.ServerDefaults[server]["organizationId"]; !ok {
+		for server := range sdk.sdkConfiguration.ServerVariables {
+			if _, ok := sdk.sdkConfiguration.ServerVariables[server]["organizationId"]; !ok {
 				continue
 			}
 
-			sdk.sdkConfiguration.ServerDefaults[server]["organizationId"] = fmt.Sprintf("%v", organizationID)
+			sdk.sdkConfiguration.ServerVariables[server]["organizationId"] = fmt.Sprintf("%v", organizationID)
 		}
 	}
 }
@@ -326,12 +303,12 @@ func WithOrganizationID(organizationID string) SDKOption {
 // WithCloudDomain allows setting the cloudDomain variable for url substitution
 func WithCloudDomain(cloudDomain string) SDKOption {
 	return func(sdk *CriblIo) {
-		for server := range sdk.sdkConfiguration.ServerDefaults {
-			if _, ok := sdk.sdkConfiguration.ServerDefaults[server]["cloudDomain"]; !ok {
+		for server := range sdk.sdkConfiguration.ServerVariables {
+			if _, ok := sdk.sdkConfiguration.ServerVariables[server]["cloudDomain"]; !ok {
 				continue
 			}
 
-			sdk.sdkConfiguration.ServerDefaults[server]["cloudDomain"] = fmt.Sprintf("%v", cloudDomain)
+			sdk.sdkConfiguration.ServerVariables[server]["cloudDomain"] = fmt.Sprintf("%v", cloudDomain)
 		}
 	}
 }
@@ -339,12 +316,12 @@ func WithCloudDomain(cloudDomain string) SDKOption {
 // WithGroupName allows setting the groupName variable for url substitution
 func WithGroupName(groupName string) SDKOption {
 	return func(sdk *CriblIo) {
-		for server := range sdk.sdkConfiguration.ServerDefaults {
-			if _, ok := sdk.sdkConfiguration.ServerDefaults[server]["groupName"]; !ok {
+		for server := range sdk.sdkConfiguration.ServerVariables {
+			if _, ok := sdk.sdkConfiguration.ServerVariables[server]["groupName"]; !ok {
 				continue
 			}
 
-			sdk.sdkConfiguration.ServerDefaults[server]["groupName"] = fmt.Sprintf("%v", groupName)
+			sdk.sdkConfiguration.ServerVariables[server]["groupName"] = fmt.Sprintf("%v", groupName)
 		}
 	}
 }
@@ -352,12 +329,12 @@ func WithGroupName(groupName string) SDKOption {
 // WithHostname allows setting the hostname variable for url substitution
 func WithHostname(hostname string) SDKOption {
 	return func(sdk *CriblIo) {
-		for server := range sdk.sdkConfiguration.ServerDefaults {
-			if _, ok := sdk.sdkConfiguration.ServerDefaults[server]["hostname"]; !ok {
+		for server := range sdk.sdkConfiguration.ServerVariables {
+			if _, ok := sdk.sdkConfiguration.ServerVariables[server]["hostname"]; !ok {
 				continue
 			}
 
-			sdk.sdkConfiguration.ServerDefaults[server]["hostname"] = fmt.Sprintf("%v", hostname)
+			sdk.sdkConfiguration.ServerVariables[server]["hostname"] = fmt.Sprintf("%v", hostname)
 		}
 	}
 }
@@ -365,12 +342,12 @@ func WithHostname(hostname string) SDKOption {
 // WithPort allows setting the port variable for url substitution
 func WithPort(port string) SDKOption {
 	return func(sdk *CriblIo) {
-		for server := range sdk.sdkConfiguration.ServerDefaults {
-			if _, ok := sdk.sdkConfiguration.ServerDefaults[server]["port"]; !ok {
+		for server := range sdk.sdkConfiguration.ServerVariables {
+			if _, ok := sdk.sdkConfiguration.ServerVariables[server]["port"]; !ok {
 				continue
 			}
 
-			sdk.sdkConfiguration.ServerDefaults[server]["port"] = fmt.Sprintf("%v", port)
+			sdk.sdkConfiguration.ServerVariables[server]["port"] = fmt.Sprintf("%v", port)
 		}
 	}
 }
@@ -414,13 +391,11 @@ func WithTimeout(timeout time.Duration) SDKOption {
 // New creates a new instance of the SDK with the provided options
 func New(opts ...SDKOption) *CriblIo {
 	sdk := &CriblIo{
-		sdkConfiguration: sdkConfiguration{
-			Language:          "go",
-			OpenAPIDocVersion: "1.0.0",
-			SDKVersion:        "1.0.8",
-			GenVersion:        "2.610.0",
-			UserAgent:         "speakeasy-sdk/terraform 1.0.8 2.610.0 1.0.0 github.com/speakeasy/terraform-provider-criblio/internal/sdk",
-			ServerDefaults: map[string]map[string]string{
+		SDKVersion: "1.0.12",
+		sdkConfiguration: config.SDKConfiguration{
+			UserAgent:  "speakeasy-sdk/terraform 1.0.12 2.616.1 1.0.0 github.com/speakeasy/terraform-provider-criblio/internal/sdk",
+			ServerList: ServerList,
+			ServerVariables: map[string]map[string]string{
 				"cloud": {
 					"workspaceName":  "main",
 					"organizationId": "ian",
@@ -442,8 +417,8 @@ func New(opts ...SDKOption) *CriblIo {
 					"groupName": "default",
 				},
 			},
-			Hooks: hooks.New(),
 		},
+		hooks: hooks.New(),
 	}
 	for _, opt := range opts {
 		opt(sdk)
@@ -456,192 +431,102 @@ func New(opts ...SDKOption) *CriblIo {
 
 	currentServerURL, _ := sdk.sdkConfiguration.GetServerDetails()
 	serverURL := currentServerURL
-	serverURL, sdk.sdkConfiguration.Client = sdk.sdkConfiguration.Hooks.SDKInit(currentServerURL, sdk.sdkConfiguration.Client)
-	if serverURL != currentServerURL {
+	serverURL, sdk.sdkConfiguration.Client = sdk.hooks.SDKInit(currentServerURL, sdk.sdkConfiguration.Client)
+	if currentServerURL != serverURL {
 		sdk.sdkConfiguration.ServerURL = serverURL
 	}
 
-	sdk.V5 = newV5(sdk.sdkConfiguration)
-
-	sdk.Billing = newBilling(sdk.sdkConfiguration)
-
-	sdk.Workspaces = newWorkspaces(sdk.sdkConfiguration)
-
-	sdk.Sandboxes = newSandboxes(sdk.sdkConfiguration)
-
-	sdk.Projects = newProjects(sdk.sdkConfiguration)
-
-	sdk.Subscriptions = newSubscriptions(sdk.sdkConfiguration)
-
-	sdk.Versioning = newVersioning(sdk.sdkConfiguration)
-
-	sdk.Git = newGit(sdk.sdkConfiguration)
-
-	sdk.Preview = newPreview(sdk.sdkConfiguration)
-
-	sdk.Samples = newSamples(sdk.sdkConfiguration)
-
-	sdk.Pipelines = newPipelines(sdk.sdkConfiguration)
-
-	sdk.Banners = newBanners(sdk.sdkConfiguration)
-
-	sdk.Certificates = newCertificates(sdk.sdkConfiguration)
-
-	sdk.Features = newFeatures(sdk.sdkConfiguration)
-
-	sdk.SavedJobs = newSavedJobs(sdk.sdkConfiguration)
-
-	sdk.Keys = newKeys(sdk.sdkConfiguration)
-
-	sdk.Messages = newMessages(sdk.sdkConfiguration)
-
-	sdk.NotificationTargets = newNotificationTargets(sdk.sdkConfiguration)
-
-	sdk.Notifications = newNotifications(sdk.sdkConfiguration)
-
-	sdk.Policies = newPolicies(sdk.sdkConfiguration)
-
-	sdk.Roles = newRoles(sdk.sdkConfiguration)
-
-	sdk.Scripts = newScripts(sdk.sdkConfiguration)
-
-	sdk.Teams = newTeams(sdk.sdkConfiguration)
-
-	sdk.Users = newUsers(sdk.sdkConfiguration)
-
-	sdk.Lake = newLake(sdk.sdkConfiguration)
-
-	sdk.DashboardCategories = newDashboardCategories(sdk.sdkConfiguration)
-
-	sdk.UsageGroups = newUsageGroups(sdk.sdkConfiguration)
-
-	sdk.Datasets = newDatasets(sdk.sdkConfiguration)
-
-	sdk.UsersACL = newUsersACL(sdk.sdkConfiguration)
-
-	sdk.TeamsACL = newTeamsACL(sdk.sdkConfiguration)
-
-	sdk.AppscopeConfigs = newAppscopeConfigs(sdk.sdkConfiguration)
-
-	sdk.Grokfiles = newGrokfiles(sdk.sdkConfiguration)
-
-	sdk.Lookups = newLookups(sdk.sdkConfiguration)
-
-	sdk.Parsers = newParsers(sdk.sdkConfiguration)
-
-	sdk.Protobuflibraries = newProtobuflibraries(sdk.sdkConfiguration)
-
-	sdk.Regexes = newRegexes(sdk.sdkConfiguration)
-
-	sdk.Dashboards = newDashboards(sdk.sdkConfiguration)
-
-	sdk.Macros = newMacros(sdk.sdkConfiguration)
-
-	sdk.SavedQueries = newSavedQueries(sdk.sdkConfiguration)
-
-	sdk.Search = newSearch(sdk.sdkConfiguration)
-
-	sdk.DatabaseConnections = newDatabaseConnections(sdk.sdkConfiguration)
-
-	sdk.EventBreakerRules = newEventBreakerRules(sdk.sdkConfiguration)
-
-	sdk.GlobalVariables = newGlobalVariables(sdk.sdkConfiguration)
-
-	sdk.HmacFunctions = newHmacFunctions(sdk.sdkConfiguration)
-
-	sdk.Inputs = newInputs(sdk.sdkConfiguration)
-
-	sdk.Outputs = newOutputs(sdk.sdkConfiguration)
-
-	sdk.Parquetschemas = newParquetschemas(sdk.sdkConfiguration)
-
-	sdk.Profiler = newProfiler(sdk.sdkConfiguration)
-
-	sdk.Routes = newRoutes(sdk.sdkConfiguration)
-
-	sdk.Schemas = newSchemas(sdk.sdkConfiguration)
-
-	sdk.Secrets = newSecrets(sdk.sdkConfiguration)
-
-	sdk.EdgeAppScopeProcesses = newEdgeAppScopeProcesses(sdk.sdkConfiguration)
-
-	sdk.Edge = newEdge(sdk.sdkConfiguration)
-
-	sdk.EdgeEvents = newEdgeEvents(sdk.sdkConfiguration)
-
-	sdk.Events = newEvents(sdk.sdkConfiguration)
-
-	sdk.EdgeFiles = newEdgeFiles(sdk.sdkConfiguration)
-
-	sdk.EdgeLs = newEdgeLs(sdk.sdkConfiguration)
-
-	sdk.File = newFile(sdk.sdkConfiguration)
-
-	sdk.Ingest = newIngest(sdk.sdkConfiguration)
-
-	sdk.FileSampler = newFileSampler(sdk.sdkConfiguration)
-
-	sdk.KubeLogs = newKubeLogs(sdk.sdkConfiguration)
-
-	sdk.KubeProxy = newKubeProxy(sdk.sdkConfiguration)
-
-	sdk.Auth = newAuth(sdk.sdkConfiguration)
-
-	sdk.Authorize = newAuthorize(sdk.sdkConfiguration)
-
-	sdk.Changelog = newChangelog(sdk.sdkConfiguration)
-
-	sdk.System = newSystem(sdk.sdkConfiguration)
-
-	sdk.ClickHouse = newClickHouse(sdk.sdkConfiguration)
-
-	sdk.Clui = newClui(sdk.sdkConfiguration)
-
-	sdk.Distributed = newDistributed(sdk.sdkConfiguration)
-
-	sdk.Workers = newWorkers(sdk.sdkConfiguration)
-
-	sdk.Expressions = newExpressions(sdk.sdkConfiguration)
-
-	sdk.Conditions = newConditions(sdk.sdkConfiguration)
-
-	sdk.Diag = newDiag(sdk.sdkConfiguration)
-
-	sdk.Health = newHealth(sdk.sdkConfiguration)
-
-	sdk.Jobs = newJobs(sdk.sdkConfiguration)
-
-	sdk.Security = newSecurity(sdk.sdkConfiguration)
-
-	sdk.Licenses = newLicenses(sdk.sdkConfiguration)
-
-	sdk.Logger = newLogger(sdk.sdkConfiguration)
-
-	sdk.Logging = newLogging(sdk.sdkConfiguration)
-
-	sdk.Packs = newPacks(sdk.sdkConfiguration)
-
-	sdk.Processes = newProcesses(sdk.sdkConfiguration)
-
-	sdk.Metrics = newMetrics(sdk.sdkConfiguration)
-
-	sdk.UIState = newUIState(sdk.sdkConfiguration)
-
-	sdk.Consent = newConsent(sdk.sdkConfiguration)
-
-	sdk.TrustPolicies = newTrustPolicies(sdk.sdkConfiguration)
-
-	sdk.EdgeContainers = newEdgeContainers(sdk.sdkConfiguration)
-
-	sdk.EdgeProcesses = newEdgeProcesses(sdk.sdkConfiguration)
-
-	sdk.Functions = newFunctions(sdk.sdkConfiguration)
-
-	sdk.Collectors = newCollectors(sdk.sdkConfiguration)
-
-	sdk.Executors = newExecutors(sdk.sdkConfiguration)
-
-	sdk.Groups = newGroups(sdk.sdkConfiguration)
+	sdk.V5 = newV5(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Billing = newBilling(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Workspaces = newWorkspaces(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Sandboxes = newSandboxes(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Projects = newProjects(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Subscriptions = newSubscriptions(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Versioning = newVersioning(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Git = newGit(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Preview = newPreview(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Samples = newSamples(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Pipelines = newPipelines(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Banners = newBanners(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Certificates = newCertificates(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Features = newFeatures(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.SavedJobs = newSavedJobs(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Keys = newKeys(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Messages = newMessages(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.NotificationTargets = newNotificationTargets(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Notifications = newNotifications(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Policies = newPolicies(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Roles = newRoles(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Scripts = newScripts(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Teams = newTeams(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Users = newUsers(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Lake = newLake(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.DashboardCategories = newDashboardCategories(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.UsageGroups = newUsageGroups(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Datasets = newDatasets(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.UsersACL = newUsersACL(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.TeamsACL = newTeamsACL(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.AppscopeConfigs = newAppscopeConfigs(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Grokfiles = newGrokfiles(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Lookups = newLookups(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Parsers = newParsers(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Protobuflibraries = newProtobuflibraries(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Regexes = newRegexes(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Dashboards = newDashboards(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Macros = newMacros(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.SavedQueries = newSavedQueries(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Search = newSearch(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.DatabaseConnections = newDatabaseConnections(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.EventBreakerRules = newEventBreakerRules(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.GlobalVariables = newGlobalVariables(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.HmacFunctions = newHmacFunctions(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Inputs = newInputs(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Outputs = newOutputs(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Parquetschemas = newParquetschemas(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Profiler = newProfiler(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Routes = newRoutes(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Schemas = newSchemas(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Secrets = newSecrets(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.EdgeAppScopeProcesses = newEdgeAppScopeProcesses(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Edge = newEdge(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.EdgeEvents = newEdgeEvents(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Events = newEvents(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.EdgeFiles = newEdgeFiles(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.EdgeLs = newEdgeLs(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.File = newFile(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Ingest = newIngest(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.FileSampler = newFileSampler(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.KubeLogs = newKubeLogs(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.KubeProxy = newKubeProxy(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Auth = newAuth(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Authorize = newAuthorize(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Changelog = newChangelog(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.System = newSystem(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.ClickHouse = newClickHouse(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Clui = newClui(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Distributed = newDistributed(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Workers = newWorkers(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Expressions = newExpressions(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Conditions = newConditions(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Diag = newDiag(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Health = newHealth(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Jobs = newJobs(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Security = newSecurity(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Licenses = newLicenses(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Logger = newLogger(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Logging = newLogging(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Packs = newPacks(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Processes = newProcesses(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Metrics = newMetrics(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.UIState = newUIState(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Consent = newConsent(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.TrustPolicies = newTrustPolicies(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.EdgeContainers = newEdgeContainers(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.EdgeProcesses = newEdgeProcesses(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Functions = newFunctions(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Collectors = newCollectors(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Executors = newExecutors(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.Groups = newGroups(sdk, sdk.sdkConfiguration, sdk.hooks)
 
 	return sdk
 }
