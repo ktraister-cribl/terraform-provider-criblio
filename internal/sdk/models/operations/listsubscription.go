@@ -7,18 +7,21 @@ import (
 	"net/http"
 )
 
-// ListSubscriptionResponseBody - a list of Subscription objects
-type ListSubscriptionResponseBody struct {
-	// number of items present in the items array
-	Count *int64                `json:"count,omitempty"`
-	Items []shared.Subscription `json:"items,omitempty"`
+type ListSubscriptionRequest struct {
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
-func (o *ListSubscriptionResponseBody) GetCount() *int64 {
+func (o *ListSubscriptionRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+// ListSubscriptionResponseBody - a list of Subscription objects
+type ListSubscriptionResponseBody struct {
+	Items []shared.Subscription `json:"items,omitempty"`
 }
 
 func (o *ListSubscriptionResponseBody) GetItems() []shared.Subscription {

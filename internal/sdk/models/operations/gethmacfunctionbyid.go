@@ -10,6 +10,8 @@ import (
 type GetHmacFunctionByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetHmacFunctionByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *GetHmacFunctionByIDRequest) GetID() string {
 	return o.ID
 }
 
-// GetHmacFunctionByIDResponseBody - a list of HmacFunction objects
-type GetHmacFunctionByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                `json:"count,omitempty"`
-	Items []shared.HmacFunction `json:"items,omitempty"`
+func (o *GetHmacFunctionByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *GetHmacFunctionByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// GetHmacFunctionByIDResponseBody - a list of HmacFunction objects
+type GetHmacFunctionByIDResponseBody struct {
+	Items []shared.HmacFunction `json:"items,omitempty"`
 }
 
 func (o *GetHmacFunctionByIDResponseBody) GetItems() []shared.HmacFunction {

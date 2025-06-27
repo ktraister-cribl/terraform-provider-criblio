@@ -10,6 +10,8 @@ import (
 type UpdateEventBreakerRulesetByIDRequest struct {
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Event Breaker Ruleset object to be updated
 	EventBreakerRuleset shared.EventBreakerRuleset `request:"mediaType=application/json"`
 }
@@ -21,6 +23,13 @@ func (o *UpdateEventBreakerRulesetByIDRequest) GetID() string {
 	return o.ID
 }
 
+func (o *UpdateEventBreakerRulesetByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
 func (o *UpdateEventBreakerRulesetByIDRequest) GetEventBreakerRuleset() shared.EventBreakerRuleset {
 	if o == nil {
 		return shared.EventBreakerRuleset{}
@@ -30,16 +39,7 @@ func (o *UpdateEventBreakerRulesetByIDRequest) GetEventBreakerRuleset() shared.E
 
 // UpdateEventBreakerRulesetByIDResponseBody - a list of Event Breaker Ruleset objects
 type UpdateEventBreakerRulesetByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                       `json:"count,omitempty"`
 	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
-}
-
-func (o *UpdateEventBreakerRulesetByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateEventBreakerRulesetByIDResponseBody) GetItems() []shared.EventBreakerRuleset {

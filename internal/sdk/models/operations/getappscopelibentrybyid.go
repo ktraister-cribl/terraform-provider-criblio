@@ -10,6 +10,8 @@ import (
 type GetAppscopeLibEntryByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetAppscopeLibEntryByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *GetAppscopeLibEntryByIDRequest) GetID() string {
 	return o.ID
 }
 
-// GetAppscopeLibEntryByIDResponseBody - a list of AppscopeLibEntry objects
-type GetAppscopeLibEntryByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                    `json:"count,omitempty"`
-	Items []shared.AppscopeLibEntry `json:"items,omitempty"`
+func (o *GetAppscopeLibEntryByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *GetAppscopeLibEntryByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// GetAppscopeLibEntryByIDResponseBody - a list of AppscopeLibEntry objects
+type GetAppscopeLibEntryByIDResponseBody struct {
+	Items []shared.AppscopeLibEntry `json:"items,omitempty"`
 }
 
 func (o *GetAppscopeLibEntryByIDResponseBody) GetItems() []shared.AppscopeLibEntry {

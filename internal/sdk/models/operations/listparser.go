@@ -7,18 +7,20 @@ import (
 	"net/http"
 )
 
-// ListParserResponseBody - a list of Parser objects
-type ListParserResponseBody struct {
-	// number of items present in the items array
-	Count *int64                  `json:"count,omitempty"`
-	Items []shared.ParserLibEntry `json:"items,omitempty"`
+type ListParserRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
-func (o *ListParserResponseBody) GetCount() *int64 {
+func (o *ListParserRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+// ListParserResponseBody - a list of Parser objects
+type ListParserResponseBody struct {
+	Items []shared.ParserLibEntry `json:"items,omitempty"`
 }
 
 func (o *ListParserResponseBody) GetItems() []shared.ParserLibEntry {

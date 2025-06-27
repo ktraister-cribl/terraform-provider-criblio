@@ -28,26 +28,16 @@ type GroupDataSource struct {
 
 // GroupDataSourceModel describes the data model.
 type GroupDataSourceModel struct {
-	Cloud                   *tfTypes.ConfigGroupCloud `tfsdk:"cloud"`
-	ConfigVersion           types.String              `tfsdk:"config_version"`
-	DeployingWorkerCount    types.Float64             `tfsdk:"deploying_worker_count"`
-	Description             types.String              `tfsdk:"description"`
-	EstimatedIngestRate     types.Float64             `tfsdk:"estimated_ingest_rate"`
-	Fields                  types.String              `queryParam:"style=form,explode=true,name=fields" tfsdk:"fields"`
-	Git                     *tfTypes.Git              `tfsdk:"git"`
-	ID                      types.String              `tfsdk:"id"`
-	IncompatibleWorkerCount types.Float64             `tfsdk:"incompatible_worker_count"`
-	Inherits                types.String              `tfsdk:"inherits"`
-	IsFleet                 types.Bool                `tfsdk:"is_fleet"`
-	IsSearch                types.Bool                `tfsdk:"is_search"`
-	Name                    types.String              `tfsdk:"name"`
-	OnPrem                  types.Bool                `tfsdk:"on_prem"`
-	Provisioned             types.Bool                `tfsdk:"provisioned"`
-	Streamtags              []types.String            `tfsdk:"streamtags"`
-	Tags                    types.String              `tfsdk:"tags"`
-	UpgradeVersion          types.String              `tfsdk:"upgrade_version"`
-	WorkerCount             types.Float64             `tfsdk:"worker_count"`
-	WorkerRemoteAccess      types.Bool                `tfsdk:"worker_remote_access"`
+	Cloud               *tfTypes.Cloud `tfsdk:"cloud"`
+	EstimatedIngestRate types.Float64  `tfsdk:"estimated_ingest_rate"`
+	Fields              types.String   `queryParam:"style=form,explode=true,name=fields" tfsdk:"fields"`
+	ID                  types.String   `tfsdk:"id"`
+	IsFleet             types.Bool     `tfsdk:"is_fleet"`
+	Name                types.String   `tfsdk:"name"`
+	OnPrem              types.Bool     `tfsdk:"on_prem"`
+	Provisioned         types.Bool     `tfsdk:"provisioned"`
+	Streamtags          []types.String `tfsdk:"streamtags"`
+	WorkerRemoteAccess  types.Bool     `tfsdk:"worker_remote_access"`
 }
 
 // Metadata returns the data source type name.
@@ -72,15 +62,6 @@ func (r *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 					},
 				},
 			},
-			"config_version": schema.StringAttribute{
-				Computed: true,
-			},
-			"deploying_worker_count": schema.Float64Attribute{
-				Computed: true,
-			},
-			"description": schema.StringAttribute{
-				Computed: true,
-			},
 			"estimated_ingest_rate": schema.Float64Attribute{
 				Computed: true,
 			},
@@ -88,57 +69,13 @@ func (r *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 				Optional:    true,
 				Description: `fields to add to results: git.commit, git.localChanges, git.log`,
 			},
-			"git": schema.SingleNestedAttribute{
-				Computed: true,
-				Attributes: map[string]schema.Attribute{
-					"commit": schema.StringAttribute{
-						Computed: true,
-					},
-					"local_changes": schema.Float64Attribute{
-						Computed: true,
-					},
-					"log": schema.ListNestedAttribute{
-						Computed: true,
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"author_email": schema.StringAttribute{
-									Computed: true,
-								},
-								"author_name": schema.StringAttribute{
-									Computed: true,
-								},
-								"date": schema.StringAttribute{
-									Computed: true,
-								},
-								"hash": schema.StringAttribute{
-									Computed: true,
-								},
-								"message": schema.StringAttribute{
-									Computed: true,
-								},
-								"short": schema.StringAttribute{
-									Computed: true,
-								},
-							},
-						},
-					},
-				},
-			},
 			"id": schema.StringAttribute{
 				Required:    true,
 				Description: `Group id`,
 			},
-			"incompatible_worker_count": schema.Float64Attribute{
-				Computed: true,
-			},
-			"inherits": schema.StringAttribute{
-				Computed: true,
-			},
 			"is_fleet": schema.BoolAttribute{
-				Computed: true,
-			},
-			"is_search": schema.BoolAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: `Must be true if product is 'edge'`,
 			},
 			"name": schema.StringAttribute{
 				Computed: true,
@@ -152,15 +89,6 @@ func (r *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 			"streamtags": schema.ListAttribute{
 				Computed:    true,
 				ElementType: types.StringType,
-			},
-			"tags": schema.StringAttribute{
-				Computed: true,
-			},
-			"upgrade_version": schema.StringAttribute{
-				Computed: true,
-			},
-			"worker_count": schema.Float64Attribute{
-				Computed: true,
 			},
 			"worker_remote_access": schema.BoolAttribute{
 				Computed: true,
@@ -233,7 +161,7 @@ func (r *GroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		resp.Diagnostics.AddError("unexpected response from API. Got an unexpected response body", debugResponse(res.RawResponse))
 		return
 	}
-	resp.Diagnostics.Append(data.RefreshFromSharedConfigGroup(ctx, &res.Object.Items[0])...)
+	resp.Diagnostics.Append(data.RefreshFromSharedGroup(ctx, &res.Object.Items[0])...)
 
 	if resp.Diagnostics.HasError() {
 		return

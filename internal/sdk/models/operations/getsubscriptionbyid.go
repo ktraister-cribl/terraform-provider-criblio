@@ -10,6 +10,8 @@ import (
 type GetSubscriptionByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetSubscriptionByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *GetSubscriptionByIDRequest) GetID() string {
 	return o.ID
 }
 
-// GetSubscriptionByIDResponseBody - a list of Subscription objects
-type GetSubscriptionByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                `json:"count,omitempty"`
-	Items []shared.Subscription `json:"items,omitempty"`
+func (o *GetSubscriptionByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *GetSubscriptionByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// GetSubscriptionByIDResponseBody - a list of Subscription objects
+type GetSubscriptionByIDResponseBody struct {
+	Items []shared.Subscription `json:"items,omitempty"`
 }
 
 func (o *GetSubscriptionByIDResponseBody) GetItems() []shared.Subscription {

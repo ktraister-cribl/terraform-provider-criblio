@@ -8,8 +8,16 @@ import (
 )
 
 type DeleteGrokFileByIDRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+}
+
+func (o *DeleteGrokFileByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 func (o *DeleteGrokFileByIDRequest) GetID() string {
@@ -21,16 +29,7 @@ func (o *DeleteGrokFileByIDRequest) GetID() string {
 
 // DeleteGrokFileByIDResponseBody - a list of GrokFile objects
 type DeleteGrokFileByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64            `json:"count,omitempty"`
 	Items []shared.GrokFile `json:"items,omitempty"`
-}
-
-func (o *DeleteGrokFileByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *DeleteGrokFileByIDResponseBody) GetItems() []shared.GrokFile {

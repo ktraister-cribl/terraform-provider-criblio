@@ -173,6 +173,8 @@ type EventBreakerRulesetRule struct {
 	Type      *EventBreakerType `default:"regex" json:"type"`
 	// The regex to match before attempting timestamp extraction. Use $ (end-of-string anchor) to prevent extraction.
 	TimestampAnchorRegex *string `default:"/^/" json:"timestampAnchorRegex"`
+	// The regex to match before attempting event breaker extraction. Use $ (end-of-string anchor) to prevent extraction.
+	EventBreakerRegex *string `default:"/[\\\\n\\\\r]+(?!\\\\s)/" json:"eventBreakerRegex"`
 	// Auto, manual format (strptime), or current time
 	Timestamp EventBreakerRulesetTimestampFormat `json:"timestamp"`
 	// Timezone to assign to timestamps without timezone info
@@ -229,6 +231,13 @@ func (o *EventBreakerRulesetRule) GetTimestampAnchorRegex() *string {
 		return nil
 	}
 	return o.TimestampAnchorRegex
+}
+
+func (o *EventBreakerRulesetRule) GetEventBreakerRegex() *string {
+	if o == nil {
+		return nil
+	}
+	return o.EventBreakerRegex
 }
 
 func (o *EventBreakerRulesetRule) GetTimestamp() EventBreakerRulesetTimestampFormat {

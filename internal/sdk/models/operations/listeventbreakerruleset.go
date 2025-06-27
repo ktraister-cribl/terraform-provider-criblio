@@ -7,25 +7,20 @@ import (
 	"net/http"
 )
 
+type ListEventBreakerRulesetRequest struct {
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+}
+
+func (o *ListEventBreakerRulesetRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
 // ListEventBreakerRulesetResponseBody - a list of Event Breaker Ruleset objects
 type ListEventBreakerRulesetResponseBody struct {
-	// number of items present in the items array
-	Count *int64                       `json:"count,omitempty"`
-	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
-}
-
-func (o *ListEventBreakerRulesetResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
-}
-
-func (o *ListEventBreakerRulesetResponseBody) GetItems() []shared.EventBreakerRuleset {
-	if o == nil {
-		return nil
-	}
-	return o.Items
 }
 
 type ListEventBreakerRulesetResponse struct {

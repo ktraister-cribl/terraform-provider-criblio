@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // EventBreakerRules - Actions related to Event Breaker rules
@@ -33,7 +32,7 @@ func newEventBreakerRules(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, h
 
 // ListEventBreakerRuleset - Get a list of Event Breaker Ruleset objects
 // Get a list of Event Breaker Ruleset objects
-func (s *EventBreakerRules) ListEventBreakerRuleset(ctx context.Context, opts ...operations.Option) (*operations.ListEventBreakerRulesetResponse, error) {
+func (s *EventBreakerRules) ListEventBreakerRuleset(ctx context.Context, request operations.ListEventBreakerRulesetRequest, opts ...operations.Option) (*operations.ListEventBreakerRulesetResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -51,7 +50,7 @@ func (s *EventBreakerRules) ListEventBreakerRuleset(ctx context.Context, opts ..
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/breakers")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/breakers", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -185,7 +184,7 @@ func (s *EventBreakerRules) ListEventBreakerRuleset(ctx context.Context, opts ..
 
 // CreateEventBreakerRuleset - Create Event Breaker Ruleset
 // Create Event Breaker Ruleset
-func (s *EventBreakerRules) CreateEventBreakerRuleset(ctx context.Context, request shared.EventBreakerRuleset, opts ...operations.Option) (*operations.CreateEventBreakerRulesetResponse, error) {
+func (s *EventBreakerRules) CreateEventBreakerRuleset(ctx context.Context, request operations.CreateEventBreakerRulesetRequest, opts ...operations.Option) (*operations.CreateEventBreakerRulesetResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *EventBreakerRules) CreateEventBreakerRuleset(ctx context.Context, reque
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/breakers")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/breakers", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -217,7 +216,7 @@ func (s *EventBreakerRules) CreateEventBreakerRuleset(ctx context.Context, reque
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "EventBreakerRuleset", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +361,7 @@ func (s *EventBreakerRules) GetEventBreakerRulesetByID(ctx context.Context, requ
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/breakers/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/breakers/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -514,7 +513,7 @@ func (s *EventBreakerRules) UpdateEventBreakerRulesetByID(ctx context.Context, r
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/breakers/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/breakers/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -673,7 +672,7 @@ func (s *EventBreakerRules) DeleteEventBreakerRulesetByID(ctx context.Context, r
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/breakers/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/breakers/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

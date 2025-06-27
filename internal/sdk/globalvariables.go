@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // GlobalVariables - Actions related to Global Variables
@@ -51,7 +50,7 @@ func (s *GlobalVariables) GetGlobalVariable(ctx context.Context, request operati
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/vars")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/vars", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -189,7 +188,7 @@ func (s *GlobalVariables) GetGlobalVariable(ctx context.Context, request operati
 
 // CreateGlobalVariable - Create Global Variable
 // Create Global Variable
-func (s *GlobalVariables) CreateGlobalVariable(ctx context.Context, request shared.GlobalVar, opts ...operations.Option) (*operations.CreateGlobalVariableResponse, error) {
+func (s *GlobalVariables) CreateGlobalVariable(ctx context.Context, request operations.CreateGlobalVariableRequest, opts ...operations.Option) (*operations.CreateGlobalVariableResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -207,7 +206,7 @@ func (s *GlobalVariables) CreateGlobalVariable(ctx context.Context, request shar
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/vars")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/vars", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -221,7 +220,7 @@ func (s *GlobalVariables) CreateGlobalVariable(ctx context.Context, request shar
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, true, "GlobalVar", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +365,7 @@ func (s *GlobalVariables) GetGlobalVariableByID(ctx context.Context, request ope
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/vars/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/vars/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -518,7 +517,7 @@ func (s *GlobalVariables) UpdateGlobalVariableByID(ctx context.Context, request 
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/vars/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/vars/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -677,7 +676,7 @@ func (s *GlobalVariables) DeleteGlobalVariableByID(ctx context.Context, request 
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/vars/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/vars/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

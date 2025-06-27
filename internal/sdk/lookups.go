@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // Lookups - Actions related to lookups
@@ -33,7 +32,7 @@ func newLookups(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, hooks *hook
 
 // ListLookupFile - Get a list of LookupFile objects
 // Get a list of LookupFile objects
-func (s *Lookups) ListLookupFile(ctx context.Context, opts ...operations.Option) (*operations.ListLookupFileResponse, error) {
+func (s *Lookups) ListLookupFile(ctx context.Context, request operations.ListLookupFileRequest, opts ...operations.Option) (*operations.ListLookupFileResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -51,7 +50,7 @@ func (s *Lookups) ListLookupFile(ctx context.Context, opts ...operations.Option)
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/system/lookups")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/lookups", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -185,7 +184,7 @@ func (s *Lookups) ListLookupFile(ctx context.Context, opts ...operations.Option)
 
 // CreateLookupFile - Create LookupFile
 // Create LookupFile
-func (s *Lookups) CreateLookupFile(ctx context.Context, request shared.LookupFileInputUnion, opts ...operations.Option) (*operations.CreateLookupFileResponse, error) {
+func (s *Lookups) CreateLookupFile(ctx context.Context, request operations.CreateLookupFileRequest, opts ...operations.Option) (*operations.CreateLookupFileResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *Lookups) CreateLookupFile(ctx context.Context, request shared.LookupFil
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/system/lookups")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/lookups", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -217,7 +216,7 @@ func (s *Lookups) CreateLookupFile(ctx context.Context, request shared.LookupFil
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "LookupFile", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +361,7 @@ func (s *Lookups) UpdateLookupFile(ctx context.Context, request operations.Updat
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/system/lookups")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/lookups", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -400,10 +399,6 @@ func (s *Lookups) UpdateLookupFile(ctx context.Context, request operations.Updat
 	req.Header.Set("User-Agent", s.sdkConfiguration.UserAgent)
 	if reqContentType != "" {
 		req.Header.Set("Content-Type", reqContentType)
-	}
-
-	if err := utils.PopulateQueryParams(ctx, req, request, nil); err != nil {
-		return nil, fmt.Errorf("error populating query params: %w", err)
 	}
 
 	if err := utils.PopulateSecurity(ctx, req, s.sdkConfiguration.Security); err != nil {
@@ -525,7 +520,7 @@ func (s *Lookups) GetLookupFileByID(ctx context.Context, request operations.GetL
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/lookups/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/lookups/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -677,7 +672,7 @@ func (s *Lookups) UpdateLookupFileByID(ctx context.Context, request operations.U
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/lookups/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/lookups/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -836,7 +831,7 @@ func (s *Lookups) DeleteLookupFileByID(ctx context.Context, request operations.D
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/lookups/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/lookups/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

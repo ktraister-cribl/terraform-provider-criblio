@@ -10,6 +10,8 @@ import (
 type GetDatabaseConnectionConfigByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetDatabaseConnectionConfigByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *GetDatabaseConnectionConfigByIDRequest) GetID() string {
 	return o.ID
 }
 
-// GetDatabaseConnectionConfigByIDResponseBody - a list of DatabaseConnectionConfig objects
-type GetDatabaseConnectionConfigByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                            `json:"count,omitempty"`
-	Items []shared.DatabaseConnectionConfig `json:"items,omitempty"`
+func (o *GetDatabaseConnectionConfigByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *GetDatabaseConnectionConfigByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// GetDatabaseConnectionConfigByIDResponseBody - a list of DatabaseConnectionConfig objects
+type GetDatabaseConnectionConfigByIDResponseBody struct {
+	Items []shared.DatabaseConnectionConfig `json:"items,omitempty"`
 }
 
 func (o *GetDatabaseConnectionConfigByIDResponseBody) GetItems() []shared.DatabaseConnectionConfig {

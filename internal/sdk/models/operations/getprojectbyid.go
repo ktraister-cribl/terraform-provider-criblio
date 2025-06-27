@@ -10,6 +10,8 @@ import (
 type GetProjectByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetProjectByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *GetProjectByIDRequest) GetID() string {
 	return o.ID
 }
 
-// GetProjectByIDResponseBody - a list of Project objects
-type GetProjectByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                 `json:"count,omitempty"`
-	Items []shared.ProjectConfig `json:"items,omitempty"`
+func (o *GetProjectByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *GetProjectByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// GetProjectByIDResponseBody - a list of Project objects
+type GetProjectByIDResponseBody struct {
+	Items []shared.ProjectConfig `json:"items,omitempty"`
 }
 
 func (o *GetProjectByIDResponseBody) GetItems() []shared.ProjectConfig {

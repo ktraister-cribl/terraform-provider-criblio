@@ -10,6 +10,8 @@ import (
 type DeleteGlobalVariableByIDRequest struct {
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteGlobalVariableByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *DeleteGlobalVariableByIDRequest) GetID() string {
 	return o.ID
 }
 
-// DeleteGlobalVariableByIDResponseBody - a list of Global Variable objects
-type DeleteGlobalVariableByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64             `json:"count,omitempty"`
-	Items []shared.GlobalVar `json:"items,omitempty"`
+func (o *DeleteGlobalVariableByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *DeleteGlobalVariableByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// DeleteGlobalVariableByIDResponseBody - a list of Global Variable objects
+type DeleteGlobalVariableByIDResponseBody struct {
+	Items []shared.GlobalVar `json:"items,omitempty"`
 }
 
 func (o *DeleteGlobalVariableByIDResponseBody) GetItems() []shared.GlobalVar {

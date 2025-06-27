@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // Subscriptions - Actions related to Subscriptions
@@ -185,7 +184,7 @@ func (s *Subscriptions) GetSystemProjectsSubscriptionsByGroupIDByAndProjectID(ct
 
 // ListSubscription - Get a list of Subscription objects
 // Get a list of Subscription objects
-func (s *Subscriptions) ListSubscription(ctx context.Context, opts ...operations.Option) (*operations.ListSubscriptionResponse, error) {
+func (s *Subscriptions) ListSubscription(ctx context.Context, request operations.ListSubscriptionRequest, opts ...operations.Option) (*operations.ListSubscriptionResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *Subscriptions) ListSubscription(ctx context.Context, opts ...operations
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/system/subscriptions")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/subscriptions", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -337,7 +336,7 @@ func (s *Subscriptions) ListSubscription(ctx context.Context, opts ...operations
 
 // CreateSubscription - Create subscription
 // Create subscription
-func (s *Subscriptions) CreateSubscription(ctx context.Context, opts ...operations.Option) (*operations.CreateSubscriptionResponse, error) {
+func (s *Subscriptions) CreateSubscription(ctx context.Context, request operations.CreateSubscriptionRequest, opts ...operations.Option) (*operations.CreateSubscriptionResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -355,7 +354,7 @@ func (s *Subscriptions) CreateSubscription(ctx context.Context, opts ...operatio
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/system/subscriptions")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/subscriptions", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -369,6 +368,10 @@ func (s *Subscriptions) CreateSubscription(ctx context.Context, opts ...operatio
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, true, "Subscription", "json", `request:"mediaType=application/json"`)
+	if err != nil {
+		return nil, err
+	}
 
 	timeout := o.Timeout
 	if timeout == nil {
@@ -381,12 +384,15 @@ func (s *Subscriptions) CreateSubscription(ctx context.Context, opts ...operatio
 		defer cancel()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", opURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "POST", opURL, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", s.sdkConfiguration.UserAgent)
+	if reqContentType != "" {
+		req.Header.Set("Content-Type", reqContentType)
+	}
 
 	if err := utils.PopulateSecurity(ctx, req, s.sdkConfiguration.Security); err != nil {
 		return nil, err
@@ -507,7 +513,7 @@ func (s *Subscriptions) GetSubscriptionByID(ctx context.Context, request operati
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/subscriptions/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/subscriptions/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -659,7 +665,7 @@ func (s *Subscriptions) UpdateSubscriptionByID(ctx context.Context, request oper
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/subscriptions/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/subscriptions/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -811,7 +817,7 @@ func (s *Subscriptions) DeleteSubscriptionByID(ctx context.Context, request oper
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/subscriptions/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/subscriptions/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

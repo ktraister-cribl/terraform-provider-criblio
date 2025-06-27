@@ -10,6 +10,8 @@ import (
 type UpdateGlobalVariableByIDRequest struct {
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Global Variable object to be updated
 	GlobalVar shared.GlobalVar `request:"mediaType=application/json"`
 }
@@ -21,6 +23,13 @@ func (o *UpdateGlobalVariableByIDRequest) GetID() string {
 	return o.ID
 }
 
+func (o *UpdateGlobalVariableByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
 func (o *UpdateGlobalVariableByIDRequest) GetGlobalVar() shared.GlobalVar {
 	if o == nil {
 		return shared.GlobalVar{}
@@ -30,16 +39,7 @@ func (o *UpdateGlobalVariableByIDRequest) GetGlobalVar() shared.GlobalVar {
 
 // UpdateGlobalVariableByIDResponseBody - a list of Global Variable objects
 type UpdateGlobalVariableByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64             `json:"count,omitempty"`
 	Items []shared.GlobalVar `json:"items,omitempty"`
-}
-
-func (o *UpdateGlobalVariableByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateGlobalVariableByIDResponseBody) GetItems() []shared.GlobalVar {

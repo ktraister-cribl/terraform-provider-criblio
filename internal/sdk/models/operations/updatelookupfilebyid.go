@@ -8,10 +8,19 @@ import (
 )
 
 type UpdateLookupFileByIDRequest struct {
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
 	// LookupFile object to be updated
 	LookupFile shared.LookupFileInputUnion `request:"mediaType=application/json"`
+}
+
+func (o *UpdateLookupFileByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 func (o *UpdateLookupFileByIDRequest) GetID() string {
@@ -30,16 +39,7 @@ func (o *UpdateLookupFileByIDRequest) GetLookupFile() shared.LookupFileInputUnio
 
 // UpdateLookupFileByIDResponseBody - a list of LookupFile objects
 type UpdateLookupFileByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                   `json:"count,omitempty"`
 	Items []shared.LookupFileUnion `json:"items,omitempty"`
-}
-
-func (o *UpdateLookupFileByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateLookupFileByIDResponseBody) GetItems() []shared.LookupFileUnion {

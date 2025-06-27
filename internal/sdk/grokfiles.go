@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // Grokfiles - Actions related to Grok files
@@ -33,7 +32,7 @@ func newGrokfiles(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, hooks *ho
 
 // ListGrokFile - Get a list of GrokFile objects
 // Get a list of GrokFile objects
-func (s *Grokfiles) ListGrokFile(ctx context.Context, opts ...operations.Option) (*operations.ListGrokFileResponse, error) {
+func (s *Grokfiles) ListGrokFile(ctx context.Context, request operations.ListGrokFileRequest, opts ...operations.Option) (*operations.ListGrokFileResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -51,7 +50,7 @@ func (s *Grokfiles) ListGrokFile(ctx context.Context, opts ...operations.Option)
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/grok")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/grok", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -185,7 +184,7 @@ func (s *Grokfiles) ListGrokFile(ctx context.Context, opts ...operations.Option)
 
 // CreateGrokFile - Create GrokFile
 // Create GrokFile
-func (s *Grokfiles) CreateGrokFile(ctx context.Context, request shared.GrokFile, opts ...operations.Option) (*operations.CreateGrokFileResponse, error) {
+func (s *Grokfiles) CreateGrokFile(ctx context.Context, request operations.CreateGrokFileRequest, opts ...operations.Option) (*operations.CreateGrokFileResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *Grokfiles) CreateGrokFile(ctx context.Context, request shared.GrokFile,
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/grok")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/grok", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -217,7 +216,7 @@ func (s *Grokfiles) CreateGrokFile(ctx context.Context, request shared.GrokFile,
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "GrokFile", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +361,7 @@ func (s *Grokfiles) GetGrokFileByID(ctx context.Context, request operations.GetG
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/grok/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/grok/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -514,7 +513,7 @@ func (s *Grokfiles) UpdateGrokFileByID(ctx context.Context, request operations.U
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/grok/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/grok/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -673,7 +672,7 @@ func (s *Grokfiles) DeleteGrokFileByID(ctx context.Context, request operations.D
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/grok/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/grok/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

@@ -7,18 +7,21 @@ import (
 	"net/http"
 )
 
-// ListHmacFunctionResponseBody - a list of HmacFunction objects
-type ListHmacFunctionResponseBody struct {
-	// number of items present in the items array
-	Count *int64                `json:"count,omitempty"`
-	Items []shared.HmacFunction `json:"items,omitempty"`
+type ListHmacFunctionRequest struct {
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
-func (o *ListHmacFunctionResponseBody) GetCount() *int64 {
+func (o *ListHmacFunctionRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+// ListHmacFunctionResponseBody - a list of HmacFunction objects
+type ListHmacFunctionResponseBody struct {
+	Items []shared.HmacFunction `json:"items,omitempty"`
 }
 
 func (o *ListHmacFunctionResponseBody) GetItems() []shared.HmacFunction {

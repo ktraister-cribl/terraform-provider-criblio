@@ -7,18 +7,29 @@ import (
 	"net/http"
 )
 
-// CreateGlobalVariableResponseBody - a list of Global Variable objects
-type CreateGlobalVariableResponseBody struct {
-	// number of items present in the items array
-	Count *int64             `json:"count,omitempty"`
-	Items []shared.GlobalVar `json:"items,omitempty"`
+type CreateGlobalVariableRequest struct {
+	// Group ID to CREATE
+	GroupID   string            `pathParam:"style=simple,explode=false,name=groupId"`
+	GlobalVar *shared.GlobalVar `request:"mediaType=application/json"`
 }
 
-func (o *CreateGlobalVariableResponseBody) GetCount() *int64 {
+func (o *CreateGlobalVariableRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
+func (o *CreateGlobalVariableRequest) GetGlobalVar() *shared.GlobalVar {
 	if o == nil {
 		return nil
 	}
-	return o.Count
+	return o.GlobalVar
+}
+
+// CreateGlobalVariableResponseBody - a list of Global Variable objects
+type CreateGlobalVariableResponseBody struct {
+	Items []shared.GlobalVar `json:"items,omitempty"`
 }
 
 func (o *CreateGlobalVariableResponseBody) GetItems() []shared.GlobalVar {

@@ -8,8 +8,17 @@ import (
 )
 
 type DeleteAppscopeLibEntryByIDRequest struct {
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+}
+
+func (o *DeleteAppscopeLibEntryByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 func (o *DeleteAppscopeLibEntryByIDRequest) GetID() string {
@@ -21,16 +30,7 @@ func (o *DeleteAppscopeLibEntryByIDRequest) GetID() string {
 
 // DeleteAppscopeLibEntryByIDResponseBody - a list of AppscopeLibEntry objects
 type DeleteAppscopeLibEntryByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                    `json:"count,omitempty"`
 	Items []shared.AppscopeLibEntry `json:"items,omitempty"`
-}
-
-func (o *DeleteAppscopeLibEntryByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *DeleteAppscopeLibEntryByIDResponseBody) GetItems() []shared.AppscopeLibEntry {

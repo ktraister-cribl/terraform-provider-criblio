@@ -7,18 +7,29 @@ import (
 	"net/http"
 )
 
-// CreateParserResponseBody - a list of Parser objects
-type CreateParserResponseBody struct {
-	// number of items present in the items array
-	Count *int64                  `json:"count,omitempty"`
-	Items []shared.ParserLibEntry `json:"items,omitempty"`
+type CreateParserRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// New Parser object
+	ParserLibEntry shared.ParserLibEntry `request:"mediaType=application/json"`
 }
 
-func (o *CreateParserResponseBody) GetCount() *int64 {
+func (o *CreateParserRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+func (o *CreateParserRequest) GetParserLibEntry() shared.ParserLibEntry {
+	if o == nil {
+		return shared.ParserLibEntry{}
+	}
+	return o.ParserLibEntry
+}
+
+// CreateParserResponseBody - a list of Parser objects
+type CreateParserResponseBody struct {
+	Items []shared.ParserLibEntry `json:"items,omitempty"`
 }
 
 func (o *CreateParserResponseBody) GetItems() []shared.ParserLibEntry {

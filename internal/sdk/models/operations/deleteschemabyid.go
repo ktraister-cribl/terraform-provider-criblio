@@ -10,6 +10,8 @@ import (
 type DeleteSchemaByIDRequest struct {
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteSchemaByIDRequest) GetID() string {
@@ -17,6 +19,13 @@ func (o *DeleteSchemaByIDRequest) GetID() string {
 		return ""
 	}
 	return o.ID
+}
+
+func (o *DeleteSchemaByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 // DeleteSchemaByIDResponseBody - a list of Schema objects

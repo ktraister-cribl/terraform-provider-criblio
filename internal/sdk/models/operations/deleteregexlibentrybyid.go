@@ -10,6 +10,8 @@ import (
 type DeleteRegexLibEntryByIDRequest struct {
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteRegexLibEntryByIDRequest) GetID() string {
@@ -17,6 +19,13 @@ func (o *DeleteRegexLibEntryByIDRequest) GetID() string {
 		return ""
 	}
 	return o.ID
+}
+
+func (o *DeleteRegexLibEntryByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 // DeleteRegexLibEntryByIDResponseBody - a list of RegexLibEntry objects

@@ -10,6 +10,8 @@ import (
 type DeleteProjectByIDRequest struct {
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteProjectByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *DeleteProjectByIDRequest) GetID() string {
 	return o.ID
 }
 
-// DeleteProjectByIDResponseBody - a list of Project objects
-type DeleteProjectByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                 `json:"count,omitempty"`
-	Items []shared.ProjectConfig `json:"items,omitempty"`
+func (o *DeleteProjectByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *DeleteProjectByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// DeleteProjectByIDResponseBody - a list of Project objects
+type DeleteProjectByIDResponseBody struct {
+	Items []shared.ProjectConfig `json:"items,omitempty"`
 }
 
 func (o *DeleteProjectByIDResponseBody) GetItems() []shared.ProjectConfig {
