@@ -10,6 +10,8 @@ import (
 type DeleteDatabaseConnectionConfigByIDRequest struct {
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteDatabaseConnectionConfigByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *DeleteDatabaseConnectionConfigByIDRequest) GetID() string {
 	return o.ID
 }
 
-// DeleteDatabaseConnectionConfigByIDResponseBody - a list of DatabaseConnectionConfig objects
-type DeleteDatabaseConnectionConfigByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                            `json:"count,omitempty"`
-	Items []shared.DatabaseConnectionConfig `json:"items,omitempty"`
+func (o *DeleteDatabaseConnectionConfigByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *DeleteDatabaseConnectionConfigByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// DeleteDatabaseConnectionConfigByIDResponseBody - a list of DatabaseConnectionConfig objects
+type DeleteDatabaseConnectionConfigByIDResponseBody struct {
+	Items []shared.DatabaseConnectionConfig `json:"items,omitempty"`
 }
 
 func (o *DeleteDatabaseConnectionConfigByIDResponseBody) GetItems() []shared.DatabaseConnectionConfig {

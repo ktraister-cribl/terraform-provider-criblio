@@ -7,18 +7,21 @@ import (
 	"net/http"
 )
 
-// ListRegexLibEntryResponseBody - a list of RegexLibEntry objects
-type ListRegexLibEntryResponseBody struct {
-	// number of items present in the items array
-	Count *int64                 `json:"count,omitempty"`
-	Items []shared.RegexLibEntry `json:"items,omitempty"`
+type ListRegexLibEntryRequest struct {
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
-func (o *ListRegexLibEntryResponseBody) GetCount() *int64 {
+func (o *ListRegexLibEntryRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+// ListRegexLibEntryResponseBody - a list of RegexLibEntry objects
+type ListRegexLibEntryResponseBody struct {
+	Items []shared.RegexLibEntry `json:"items,omitempty"`
 }
 
 func (o *ListRegexLibEntryResponseBody) GetItems() []shared.RegexLibEntry {

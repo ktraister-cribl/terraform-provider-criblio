@@ -21,10 +21,10 @@ func (o *DeleteGroupsByIDRequest) GetID() string {
 
 // DeleteGroupsByIDResponseBody - a list of ConfigGroup objects
 type DeleteGroupsByIDResponseBody struct {
-	Items []shared.ConfigGroup `json:"items,omitempty"`
+	Items []shared.Group `json:"items,omitempty"`
 }
 
-func (o *DeleteGroupsByIDResponseBody) GetItems() []shared.ConfigGroup {
+func (o *DeleteGroupsByIDResponseBody) GetItems() []shared.Group {
 	if o == nil {
 		return nil
 	}

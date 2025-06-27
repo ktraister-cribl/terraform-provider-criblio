@@ -10,6 +10,8 @@ import (
 type GetRegexLibEntryByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetRegexLibEntryByIDRequest) GetID() string {
@@ -17,6 +19,13 @@ func (o *GetRegexLibEntryByIDRequest) GetID() string {
 		return ""
 	}
 	return o.ID
+}
+
+func (o *GetRegexLibEntryByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 // GetRegexLibEntryByIDResponseBody - a list of RegexLibEntry objects

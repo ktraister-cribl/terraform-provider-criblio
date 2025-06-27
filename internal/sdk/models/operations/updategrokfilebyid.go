@@ -8,10 +8,18 @@ import (
 )
 
 type UpdateGrokFileByIDRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
 	// GrokFile object to be updated
 	GrokFile shared.GrokFile `request:"mediaType=application/json"`
+}
+
+func (o *UpdateGrokFileByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 func (o *UpdateGrokFileByIDRequest) GetID() string {
@@ -30,16 +38,7 @@ func (o *UpdateGrokFileByIDRequest) GetGrokFile() shared.GrokFile {
 
 // UpdateGrokFileByIDResponseBody - a list of GrokFile objects
 type UpdateGrokFileByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64            `json:"count,omitempty"`
 	Items []shared.GrokFile `json:"items,omitempty"`
-}
-
-func (o *UpdateGrokFileByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateGrokFileByIDResponseBody) GetItems() []shared.GrokFile {

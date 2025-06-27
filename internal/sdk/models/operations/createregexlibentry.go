@@ -7,18 +7,30 @@ import (
 	"net/http"
 )
 
-// CreateRegexLibEntryResponseBody - a list of RegexLibEntry objects
-type CreateRegexLibEntryResponseBody struct {
-	// number of items present in the items array
-	Count *int64                 `json:"count,omitempty"`
-	Items []shared.RegexLibEntry `json:"items,omitempty"`
+type CreateRegexLibEntryRequest struct {
+	// Group ID to CREATE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// New RegexLibEntry object
+	RegexLibEntry shared.RegexLibEntry `request:"mediaType=application/json"`
 }
 
-func (o *CreateRegexLibEntryResponseBody) GetCount() *int64 {
+func (o *CreateRegexLibEntryRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+func (o *CreateRegexLibEntryRequest) GetRegexLibEntry() shared.RegexLibEntry {
+	if o == nil {
+		return shared.RegexLibEntry{}
+	}
+	return o.RegexLibEntry
+}
+
+// CreateRegexLibEntryResponseBody - a list of RegexLibEntry objects
+type CreateRegexLibEntryResponseBody struct {
+	Items []shared.RegexLibEntry `json:"items,omitempty"`
 }
 
 func (o *CreateRegexLibEntryResponseBody) GetItems() []shared.RegexLibEntry {

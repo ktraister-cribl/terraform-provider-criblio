@@ -10,6 +10,8 @@ import (
 type GetEventBreakerRulesetByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetEventBreakerRulesetByIDRequest) GetID() string {
@@ -17,6 +19,13 @@ func (o *GetEventBreakerRulesetByIDRequest) GetID() string {
 		return ""
 	}
 	return o.ID
+}
+
+func (o *GetEventBreakerRulesetByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 // GetEventBreakerRulesetByIDResponseBody - a list of Event Breaker Ruleset objects

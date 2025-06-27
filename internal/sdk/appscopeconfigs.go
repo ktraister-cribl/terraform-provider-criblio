@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // AppscopeConfigs - Actions related to Appscope Configs
@@ -33,7 +32,7 @@ func newAppscopeConfigs(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, hoo
 
 // ListAppscopeLibEntry - Get a list of AppscopeLibEntry objects
 // Get a list of AppscopeLibEntry objects
-func (s *AppscopeConfigs) ListAppscopeLibEntry(ctx context.Context, opts ...operations.Option) (*operations.ListAppscopeLibEntryResponse, error) {
+func (s *AppscopeConfigs) ListAppscopeLibEntry(ctx context.Context, request operations.ListAppscopeLibEntryRequest, opts ...operations.Option) (*operations.ListAppscopeLibEntryResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -51,7 +50,7 @@ func (s *AppscopeConfigs) ListAppscopeLibEntry(ctx context.Context, opts ...oper
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/appscope-configs")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/appscope-configs", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -185,7 +184,7 @@ func (s *AppscopeConfigs) ListAppscopeLibEntry(ctx context.Context, opts ...oper
 
 // CreateAppscopeLibEntry - Create AppscopeLibEntry
 // Create AppscopeLibEntry
-func (s *AppscopeConfigs) CreateAppscopeLibEntry(ctx context.Context, request shared.AppscopeLibEntry, opts ...operations.Option) (*operations.CreateAppscopeLibEntryResponse, error) {
+func (s *AppscopeConfigs) CreateAppscopeLibEntry(ctx context.Context, request operations.CreateAppscopeLibEntryRequest, opts ...operations.Option) (*operations.CreateAppscopeLibEntryResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *AppscopeConfigs) CreateAppscopeLibEntry(ctx context.Context, request sh
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/appscope-configs")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/appscope-configs", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -217,7 +216,7 @@ func (s *AppscopeConfigs) CreateAppscopeLibEntry(ctx context.Context, request sh
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "AppscopeLibEntry", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +361,7 @@ func (s *AppscopeConfigs) GetAppscopeLibEntryByID(ctx context.Context, request o
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/appscope-configs/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/appscope-configs/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -514,7 +513,7 @@ func (s *AppscopeConfigs) UpdateAppscopeLibEntryByID(ctx context.Context, reques
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/appscope-configs/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/appscope-configs/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -673,7 +672,7 @@ func (s *AppscopeConfigs) DeleteAppscopeLibEntryByID(ctx context.Context, reques
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/appscope-configs/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/appscope-configs/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

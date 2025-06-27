@@ -7,18 +7,29 @@ import (
 	"net/http"
 )
 
-// CreateLibSchemasResponseBody - a list of Schema objects
-type CreateLibSchemasResponseBody struct {
-	// number of items present in the items array
-	Count *int64                  `json:"count,omitempty"`
-	Items []shared.SchemaLibEntry `json:"items,omitempty"`
+type CreateLibSchemasRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// New Schema object
+	SchemaLibEntry shared.SchemaLibEntry `request:"mediaType=application/json"`
 }
 
-func (o *CreateLibSchemasResponseBody) GetCount() *int64 {
+func (o *CreateLibSchemasRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+func (o *CreateLibSchemasRequest) GetSchemaLibEntry() shared.SchemaLibEntry {
+	if o == nil {
+		return shared.SchemaLibEntry{}
+	}
+	return o.SchemaLibEntry
+}
+
+// CreateLibSchemasResponseBody - a list of Schema objects
+type CreateLibSchemasResponseBody struct {
+	Items []shared.SchemaLibEntry `json:"items,omitempty"`
 }
 
 func (o *CreateLibSchemasResponseBody) GetItems() []shared.SchemaLibEntry {

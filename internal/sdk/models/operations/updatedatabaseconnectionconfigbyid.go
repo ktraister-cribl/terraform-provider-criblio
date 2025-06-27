@@ -10,6 +10,8 @@ import (
 type UpdateDatabaseConnectionConfigByIDRequest struct {
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// DatabaseConnectionConfig object to be updated
 	DatabaseConnectionConfig shared.DatabaseConnectionConfig `request:"mediaType=application/json"`
 }
@@ -21,6 +23,13 @@ func (o *UpdateDatabaseConnectionConfigByIDRequest) GetID() string {
 	return o.ID
 }
 
+func (o *UpdateDatabaseConnectionConfigByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
 func (o *UpdateDatabaseConnectionConfigByIDRequest) GetDatabaseConnectionConfig() shared.DatabaseConnectionConfig {
 	if o == nil {
 		return shared.DatabaseConnectionConfig{}
@@ -30,16 +39,7 @@ func (o *UpdateDatabaseConnectionConfigByIDRequest) GetDatabaseConnectionConfig(
 
 // UpdateDatabaseConnectionConfigByIDResponseBody - a list of DatabaseConnectionConfig objects
 type UpdateDatabaseConnectionConfigByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                            `json:"count,omitempty"`
 	Items []shared.DatabaseConnectionConfig `json:"items,omitempty"`
-}
-
-func (o *UpdateDatabaseConnectionConfigByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateDatabaseConnectionConfigByIDResponseBody) GetItems() []shared.DatabaseConnectionConfig {

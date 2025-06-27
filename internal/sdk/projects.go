@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // Projects - Actions related to Projects
@@ -2997,7 +2996,7 @@ func (s *Projects) GetSystemProjectsVersionShowByProjectID(ctx context.Context, 
 
 // ListProject - Get a list of Project objects
 // Get a list of Project objects
-func (s *Projects) ListProject(ctx context.Context, opts ...operations.Option) (*operations.ListProjectResponse, error) {
+func (s *Projects) ListProject(ctx context.Context, request operations.ListProjectRequest, opts ...operations.Option) (*operations.ListProjectResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -3015,7 +3014,7 @@ func (s *Projects) ListProject(ctx context.Context, opts ...operations.Option) (
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/system/projects")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/projects", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -3149,7 +3148,7 @@ func (s *Projects) ListProject(ctx context.Context, opts ...operations.Option) (
 
 // CreateProject - Create Project
 // Create Project
-func (s *Projects) CreateProject(ctx context.Context, request shared.ProjectConfig, opts ...operations.Option) (*operations.CreateProjectResponse, error) {
+func (s *Projects) CreateProject(ctx context.Context, request operations.CreateProjectRequest, opts ...operations.Option) (*operations.CreateProjectResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -3167,7 +3166,7 @@ func (s *Projects) CreateProject(ctx context.Context, request shared.ProjectConf
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/system/projects")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/projects", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -3181,7 +3180,7 @@ func (s *Projects) CreateProject(ctx context.Context, request shared.ProjectConf
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "ProjectConfig", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -3326,7 +3325,7 @@ func (s *Projects) GetProjectByID(ctx context.Context, request operations.GetPro
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/projects/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/projects/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -3478,7 +3477,7 @@ func (s *Projects) UpdateProjectByID(ctx context.Context, request operations.Upd
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/projects/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/projects/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -3637,7 +3636,7 @@ func (s *Projects) DeleteProjectByID(ctx context.Context, request operations.Del
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/system/projects/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/system/projects/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

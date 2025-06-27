@@ -7,18 +7,29 @@ import (
 	"net/http"
 )
 
-// CreateProjectResponseBody - a list of Project objects
-type CreateProjectResponseBody struct {
-	// number of items present in the items array
-	Count *int64                 `json:"count,omitempty"`
-	Items []shared.ProjectConfig `json:"items,omitempty"`
+type CreateProjectRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// New Project object
+	ProjectConfig shared.ProjectConfig `request:"mediaType=application/json"`
 }
 
-func (o *CreateProjectResponseBody) GetCount() *int64 {
+func (o *CreateProjectRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+func (o *CreateProjectRequest) GetProjectConfig() shared.ProjectConfig {
+	if o == nil {
+		return shared.ProjectConfig{}
+	}
+	return o.ProjectConfig
+}
+
+// CreateProjectResponseBody - a list of Project objects
+type CreateProjectResponseBody struct {
+	Items []shared.ProjectConfig `json:"items,omitempty"`
 }
 
 func (o *CreateProjectResponseBody) GetItems() []shared.ProjectConfig {

@@ -10,6 +10,8 @@ import (
 type GetGlobalVariableByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetGlobalVariableByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *GetGlobalVariableByIDRequest) GetID() string {
 	return o.ID
 }
 
-// GetGlobalVariableByIDResponseBody - a list of Global Variable objects
-type GetGlobalVariableByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64             `json:"count,omitempty"`
-	Items []shared.GlobalVar `json:"items,omitempty"`
+func (o *GetGlobalVariableByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *GetGlobalVariableByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// GetGlobalVariableByIDResponseBody - a list of Global Variable objects
+type GetGlobalVariableByIDResponseBody struct {
+	Items []shared.GlobalVar `json:"items,omitempty"`
 }
 
 func (o *GetGlobalVariableByIDResponseBody) GetItems() []shared.GlobalVar {

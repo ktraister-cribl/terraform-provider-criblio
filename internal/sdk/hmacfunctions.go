@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // HmacFunctions - Actions related to HMAC functions
@@ -33,7 +32,7 @@ func newHmacFunctions(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, hooks
 
 // ListHmacFunction - Get a list of HmacFunction objects
 // Get a list of HmacFunction objects
-func (s *HmacFunctions) ListHmacFunction(ctx context.Context, opts ...operations.Option) (*operations.ListHmacFunctionResponse, error) {
+func (s *HmacFunctions) ListHmacFunction(ctx context.Context, request operations.ListHmacFunctionRequest, opts ...operations.Option) (*operations.ListHmacFunctionResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -51,7 +50,7 @@ func (s *HmacFunctions) ListHmacFunction(ctx context.Context, opts ...operations
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/hmac-functions")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/hmac-functions", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -185,7 +184,7 @@ func (s *HmacFunctions) ListHmacFunction(ctx context.Context, opts ...operations
 
 // CreateHmacFunction - Create HmacFunction
 // Create HmacFunction
-func (s *HmacFunctions) CreateHmacFunction(ctx context.Context, request shared.HmacFunction, opts ...operations.Option) (*operations.CreateHmacFunctionResponse, error) {
+func (s *HmacFunctions) CreateHmacFunction(ctx context.Context, request operations.CreateHmacFunctionRequest, opts ...operations.Option) (*operations.CreateHmacFunctionResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *HmacFunctions) CreateHmacFunction(ctx context.Context, request shared.H
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/hmac-functions")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/hmac-functions", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -217,7 +216,7 @@ func (s *HmacFunctions) CreateHmacFunction(ctx context.Context, request shared.H
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "HmacFunction", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +361,7 @@ func (s *HmacFunctions) GetHmacFunctionByID(ctx context.Context, request operati
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/hmac-functions/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/hmac-functions/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -514,7 +513,7 @@ func (s *HmacFunctions) UpdateHmacFunctionByID(ctx context.Context, request oper
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/hmac-functions/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/hmac-functions/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -673,7 +672,7 @@ func (s *HmacFunctions) DeleteHmacFunctionByID(ctx context.Context, request oper
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/hmac-functions/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/hmac-functions/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

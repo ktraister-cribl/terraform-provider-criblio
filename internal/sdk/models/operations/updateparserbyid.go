@@ -8,10 +8,19 @@ import (
 )
 
 type UpdateParserByIDRequest struct {
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
 	// Parser object to be updated
 	ParserLibEntry shared.ParserLibEntry `request:"mediaType=application/json"`
+}
+
+func (o *UpdateParserByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 func (o *UpdateParserByIDRequest) GetID() string {
@@ -30,16 +39,7 @@ func (o *UpdateParserByIDRequest) GetParserLibEntry() shared.ParserLibEntry {
 
 // UpdateParserByIDResponseBody - a list of Parser objects
 type UpdateParserByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                  `json:"count,omitempty"`
 	Items []shared.ParserLibEntry `json:"items,omitempty"`
-}
-
-func (o *UpdateParserByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateParserByIDResponseBody) GetItems() []shared.ParserLibEntry {

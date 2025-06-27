@@ -10,6 +10,8 @@ import (
 type UpdateHmacFunctionByIDRequest struct {
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// HmacFunction object to be updated
 	HmacFunction shared.HmacFunction `request:"mediaType=application/json"`
 }
@@ -21,6 +23,13 @@ func (o *UpdateHmacFunctionByIDRequest) GetID() string {
 	return o.ID
 }
 
+func (o *UpdateHmacFunctionByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
 func (o *UpdateHmacFunctionByIDRequest) GetHmacFunction() shared.HmacFunction {
 	if o == nil {
 		return shared.HmacFunction{}
@@ -30,16 +39,7 @@ func (o *UpdateHmacFunctionByIDRequest) GetHmacFunction() shared.HmacFunction {
 
 // UpdateHmacFunctionByIDResponseBody - a list of HmacFunction objects
 type UpdateHmacFunctionByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                `json:"count,omitempty"`
 	Items []shared.HmacFunction `json:"items,omitempty"`
-}
-
-func (o *UpdateHmacFunctionByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateHmacFunctionByIDResponseBody) GetItems() []shared.HmacFunction {

@@ -1,0 +1,1 @@
+terraform import criblio_appscope_config.my_criblio_appscope_config ""

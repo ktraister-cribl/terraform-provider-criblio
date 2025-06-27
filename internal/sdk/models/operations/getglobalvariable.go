@@ -10,6 +10,8 @@ import (
 type GetGlobalVariableRequest struct {
 	// Pass "refs" to include references to fields the variable is used in
 	With *string `queryParam:"style=form,explode=true,name=with"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetGlobalVariableRequest) GetWith() *string {
@@ -19,18 +21,16 @@ func (o *GetGlobalVariableRequest) GetWith() *string {
 	return o.With
 }
 
-// GetGlobalVariableResponseBody - a list of Global Variable objects
-type GetGlobalVariableResponseBody struct {
-	// number of items present in the items array
-	Count *int64             `json:"count,omitempty"`
-	Items []shared.GlobalVar `json:"items,omitempty"`
+func (o *GetGlobalVariableRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *GetGlobalVariableResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// GetGlobalVariableResponseBody - a list of Global Variable objects
+type GetGlobalVariableResponseBody struct {
+	Items []shared.GlobalVar `json:"items,omitempty"`
 }
 
 func (o *GetGlobalVariableResponseBody) GetItems() []shared.GlobalVar {
