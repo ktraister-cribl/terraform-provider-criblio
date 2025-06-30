@@ -23,6 +23,7 @@ func NewDestinationDataSource() datasource.DataSource {
 
 // DestinationDataSource is the data source implementation.
 type DestinationDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

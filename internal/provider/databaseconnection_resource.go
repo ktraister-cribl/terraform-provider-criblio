@@ -25,6 +25,7 @@ func NewDatabaseConnectionResource() resource.Resource {
 
 // DatabaseConnectionResource defines the resource implementation.
 type DatabaseConnectionResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

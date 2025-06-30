@@ -38,6 +38,7 @@ func NewGroupResource() resource.Resource {
 
 // GroupResource defines the resource implementation.
 type GroupResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

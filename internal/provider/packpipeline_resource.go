@@ -49,6 +49,7 @@ func NewPackPipelineResource() resource.Resource {
 
 // PackPipelineResource defines the resource implementation.
 type PackPipelineResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 
@@ -496,5 +497,4 @@ func (r *PackPipelineResource) ImportState(ctx context.Context, req resource.Imp
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("pack"), data.Pack)...)
-
 }

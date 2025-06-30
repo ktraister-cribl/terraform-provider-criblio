@@ -25,6 +25,7 @@ func NewHmacFunctionResource() resource.Resource {
 
 // HmacFunctionResource defines the resource implementation.
 type HmacFunctionResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 
