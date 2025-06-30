@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // Schemas - Actions related to Schemas
@@ -33,7 +32,7 @@ func newSchemas(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, hooks *hook
 
 // ListLibSchemas - Get a list of Schema objects
 // Get a list of Schema objects
-func (s *Schemas) ListLibSchemas(ctx context.Context, opts ...operations.Option) (*operations.ListLibSchemasResponse, error) {
+func (s *Schemas) ListLibSchemas(ctx context.Context, request operations.ListLibSchemasRequest, opts ...operations.Option) (*operations.ListLibSchemasResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -51,7 +50,7 @@ func (s *Schemas) ListLibSchemas(ctx context.Context, opts ...operations.Option)
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/schemas")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/schemas", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -185,7 +184,7 @@ func (s *Schemas) ListLibSchemas(ctx context.Context, opts ...operations.Option)
 
 // CreateLibSchemas - Create Schema
 // Create Schema
-func (s *Schemas) CreateLibSchemas(ctx context.Context, request shared.SchemaLibEntry, opts ...operations.Option) (*operations.CreateLibSchemasResponse, error) {
+func (s *Schemas) CreateLibSchemas(ctx context.Context, request operations.CreateLibSchemasRequest, opts ...operations.Option) (*operations.CreateLibSchemasResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *Schemas) CreateLibSchemas(ctx context.Context, request shared.SchemaLib
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/schemas")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/schemas", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -217,7 +216,7 @@ func (s *Schemas) CreateLibSchemas(ctx context.Context, request shared.SchemaLib
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "SchemaLibEntry", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +361,7 @@ func (s *Schemas) GetLibSchemasByID(ctx context.Context, request operations.GetL
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/schemas/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/schemas/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -514,7 +513,7 @@ func (s *Schemas) UpdateLibSchemasByID(ctx context.Context, request operations.U
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/schemas/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/schemas/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -673,7 +672,7 @@ func (s *Schemas) DeleteLibSchemasByID(ctx context.Context, request operations.D
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/schemas/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/schemas/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

@@ -3,10 +3,8 @@
 package shared
 
 type GrokFile struct {
-	Content string  `json:"content"`
-	ID      string  `json:"id"`
-	Size    float64 `json:"size"`
-	Tags    *string `json:"tags,omitempty"`
+	Content string `json:"content"`
+	ID      string `json:"id"`
 }
 
 func (o *GrokFile) GetContent() string {
@@ -21,18 +19,4 @@ func (o *GrokFile) GetID() string {
 		return ""
 	}
 	return o.ID
-}
-
-func (o *GrokFile) GetSize() float64 {
-	if o == nil {
-		return 0.0
-	}
-	return o.Size
-}
-
-func (o *GrokFile) GetTags() *string {
-	if o == nil {
-		return nil
-	}
-	return o.Tags
 }

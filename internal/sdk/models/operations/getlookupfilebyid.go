@@ -10,6 +10,8 @@ import (
 type GetLookupFileByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetLookupFileByIDRequest) GetID() string {
@@ -17,6 +19,13 @@ func (o *GetLookupFileByIDRequest) GetID() string {
 		return ""
 	}
 	return o.ID
+}
+
+func (o *GetLookupFileByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 // GetLookupFileByIDResponseBody - a list of LookupFile objects

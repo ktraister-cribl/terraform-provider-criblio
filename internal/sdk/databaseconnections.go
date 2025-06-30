@@ -51,7 +51,7 @@ func (s *DatabaseConnections) GetDatabaseConnectionConfig(ctx context.Context, r
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/database-connections")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/database-connections", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -189,7 +189,7 @@ func (s *DatabaseConnections) GetDatabaseConnectionConfig(ctx context.Context, r
 
 // CreateDatabaseConnectionConfig - Create DatabaseConnectionConfig
 // Create DatabaseConnectionConfig
-func (s *DatabaseConnections) CreateDatabaseConnectionConfig(ctx context.Context, request shared.DatabaseConnectionConfig, opts ...operations.Option) (*operations.CreateDatabaseConnectionConfigResponse, error) {
+func (s *DatabaseConnections) CreateDatabaseConnectionConfig(ctx context.Context, request operations.CreateDatabaseConnectionConfigRequest, opts ...operations.Option) (*operations.CreateDatabaseConnectionConfigResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -207,7 +207,7 @@ func (s *DatabaseConnections) CreateDatabaseConnectionConfig(ctx context.Context
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/database-connections")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/database-connections", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -221,7 +221,7 @@ func (s *DatabaseConnections) CreateDatabaseConnectionConfig(ctx context.Context
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "DatabaseConnectionConfig", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +366,7 @@ func (s *DatabaseConnections) GetDatabaseConnectionConfigByID(ctx context.Contex
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/database-connections/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/database-connections/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -518,7 +518,7 @@ func (s *DatabaseConnections) UpdateDatabaseConnectionConfigByID(ctx context.Con
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/database-connections/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/database-connections/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -677,7 +677,7 @@ func (s *DatabaseConnections) DeleteDatabaseConnectionConfigByID(ctx context.Con
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/database-connections/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/database-connections/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

@@ -7,6 +7,17 @@ import (
 	"net/http"
 )
 
+type ListProjectRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+}
+
+func (o *ListProjectRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
 // ListProjectResponseBody - a list of Project objects
 type ListProjectResponseBody struct {
 	// number of items present in the items array

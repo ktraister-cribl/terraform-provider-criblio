@@ -7,18 +7,20 @@ import (
 	"net/http"
 )
 
-// ListLibSchemasResponseBody - a list of Schema objects
-type ListLibSchemasResponseBody struct {
-	// number of items present in the items array
-	Count *int64                  `json:"count,omitempty"`
-	Items []shared.SchemaLibEntry `json:"items,omitempty"`
+type ListLibSchemasRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
-func (o *ListLibSchemasResponseBody) GetCount() *int64 {
+func (o *ListLibSchemasRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+// ListLibSchemasResponseBody - a list of Schema objects
+type ListLibSchemasResponseBody struct {
+	Items []shared.SchemaLibEntry `json:"items,omitempty"`
 }
 
 func (o *ListLibSchemasResponseBody) GetItems() []shared.SchemaLibEntry {

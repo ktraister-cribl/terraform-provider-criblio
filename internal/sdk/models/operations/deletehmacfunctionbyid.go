@@ -10,6 +10,8 @@ import (
 type DeleteHmacFunctionByIDRequest struct {
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteHmacFunctionByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *DeleteHmacFunctionByIDRequest) GetID() string {
 	return o.ID
 }
 
-// DeleteHmacFunctionByIDResponseBody - a list of HmacFunction objects
-type DeleteHmacFunctionByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                `json:"count,omitempty"`
-	Items []shared.HmacFunction `json:"items,omitempty"`
+func (o *DeleteHmacFunctionByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *DeleteHmacFunctionByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// DeleteHmacFunctionByIDResponseBody - a list of HmacFunction objects
+type DeleteHmacFunctionByIDResponseBody struct {
+	Items []shared.HmacFunction `json:"items,omitempty"`
 }
 
 func (o *DeleteHmacFunctionByIDResponseBody) GetItems() []shared.HmacFunction {

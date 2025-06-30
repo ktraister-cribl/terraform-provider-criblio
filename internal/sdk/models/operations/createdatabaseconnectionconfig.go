@@ -7,18 +7,30 @@ import (
 	"net/http"
 )
 
-// CreateDatabaseConnectionConfigResponseBody - a list of DatabaseConnectionConfig objects
-type CreateDatabaseConnectionConfigResponseBody struct {
-	// number of items present in the items array
-	Count *int64                            `json:"count,omitempty"`
-	Items []shared.DatabaseConnectionConfig `json:"items,omitempty"`
+type CreateDatabaseConnectionConfigRequest struct {
+	// Group ID to CREATE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// New DatabaseConnectionConfig object
+	DatabaseConnectionConfig shared.DatabaseConnectionConfig `request:"mediaType=application/json"`
 }
 
-func (o *CreateDatabaseConnectionConfigResponseBody) GetCount() *int64 {
+func (o *CreateDatabaseConnectionConfigRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+func (o *CreateDatabaseConnectionConfigRequest) GetDatabaseConnectionConfig() shared.DatabaseConnectionConfig {
+	if o == nil {
+		return shared.DatabaseConnectionConfig{}
+	}
+	return o.DatabaseConnectionConfig
+}
+
+// CreateDatabaseConnectionConfigResponseBody - a list of DatabaseConnectionConfig objects
+type CreateDatabaseConnectionConfigResponseBody struct {
+	Items []shared.DatabaseConnectionConfig `json:"items,omitempty"`
 }
 
 func (o *CreateDatabaseConnectionConfigResponseBody) GetItems() []shared.DatabaseConnectionConfig {

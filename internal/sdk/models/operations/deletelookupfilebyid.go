@@ -8,8 +8,17 @@ import (
 )
 
 type DeleteLookupFileByIDRequest struct {
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+}
+
+func (o *DeleteLookupFileByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 func (o *DeleteLookupFileByIDRequest) GetID() string {
@@ -21,16 +30,7 @@ func (o *DeleteLookupFileByIDRequest) GetID() string {
 
 // DeleteLookupFileByIDResponseBody - a list of LookupFile objects
 type DeleteLookupFileByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                   `json:"count,omitempty"`
 	Items []shared.LookupFileUnion `json:"items,omitempty"`
-}
-
-func (o *DeleteLookupFileByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *DeleteLookupFileByIDResponseBody) GetItems() []shared.LookupFileUnion {

@@ -8,8 +8,9 @@ import (
 )
 
 type DeleteLibSchemasByIDRequest struct {
-	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteLibSchemasByIDRequest) GetID() string {
@@ -19,18 +20,16 @@ func (o *DeleteLibSchemasByIDRequest) GetID() string {
 	return o.ID
 }
 
-// DeleteLibSchemasByIDResponseBody - a list of Schema objects
-type DeleteLibSchemasByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                  `json:"count,omitempty"`
-	Items []shared.SchemaLibEntry `json:"items,omitempty"`
+func (o *DeleteLibSchemasByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *DeleteLibSchemasByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// DeleteLibSchemasByIDResponseBody - a list of Schema objects
+type DeleteLibSchemasByIDResponseBody struct {
+	Items []shared.SchemaLibEntry `json:"items,omitempty"`
 }
 
 func (o *DeleteLibSchemasByIDResponseBody) GetItems() []shared.SchemaLibEntry {

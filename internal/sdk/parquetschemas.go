@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // Parquetschemas - Actions related to Parquet schemas
@@ -33,7 +32,7 @@ func newParquetschemas(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, hook
 
 // ListSchema - Get a list of Schema objects
 // Get a list of Schema objects
-func (s *Parquetschemas) ListSchema(ctx context.Context, opts ...operations.Option) (*operations.ListSchemaResponse, error) {
+func (s *Parquetschemas) ListSchema(ctx context.Context, request operations.ListSchemaRequest, opts ...operations.Option) (*operations.ListSchemaResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -51,7 +50,7 @@ func (s *Parquetschemas) ListSchema(ctx context.Context, opts ...operations.Opti
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/parquet-schemas")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parquet-schemas", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -185,7 +184,7 @@ func (s *Parquetschemas) ListSchema(ctx context.Context, opts ...operations.Opti
 
 // CreateSchema - Create Schema
 // Create Schema
-func (s *Parquetschemas) CreateSchema(ctx context.Context, request shared.SchemaLibEntry, opts ...operations.Option) (*operations.CreateSchemaResponse, error) {
+func (s *Parquetschemas) CreateSchema(ctx context.Context, request operations.CreateSchemaRequest, opts ...operations.Option) (*operations.CreateSchemaResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *Parquetschemas) CreateSchema(ctx context.Context, request shared.Schema
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/parquet-schemas")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parquet-schemas", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -217,7 +216,7 @@ func (s *Parquetschemas) CreateSchema(ctx context.Context, request shared.Schema
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "SchemaLibEntry", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +361,7 @@ func (s *Parquetschemas) GetSchemaByID(ctx context.Context, request operations.G
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/parquet-schemas/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parquet-schemas/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -514,7 +513,7 @@ func (s *Parquetschemas) UpdateSchemaByID(ctx context.Context, request operation
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/parquet-schemas/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parquet-schemas/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -673,7 +672,7 @@ func (s *Parquetschemas) DeleteSchemaByID(ctx context.Context, request operation
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/parquet-schemas/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parquet-schemas/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

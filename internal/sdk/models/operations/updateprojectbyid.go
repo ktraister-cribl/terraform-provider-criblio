@@ -10,6 +10,8 @@ import (
 type UpdateProjectByIDRequest struct {
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Project object to be updated
 	ProjectConfig shared.ProjectConfig `request:"mediaType=application/json"`
 }
@@ -21,6 +23,13 @@ func (o *UpdateProjectByIDRequest) GetID() string {
 	return o.ID
 }
 
+func (o *UpdateProjectByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
 func (o *UpdateProjectByIDRequest) GetProjectConfig() shared.ProjectConfig {
 	if o == nil {
 		return shared.ProjectConfig{}
@@ -30,16 +39,7 @@ func (o *UpdateProjectByIDRequest) GetProjectConfig() shared.ProjectConfig {
 
 // UpdateProjectByIDResponseBody - a list of Project objects
 type UpdateProjectByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                 `json:"count,omitempty"`
 	Items []shared.ProjectConfig `json:"items,omitempty"`
-}
-
-func (o *UpdateProjectByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateProjectByIDResponseBody) GetItems() []shared.ProjectConfig {

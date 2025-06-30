@@ -7,18 +7,20 @@ import (
 	"net/http"
 )
 
-// ListLookupFileResponseBody - a list of LookupFile objects
-type ListLookupFileResponseBody struct {
-	// number of items present in the items array
-	Count *int64                   `json:"count,omitempty"`
-	Items []shared.LookupFileUnion `json:"items,omitempty"`
+type ListLookupFileRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
-func (o *ListLookupFileResponseBody) GetCount() *int64 {
+func (o *ListLookupFileRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+// ListLookupFileResponseBody - a list of LookupFile objects
+type ListLookupFileResponseBody struct {
+	Items []shared.LookupFileUnion `json:"items,omitempty"`
 }
 
 func (o *ListLookupFileResponseBody) GetItems() []shared.LookupFileUnion {

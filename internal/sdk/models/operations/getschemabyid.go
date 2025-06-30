@@ -10,6 +10,8 @@ import (
 type GetSchemaByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetSchemaByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *GetSchemaByIDRequest) GetID() string {
 	return o.ID
 }
 
-// GetSchemaByIDResponseBody - a list of Schema objects
-type GetSchemaByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                  `json:"count,omitempty"`
-	Items []shared.SchemaLibEntry `json:"items,omitempty"`
+func (o *GetSchemaByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *GetSchemaByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// GetSchemaByIDResponseBody - a list of Schema objects
+type GetSchemaByIDResponseBody struct {
+	Items []shared.SchemaLibEntry `json:"items,omitempty"`
 }
 
 func (o *GetSchemaByIDResponseBody) GetItems() []shared.SchemaLibEntry {

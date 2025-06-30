@@ -13,7 +13,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/operations"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 	"net/http"
-	"net/url"
 )
 
 // Parsers - Actions related to parsers
@@ -33,7 +32,7 @@ func newParsers(rootSDK *CriblIo, sdkConfig config.SDKConfiguration, hooks *hook
 
 // ListParser - Get a list of Parser objects
 // Get a list of Parser objects
-func (s *Parsers) ListParser(ctx context.Context, opts ...operations.Option) (*operations.ListParserResponse, error) {
+func (s *Parsers) ListParser(ctx context.Context, request operations.ListParserRequest, opts ...operations.Option) (*operations.ListParserResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -51,7 +50,7 @@ func (s *Parsers) ListParser(ctx context.Context, opts ...operations.Option) (*o
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/parsers")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parsers", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -185,7 +184,7 @@ func (s *Parsers) ListParser(ctx context.Context, opts ...operations.Option) (*o
 
 // CreateParser - Create Parser
 // Create Parser
-func (s *Parsers) CreateParser(ctx context.Context, request shared.ParserLibEntry, opts ...operations.Option) (*operations.CreateParserResponse, error) {
+func (s *Parsers) CreateParser(ctx context.Context, request operations.CreateParserRequest, opts ...operations.Option) (*operations.CreateParserResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
 		operations.SupportedOptionTimeout,
@@ -203,7 +202,7 @@ func (s *Parsers) CreateParser(ctx context.Context, request shared.ParserLibEntr
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := url.JoinPath(baseURL, "/lib/parsers")
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parsers", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -217,7 +216,7 @@ func (s *Parsers) CreateParser(ctx context.Context, request shared.ParserLibEntr
 		OAuth2Scopes:     []string{},
 		SecuritySource:   s.sdkConfiguration.Security,
 	}
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "Request", "json", `request:"mediaType=application/json"`)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, false, false, "ParserLibEntry", "json", `request:"mediaType=application/json"`)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +361,7 @@ func (s *Parsers) GetParserByID(ctx context.Context, request operations.GetParse
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/parsers/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parsers/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -514,7 +513,7 @@ func (s *Parsers) UpdateParserByID(ctx context.Context, request operations.Updat
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/parsers/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parsers/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -673,7 +672,7 @@ func (s *Parsers) DeleteParserByID(ctx context.Context, request operations.Delet
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/lib/parsers/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/m/{groupId}/lib/parsers/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

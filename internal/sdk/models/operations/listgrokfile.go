@@ -7,18 +7,20 @@ import (
 	"net/http"
 )
 
-// ListGrokFileResponseBody - a list of GrokFile objects
-type ListGrokFileResponseBody struct {
-	// number of items present in the items array
-	Count *int64            `json:"count,omitempty"`
-	Items []shared.GrokFile `json:"items,omitempty"`
+type ListGrokFileRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
-func (o *ListGrokFileResponseBody) GetCount() *int64 {
+func (o *ListGrokFileRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+// ListGrokFileResponseBody - a list of GrokFile objects
+type ListGrokFileResponseBody struct {
+	Items []shared.GrokFile `json:"items,omitempty"`
 }
 
 func (o *ListGrokFileResponseBody) GetItems() []shared.GrokFile {

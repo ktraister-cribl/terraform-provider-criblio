@@ -7,18 +7,30 @@ import (
 	"net/http"
 )
 
-// CreateEventBreakerRulesetResponseBody - a list of Event Breaker Ruleset objects
-type CreateEventBreakerRulesetResponseBody struct {
-	// number of items present in the items array
-	Count *int64                       `json:"count,omitempty"`
-	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
+type CreateEventBreakerRulesetRequest struct {
+	// Group ID to CREATE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// New Event Breaker Ruleset object
+	EventBreakerRuleset shared.EventBreakerRuleset `request:"mediaType=application/json"`
 }
 
-func (o *CreateEventBreakerRulesetResponseBody) GetCount() *int64 {
+func (o *CreateEventBreakerRulesetRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+func (o *CreateEventBreakerRulesetRequest) GetEventBreakerRuleset() shared.EventBreakerRuleset {
+	if o == nil {
+		return shared.EventBreakerRuleset{}
+	}
+	return o.EventBreakerRuleset
+}
+
+// CreateEventBreakerRulesetResponseBody - a list of Event Breaker Ruleset objects
+type CreateEventBreakerRulesetResponseBody struct {
+	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
 }
 
 func (o *CreateEventBreakerRulesetResponseBody) GetItems() []shared.EventBreakerRuleset {

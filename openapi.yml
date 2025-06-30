@@ -1483,7 +1483,9 @@ components:
                   field:
                     type: string
                   headers:
-                    type: string
+                    type: array
+                    items:
+                      type: string
                   name:
                     type: string
                   type:
@@ -1541,7 +1543,7 @@ components:
             watch:
               type: array
               items:
-                type: string
+                type: object
           required:
           - enable
           - format
@@ -1663,7 +1665,9 @@ components:
                   field:
                     type: string
                   headers:
-                    type: string
+                    type: array
+                    items:
+                      type: string
                   name:
                     type: string
                   type:
@@ -1721,7 +1725,7 @@ components:
             watch:
               type: array
               items:
-                type: string
+                type: object
           required:
           - enable
           - format
@@ -1804,14 +1808,9 @@ components:
           type: string
         id:
           type: string
-        size:
-          type: number
-        tags:
-          type: string
       required:
       - content
       - id
-      - size
     LookupFile:
       type: object
       required:
@@ -2694,6 +2693,12 @@ components:
                 description: The regex to match before attempting timestamp extraction.
                   Use $ (end-of-string anchor) to prevent extraction.
                 default: /^/
+              eventBreakerRegex:
+                type: string
+                title: Event breaker regex
+                description: The regex to match before attempting event breaker extraction.
+                  Use $ (end-of-string anchor) to prevent extraction.
+                default: /[\\n\\r]+(?!\\s)/
               timestamp:
                 type: object
                 required:
@@ -42668,7 +42673,6 @@ components:
       - events
     SchemaLibEntry:
       type: object
-      additionalProperties: true
       required:
       - id
       - schema
@@ -47167,6 +47171,7 @@ components:
           type: string
         eventBreakerRegex:
           type: string
+          default: "/^/"
         fields:
           type: array
           items:
@@ -47821,8 +47826,6 @@ components:
     Subscription:
       type: object
       properties:
-        consumer:
-          $ref: '#/components/schemas/SubscriptionConsumer'
         description:
           type: string
         disabled:
@@ -47927,6 +47930,42 @@ components:
       required:
       - configVersion
       - id
+    Group:
+      type: object
+      properties:
+        onPrem:
+          type: boolean
+        workerRemoteAccess:
+          type: boolean
+        streamtags:
+          type: array
+          items:
+            type: string
+        cloud:
+          type: object
+          properties:
+            provider:
+              type: string
+              enum: ["aws", "azure"]
+            region:
+              type: string
+          required:
+            - provider
+            - region
+        provisioned:
+          type: boolean
+        isFleet:
+          type: boolean
+          description: Must be true if product is 'edge'
+        estimatedIngestRate:
+          type: number
+        name:
+          type: string
+        id:
+          type: string
+      required:
+        - provisioned
+        - id
     DeployRequest:
       type: object
       properties:
@@ -53790,13 +53829,20 @@ paths:
         description: Unique ID for ACL Teams Create
       description: Add/remove accesses to Dataset for Teams
       summary: Modify Dataset Teams ACL
-  /lib/appscope-configs:
+  /m/{groupId}/lib/appscope-configs:
     get:
       operationId: listAppscopeLibEntry
       tags:
       - appscope-configs
       summary: Get a list of AppscopeLibEntry objects
       description: Get a list of AppscopeLibEntry objects
+      x-speakeasy-entity-operation: AppscopeConfig#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: a list of AppscopeLibEntry objects
@@ -53805,9 +53851,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -53831,9 +53878,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -53849,6 +53897,13 @@ paths:
       operationId: createAppscopeLibEntry
       summary: Create AppscopeLibEntry
       description: Create AppscopeLibEntry
+      x-speakeasy-entity-operation: AppscopeConfig#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         description: New AppscopeLibEntry object
         required: true
@@ -53856,7 +53911,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AppscopeLibEntry'
-  /lib/appscope-configs/{id}:
+  /m/{groupId}/lib/appscope-configs/{id}:
     get:
       tags:
       - appscope-configs
@@ -53868,9 +53923,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -53893,6 +53949,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - appscope-configs
@@ -53904,9 +53966,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -53922,7 +53985,14 @@ paths:
       operationId: updateAppscopeLibEntryById
       summary: Update AppscopeLibEntry
       description: Update AppscopeLibEntry
+      x-speakeasy-entity-operation: AppscopeConfig#update
       parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       - schema:
           type: string
         name: id
@@ -53947,9 +54017,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -53965,20 +54036,34 @@ paths:
       operationId: deleteAppscopeLibEntryById
       summary: Delete AppscopeLibEntry
       description: Delete AppscopeLibEntry
+      x-speakeasy-entity-operation: AppscopeConfig#delete
       parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
       - schema:
           type: string
         name: id
         in: path
         required: true
         description: Unique ID to DELETE
-  /lib/grok:
+  /m/{groupId}/lib/grok:
     get:
       operationId: listGrokFile
       tags:
       - grokfiles
       summary: Get a list of GrokFile objects
       description: Get a list of GrokFile objects
+      x-speakeasy-entity-operation: Grok#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: a list of GrokFile objects
@@ -53987,9 +54072,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54013,9 +54099,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54031,6 +54118,13 @@ paths:
       operationId: createGrokFile
       summary: Create GrokFile
       description: Create GrokFile
+      x-speakeasy-entity-operation: Grok#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         description: New GrokFile object
         required: true
@@ -54038,7 +54132,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GrokFile'
-  /lib/grok/{id}:
+  /m/{groupId}/lib/grok/{id}:
     get:
       tags:
       - grokfiles
@@ -54050,9 +54144,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54075,6 +54170,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - grokfiles
@@ -54086,9 +54187,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54104,7 +54206,13 @@ paths:
       operationId: updateGrokFileById
       summary: Update GrokFile
       description: Update GrokFile
+      x-speakeasy-entity-operation: Grok#update
       parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       - schema:
           type: string
         name: id
@@ -54129,9 +54237,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54147,20 +54256,33 @@ paths:
       operationId: deleteGrokFileById
       summary: Delete GrokFile
       description: Delete GrokFile
+      x-speakeasy-entity-operation: Grok#delete
       parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       - schema:
           type: string
         name: id
         in: path
         required: true
         description: Unique ID to DELETE
-  /system/lookups:
+  /m/{groupId}/system/lookups:
     get:
       operationId: listLookupFile
       tags:
       - lookups
       summary: Get a list of LookupFile objects
       description: Get a list of LookupFile objects
+      x-speakeasy-entity-operation: LookupFile#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: a list of LookupFile objects
@@ -54169,9 +54291,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54195,9 +54318,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54213,6 +54337,13 @@ paths:
       operationId: createLookupFile
       summary: Create LookupFile
       description: Create LookupFile
+      x-speakeasy-entity-operation: LookupFile#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         description: New LookupFile object
         required: true
@@ -54226,6 +54357,12 @@ paths:
       - lookups
       summary: Upload LookupFile
       description: Upload LookupFile
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: LookupFileInfoResponse object
@@ -54255,7 +54392,7 @@ paths:
         schema:
           type: string
         description: query LookupFilenameSchema required Filename
-  /system/lookups/{id}:
+  /m/{groupId}/system/lookups/{id}:
     get:
       tags:
       - lookups
@@ -54292,6 +54429,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - lookups
@@ -54303,9 +54446,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54321,7 +54465,14 @@ paths:
       operationId: updateLookupFileById
       summary: Update LookupFile
       description: Update LookupFile
+      x-speakeasy-entity-operation: LookupFile#update
       parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       - schema:
           type: string
         name: id
@@ -54346,9 +54497,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54364,20 +54516,34 @@ paths:
       operationId: deleteLookupFileById
       summary: Delete LookupFile
       description: Delete LookupFile
+      x-speakeasy-entity-operation: LookupFile#delete
       parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
       - schema:
           type: string
         name: id
         in: path
         required: true
         description: Unique ID to DELETE
-  /lib/parsers:
+  /m/{groupId}/lib/parsers:
     get:
       operationId: listParser
       tags:
       - parsers
       summary: Get a list of Parser objects
       description: Get a list of Parser objects
+      x-speakeasy-entity-operation: ParserLibEntry#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: a list of Parser objects
@@ -54386,9 +54552,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54412,9 +54579,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54430,6 +54598,13 @@ paths:
       operationId: createParser
       summary: Create Parser
       description: Create Parser
+      x-speakeasy-entity-operation: ParserLibEntry#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         description: New Parser object
         required: true
@@ -54437,7 +54612,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ParserLibEntry'
-  /lib/parsers/{id}:
+  /m/{groupId}/lib/parsers/{id}:
     get:
       tags:
       - parsers
@@ -54474,6 +54649,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - parsers
@@ -54485,9 +54666,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54503,7 +54685,14 @@ paths:
       operationId: updateParserById
       summary: Update Parser
       description: Update Parser
+      x-speakeasy-entity-operation: ParserLibEntry#update
       parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       - schema:
           type: string
         name: id
@@ -54528,9 +54717,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54553,6 +54743,12 @@ paths:
         in: path
         required: true
         description: Unique ID to DELETE
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /lib/protobuf-libraries:
     get:
       operationId: getProtobufLibraryConfig
@@ -54707,13 +54903,21 @@ paths:
         schema:
           type: string
         description: Library id
-  /lib/regex:
+  /m/{groupId}/lib/regex:
     get:
       operationId: listRegexLibEntry
       tags:
       - regexes
       summary: Get a list of RegexLibEntry objects
       description: Get a list of RegexLibEntry objects
+      x-speakeasy-entity-operation: Regex#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
       responses:
         '200':
           description: a list of RegexLibEntry objects
@@ -54722,9 +54926,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54748,9 +54953,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -54766,6 +54972,14 @@ paths:
       operationId: createRegexLibEntry
       summary: Create RegexLibEntry
       description: Create RegexLibEntry
+      x-speakeasy-entity-operation: Regex#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to CREATE
       requestBody:
         description: New RegexLibEntry object
         required: true
@@ -54773,7 +54987,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RegexLibEntry'
-  /lib/regex/{id}:
+  /m/{groupId}/lib/regex/{id}:
     get:
       tags:
       - regexes
@@ -54810,6 +55024,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - regexes
@@ -54839,6 +55059,7 @@ paths:
       operationId: updateRegexLibEntryById
       summary: Update RegexLibEntry
       description: Update RegexLibEntry
+      x-speakeasy-entity-operation: Regex#update
       parameters:
       - schema:
           type: string
@@ -54846,6 +55067,12 @@ paths:
         in: path
         required: true
         description: Unique ID to PATCH
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       requestBody:
         description: RegexLibEntry object to be updated
         required: true
@@ -54882,6 +55109,7 @@ paths:
       operationId: deleteRegexLibEntryById
       summary: Delete RegexLibEntry
       description: Delete RegexLibEntry
+      x-speakeasy-entity-operation: Regex#delete
       parameters:
       - schema:
           type: string
@@ -54889,6 +55117,12 @@ paths:
         in: path
         required: true
         description: Unique ID to DELETE
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /system/samples:
     get:
       operationId: listDataSample
@@ -56055,13 +56289,14 @@ paths:
         schema:
           type: string
         description: search job id
-  /lib/database-connections:
+  /m/{groupId}/lib/database-connections:
     get:
       operationId: getDatabaseConnectionConfig
       tags:
       - database-connections
       summary: Get a list of DatabaseConnection objects
       description: Get a list of DatabaseConnection objects
+      x-speakeasy-entity-operation: DatabaseConnection#read
       responses:
         '200':
           description: a list of DatabaseConnectionConfig objects
@@ -56070,9 +56305,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56092,12 +56328,26 @@ paths:
         schema:
           type: string
         description: type of database connection
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     post:
       operationId: createDatabaseConnectionConfig
       tags:
       - database-connections
       summary: Create DatabaseConnectionConfig
       description: Create DatabaseConnectionConfig
+      x-speakeasy-entity-operation: DatabaseConnection#create
+      parameters:
+          - name: groupId
+            in: path
+            required: true
+            schema:
+              type: string
+            description: Group ID to CREATE
       requestBody:
         description: New DatabaseConnectionConfig object
         required: true
@@ -56113,9 +56363,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56128,7 +56379,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /lib/database-connections/{id}:
+  /m/{groupId}/lib/database-connections/{id}:
     get:
       tags:
       - database-connections
@@ -56140,9 +56391,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56165,6 +56417,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - database-connections
@@ -56176,9 +56434,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56194,6 +56453,7 @@ paths:
       operationId: updateDatabaseConnectionConfigById
       summary: Update DatabaseConnectionConfig
       description: Update DatabaseConnectionConfig
+      x-speakeasy-entity-operation: DatabaseConnection#update
       parameters:
       - schema:
           type: string
@@ -56201,6 +56461,12 @@ paths:
         in: path
         required: true
         description: Unique ID to PATCH
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       requestBody:
         description: DatabaseConnectionConfig object to be updated
         required: true
@@ -56219,9 +56485,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56237,6 +56504,7 @@ paths:
       operationId: deleteDatabaseConnectionConfigById
       summary: Delete DatabaseConnectionConfig
       description: Delete DatabaseConnectionConfig
+      x-speakeasy-entity-operation: DatabaseConnection#delete
       parameters:
       - schema:
           type: string
@@ -56244,6 +56512,12 @@ paths:
         in: path
         required: true
         description: Unique ID to DELETE
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /lib/database-connections/test:
     post:
       operationId: createLibDatabaseConnectionsTest
@@ -56281,13 +56555,21 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DatabaseConnectionTest'
-  /lib/breakers:
+  /m/{groupId}/lib/breakers:
     get:
       operationId: listEventBreakerRuleset
       tags:
       - event_breaker_rules
       summary: Get a list of Event Breaker Ruleset objects
       description: Get a list of Event Breaker Ruleset objects
+      x-speakeasy-entity-operation: EventBreakerRuleset#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
       responses:
         '200':
           description: a list of Event Breaker Ruleset objects
@@ -56296,13 +56578,15 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
                       $ref: '#/components/schemas/EventBreakerRuleset'
+                    x-speakeasy-ignore: true
         '401':
           description: Unauthorized
         '500':
@@ -56322,9 +56606,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56340,6 +56625,14 @@ paths:
       operationId: createEventBreakerRuleset
       summary: Create Event Breaker Ruleset
       description: Create Event Breaker Ruleset
+      x-speakeasy-entity-operation: EventBreakerRuleset#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to CREATE
       requestBody:
         description: New Event Breaker Ruleset object
         required: true
@@ -56347,7 +56640,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/EventBreakerRuleset'
-  /lib/breakers/{id}:
+  /m/{groupId}/lib/breakers/{id}:
     get:
       tags:
       - event_breaker_rules
@@ -56384,6 +56677,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - event_breaker_rules
@@ -56395,9 +56694,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56413,6 +56713,7 @@ paths:
       operationId: updateEventBreakerRulesetById
       summary: Update Event Breaker Ruleset
       description: Update Event Breaker Ruleset
+      x-speakeasy-entity-operation: EventBreakerRuleset#update
       parameters:
       - schema:
           type: string
@@ -56420,6 +56721,12 @@ paths:
         in: path
         required: true
         description: Unique ID to PATCH
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       requestBody:
         description: Event Breaker Ruleset object to be updated
         required: true
@@ -56438,9 +56745,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56456,6 +56764,7 @@ paths:
       operationId: deleteEventBreakerRulesetById
       summary: Delete Event Breaker Ruleset
       description: Delete Event Breaker Ruleset
+      x-speakeasy-entity-operation: EventBreakerRuleset#delete
       parameters:
       - schema:
           type: string
@@ -56463,13 +56772,20 @@ paths:
         in: path
         required: true
         description: Unique ID to DELETE
-  /lib/vars:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
+  /m/{groupId}/lib/vars:
     get:
       operationId: getGlobalVariable
       tags:
       - global_variables
       summary: List all GlobalVars with references
       description: List all GlobalVars with references
+      x-speakeasy-entity-operation: GlobalVar#read
       responses:
         '200':
           description: a list of Global Variable objects
@@ -56478,9 +56794,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56501,15 +56818,27 @@ paths:
           type: string
         description: Pass "refs" to include references to fields the variable is used
           in
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     post:
       operationId: createGlobalVariable
       tags:
       - global_variables
       summary: Create Global Variable
       description: Create Global Variable
-      requestBody:
-        description: New Global Variable object
+      x-speakeasy-entity-operation: GlobalVar#create
+      parameters:
+      - name: groupId
+        in: path
         required: true
+        schema:
+          type: string
+        description: Group ID to CREATE
+      requestBody:
         content:
           application/json:
             schema:
@@ -56522,9 +56851,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56537,7 +56867,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /lib/vars/{id}:
+  /m/{groupId}/lib/vars/{id}:
     get:
       tags:
       - global_variables
@@ -56549,9 +56879,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56574,6 +56905,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - global_variables
@@ -56585,9 +56922,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56603,6 +56941,7 @@ paths:
       operationId: updateGlobalVariableById
       summary: Update Global Variable
       description: Update Global Variable
+      x-speakeasy-entity-operation: GlobalVar#update
       parameters:
       - schema:
           type: string
@@ -56610,6 +56949,12 @@ paths:
         in: path
         required: true
         description: Unique ID to PATCH
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       requestBody:
         description: Global Variable object to be updated
         required: true
@@ -56628,9 +56973,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56646,6 +56992,7 @@ paths:
       operationId: deleteGlobalVariableById
       summary: Delete Global Variable
       description: Delete Global Variable
+      x-speakeasy-entity-operation: GlobalVar#delete
       parameters:
       - schema:
           type: string
@@ -56653,6 +57000,12 @@ paths:
         in: path
         required: true
         description: Unique ID to DELETE
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /p/{pack}/lib/vars:
     get:
       tags:
@@ -56874,13 +57227,21 @@ paths:
         in: path
         required: true
         description: pack ID to DELETE
-  /lib/hmac-functions:
+  /m/{groupId}/lib/hmac-functions:
     get:
       operationId: listHmacFunction
       tags:
       - hmac-functions
       summary: Get a list of HmacFunction objects
       description: Get a list of HmacFunction objects
+      x-speakeasy-entity-operation: HmacFunction#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
       responses:
         '200':
           description: a list of HmacFunction objects
@@ -56889,9 +57250,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56915,9 +57277,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56933,6 +57296,14 @@ paths:
       operationId: createHmacFunction
       summary: Create HmacFunction
       description: Create HmacFunction
+      x-speakeasy-entity-operation: HmacFunction#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to CREATE
       requestBody:
         description: New HmacFunction object
         required: true
@@ -56940,7 +57311,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/HmacFunction'
-  /lib/hmac-functions/{id}:
+  /m/{groupId}/lib/hmac-functions/{id}:
     get:
       tags:
       - hmac-functions
@@ -56952,9 +57323,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -56977,6 +57349,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - hmac-functions
@@ -56988,9 +57366,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -57006,6 +57385,7 @@ paths:
       operationId: updateHmacFunctionById
       summary: Update HmacFunction
       description: Update HmacFunction
+      x-speakeasy-entity-operation: HmacFunction#update
       parameters:
       - schema:
           type: string
@@ -57013,6 +57393,12 @@ paths:
         in: path
         required: true
         description: Unique ID to PATCH
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       requestBody:
         description: HmacFunction object to be updated
         required: true
@@ -57031,9 +57417,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -57049,6 +57436,7 @@ paths:
       operationId: deleteHmacFunctionById
       summary: Delete HmacFunction
       description: Delete HmacFunction
+      x-speakeasy-entity-operation: HmacFunction#delete
       parameters:
       - schema:
           type: string
@@ -57056,6 +57444,12 @@ paths:
         in: path
         required: true
         description: Unique ID to DELETE
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /m/{groupId}/system/inputs:
     get:
       operationId: listInput
@@ -57791,13 +58185,20 @@ paths:
         schema:
           type: string
         description: Group Id
-  /lib/parquet-schemas:
+  /m/{groupId}/lib/parquet-schemas:
     get:
       operationId: listSchema
       tags:
       - parquetschemas
       summary: Get a list of Schema objects
       description: Get a list of Schema objects
+      x-speakeasy-entity-operation: ParquetSchema#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: a list of Schema objects
@@ -57806,9 +58207,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -57832,9 +58234,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -57850,6 +58253,13 @@ paths:
       operationId: createSchema
       summary: Create Schema
       description: Create Schema
+      x-speakeasy-entity-operation: ParquetSchema#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         description: New Schema object
         required: true
@@ -57857,7 +58267,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SchemaLibEntry'
-  /lib/parquet-schemas/{id}:
+  /m/{groupId}/lib/parquet-schemas/{id}:
     get:
       tags:
       - parquetschemas
@@ -57869,9 +58279,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -57894,6 +58305,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - parquetschemas
@@ -57905,9 +58322,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -57923,6 +58341,7 @@ paths:
       operationId: updateSchemaById
       summary: Update Schema
       description: Update Schema
+      x-speakeasy-entity-operation: ParquetSchema#update
       parameters:
       - schema:
           type: string
@@ -57930,6 +58349,12 @@ paths:
         in: path
         required: true
         description: Unique ID to PATCH
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       requestBody:
         description: Schema object to be updated
         required: true
@@ -57967,6 +58392,7 @@ paths:
       operationId: deleteSchemaById
       summary: Delete Schema
       description: Delete Schema
+      x-speakeasy-entity-operation: ParquetSchema#delete
       parameters:
       - schema:
           type: string
@@ -57974,6 +58400,12 @@ paths:
         in: path
         required: true
         description: Unique ID to DELETE
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /m/{groupId}/pipelines:
     get:
       operationId: listPipeline
@@ -58967,13 +59399,20 @@ paths:
         in: path
         required: true
         description: pack ID to POST
-  /lib/schemas:
+  /m/{groupId}/lib/schemas:
     get:
       operationId: listLibSchemas
       tags:
       - schemas
       summary: Get a list of Schema objects
       description: Get a list of Schema objects
+      x-speakeasy-entity-operation: Schema#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: a list of Schema objects
@@ -58982,9 +59421,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -59008,9 +59448,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -59026,6 +59467,13 @@ paths:
       operationId: createLibSchemas
       summary: Create Schema
       description: Create Schema
+      x-speakeasy-entity-operation: Schema#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         description: New Schema object
         required: true
@@ -59033,7 +59481,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SchemaLibEntry'
-  /lib/schemas/{id}:
+  /m/{groupId}/lib/schemas/{id}:
     get:
       tags:
       - schemas
@@ -59045,9 +59493,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -59070,6 +59519,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - schemas
@@ -59081,9 +59536,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -59099,13 +59555,19 @@ paths:
       operationId: updateLibSchemasById
       summary: Update Schema
       description: Update Schema
+      x-speakeasy-entity-operation: Schema#update
       parameters:
-      - schema:
-          type: string
-        name: id
+      - name: id
         in: path
         required: true
-        description: Unique ID to PATCH
+        schema:
+          type: string
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       requestBody:
         description: Schema object to be updated
         required: true
@@ -59124,9 +59586,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -59142,13 +59605,19 @@ paths:
       operationId: deleteLibSchemasById
       summary: Delete Schema
       description: Delete Schema
+      x-speakeasy-entity-operation: Schema#delete
       parameters:
-      - schema:
-          type: string
-        name: id
+      - name: id
         in: path
         required: true
-        description: Unique ID to DELETE
+        schema:
+          type: string
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /p/{pack}/lib/schemas:
     get:
       tags:
@@ -65664,13 +66133,19 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
-  /system/projects:
+  /m/{groupId}/system/projects:
     get:
       operationId: listProject
       tags:
       - projects
       summary: Get a list of Project objects
       description: Get a list of Project objects
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: a list of Project objects
@@ -65705,9 +66180,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -65722,7 +66198,14 @@ paths:
                 $ref: '#/components/schemas/Error'
       operationId: createProject
       summary: Create Project
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       description: Create Project
+      x-speakeasy-entity-operation: Project#create
       requestBody:
         description: New Project object
         required: true
@@ -65730,7 +66213,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ProjectConfig'
-  /system/projects/{id}:
+  /m/{groupId}/system/projects/{id}:
     get:
       tags:
       - projects
@@ -65742,9 +66225,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -65760,6 +66244,7 @@ paths:
       operationId: getProjectById
       summary: Get Project by ID
       description: Get Project by ID
+      x-speakeasy-entity-operation: Project#read
       parameters:
       - name: id
         in: path
@@ -65767,6 +66252,12 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       tags:
       - projects
@@ -65778,9 +66269,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -65796,6 +66288,7 @@ paths:
       operationId: updateProjectById
       summary: Update Project
       description: Update Project
+      x-speakeasy-entity-operation: Project#update
       parameters:
       - schema:
           type: string
@@ -65803,6 +66296,12 @@ paths:
         in: path
         required: true
         description: Unique ID to PATCH
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
       requestBody:
         description: Project object to be updated
         required: true
@@ -65821,9 +66320,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -65839,6 +66339,7 @@ paths:
       operationId: deleteProjectById
       summary: Delete Project
       description: Delete Project
+      x-speakeasy-entity-operation: Project#delete
       parameters:
       - schema:
           type: string
@@ -65846,6 +66347,12 @@ paths:
         in: path
         required: true
         description: Unique ID to DELETE
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /system/projects/{id}/acl:
     get:
       operationId: getProjectAclById
@@ -66025,13 +66532,21 @@ paths:
         schema:
           type: string
         description: Project Id
-  /system/subscriptions:
+  /m/{groupId}/system/subscriptions:
     get:
       operationId: listSubscription
       tags:
       - subscriptions
       summary: Get a list of Subscription objects
       description: Get a list of Subscription objects
+      x-speakeasy-entity-operation: Subscription#read
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
       responses:
         '200':
           description: a list of Subscription objects
@@ -66040,9 +66555,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -66061,6 +66577,13 @@ paths:
       - subscriptions
       summary: Create subscription
       description: Create subscription
+      x-speakeasy-entity-operation: Subscription#create
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: a list of Subscription objects
@@ -66069,9 +66592,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -66084,7 +66608,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /system/subscriptions/{id}:
+      requestBody:
+        description: Subscription object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+  /m/{groupId}/system/subscriptions/{id}:
     get:
       tags:
       - subscriptions
@@ -66096,9 +66626,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -66121,12 +66652,19 @@ paths:
         schema:
           type: string
         description: Unique ID to GET
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to GET
     patch:
       operationId: updateSubscriptionById
       tags:
       - subscriptions
       summary: Update subscription
       description: Update subscription
+      x-speakeasy-entity-operation: Subscription#update
       responses:
         '200':
           description: a list of Subscription objects
@@ -66135,9 +66673,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -66157,12 +66696,19 @@ paths:
         schema:
           type: string
         description: Subscription ID
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to PATCH
     delete:
       operationId: deleteSubscriptionById
       tags:
       - subscriptions
       summary: Delete subscription
       description: Delete subscription
+      x-speakeasy-entity-operation: Subscription#delete
       responses:
         '200':
           description: a list of Subscription objects
@@ -66171,9 +66717,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -66193,6 +66740,12 @@ paths:
         schema:
           type: string
         description: Subscription ID
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group ID to DELETE
   /system/projects/{projectId}/subscriptions:
     get:
       operationId: getSubscriptionByProjectId
@@ -66286,14 +66839,14 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
                     x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ConfigGroup'
+                      $ref: '#/components/schemas/Group'
         '401':
           description: Unauthorized
         '500':
@@ -66303,12 +66856,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       requestBody:
-        description: ConfigGroup object
+        description: Group object
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConfigGroup'
+              $ref: '#/components/schemas/Group'
       parameters:
       - name: product
         in: path
@@ -66333,9 +66886,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  count_total:
                     type: integer
                     description: number of items present in the items array
+                    x-speakeasy-ignore: true
                   items:
                     type: array
                     items:
@@ -66417,7 +66971,7 @@ paths:
       - groups
       summary: Get a specific ConfigGroup object
       description: Get a specific ConfigGroup object
-      x-speakeasy-entity-operation: Group#read
+      x-speakeasy-entity-operation: Group#get
       responses:
         '200':
           description: a list of ConfigGroup objects
@@ -66433,7 +66987,51 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ConfigGroup'
+                      $ref: '#/components/schemas/Group'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Group id
+      - name: fields
+        in: query
+        required: false
+        schema:
+          type: string
+        description: 'fields to add to results: git.commit, git.localChanges, git.log'
+    patch:
+      operationId: updateGroupsById
+      tags:
+      - groups
+      summary: Update a specific ConfigGroup object
+      description: Update a specific ConfigGroup object
+      x-speakeasy-entity-operation: Group#update
+      responses:
+        '200':
+          description: a list of ConfigGroup objects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count_total:
+                    type: integer
+                    description: number of items present in the items array
+                    x-speakeasy-ignore: true
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Group'
         '401':
           description: Unauthorized
         '500':
@@ -66477,7 +67075,7 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ConfigGroup'
+                      $ref: '#/components/schemas/Group'
         '401':
           description: Unauthorized
         '500':

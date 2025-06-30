@@ -166,26 +166,52 @@ func (p *CriblioProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 func (p *CriblioProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewAppscopeConfigResource,
 		NewCommitResource,
+		NewDatabaseConnectionResource,
 		NewDeployResource,
 		NewDestinationResource,
+		NewEventBreakerRulesetResource,
+		NewGlobalVarResource,
+		NewGrokResource,
 		NewGroupResource,
+		NewHmacFunctionResource,
+		NewLookupFileResource,
 		NewPackResource,
 		NewPackPipelineResource,
+		NewParquetSchemaResource,
+		NewParserLibEntryResource,
 		NewPipelineResource,
+		NewProjectResource,
+		NewRegexResource,
+		NewSchemaResource,
 		NewSourceResource,
+		NewSubscriptionResource,
 	}
 }
 
 func (p *CriblioProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		NewAppscopeConfigDataSource,
 		NewConfigVersionDataSource,
+		NewDatabaseConnectionDataSource,
 		NewDestinationDataSource,
+		NewEventBreakerRulesetDataSource,
+		NewGlobalVarDataSource,
+		NewGrokDataSource,
 		NewGroupDataSource,
+		NewHmacFunctionDataSource,
+		NewLookupFileDataSource,
 		NewPackDataSource,
 		NewPackPipelineDataSource,
+		NewParquetSchemaDataSource,
+		NewParserLibEntryDataSource,
 		NewPipelineDataSource,
+		NewProjectDataSource,
+		NewRegexDataSource,
+		NewSchemaDataSource,
 		NewSourceDataSource,
+		NewSubscriptionDataSource,
 	}
 }
 

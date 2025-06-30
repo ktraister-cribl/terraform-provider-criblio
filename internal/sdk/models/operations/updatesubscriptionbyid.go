@@ -10,6 +10,8 @@ import (
 type UpdateSubscriptionByIDRequest struct {
 	// Subscription ID
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *UpdateSubscriptionByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *UpdateSubscriptionByIDRequest) GetID() string {
 	return o.ID
 }
 
-// UpdateSubscriptionByIDResponseBody - a list of Subscription objects
-type UpdateSubscriptionByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                `json:"count,omitempty"`
-	Items []shared.Subscription `json:"items,omitempty"`
+func (o *UpdateSubscriptionByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *UpdateSubscriptionByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// UpdateSubscriptionByIDResponseBody - a list of Subscription objects
+type UpdateSubscriptionByIDResponseBody struct {
+	Items []shared.Subscription `json:"items,omitempty"`
 }
 
 func (o *UpdateSubscriptionByIDResponseBody) GetItems() []shared.Subscription {

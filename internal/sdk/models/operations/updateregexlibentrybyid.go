@@ -10,6 +10,8 @@ import (
 type UpdateRegexLibEntryByIDRequest struct {
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// RegexLibEntry object to be updated
 	RegexLibEntry shared.RegexLibEntry `request:"mediaType=application/json"`
 }
@@ -19,6 +21,13 @@ func (o *UpdateRegexLibEntryByIDRequest) GetID() string {
 		return ""
 	}
 	return o.ID
+}
+
+func (o *UpdateRegexLibEntryByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 func (o *UpdateRegexLibEntryByIDRequest) GetRegexLibEntry() shared.RegexLibEntry {

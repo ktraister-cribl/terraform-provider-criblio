@@ -7,6 +7,7 @@ terraform {
 }
 
 provider "criblio" {
+  
 }
 
 # Worker Group Configuration
@@ -15,19 +16,18 @@ resource "criblio_group" "syslog_worker_group" {
     provider = "aws"
     region   = "us-west-2"
   }
-  config_version         = "4.12.0"
-  deploying_worker_count = 1
-  description            = "Worker group for handling syslog data"
-  estimated_ingest_rate  = 1024
-  id                     = "syslog-workers"
-  is_fleet               = false
-  is_search              = false
-  name                   = "syslog-workers"
-  on_prem                = false
-  product                = "stream"
-  provisioned            = true
-  worker_count           = 1
-  worker_remote_access   = false
+  estimated_ingest_rate = 1024
+  id                    = "syslog-workers"
+  is_fleet              = false
+  name                  = "syslog-workers"
+  on_prem               = false
+  product               = "stream"
+  provisioned           = true
+  streamtags = [
+    "syslog",
+    "network"
+  ]
+  worker_remote_access = false
 }
 
 # Syslog Source Configuration

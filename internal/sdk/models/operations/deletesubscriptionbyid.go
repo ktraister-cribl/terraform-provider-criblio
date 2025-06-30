@@ -10,6 +10,8 @@ import (
 type DeleteSubscriptionByIDRequest struct {
 	// Subscription ID
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteSubscriptionByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *DeleteSubscriptionByIDRequest) GetID() string {
 	return o.ID
 }
 
-// DeleteSubscriptionByIDResponseBody - a list of Subscription objects
-type DeleteSubscriptionByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                `json:"count,omitempty"`
-	Items []shared.Subscription `json:"items,omitempty"`
+func (o *DeleteSubscriptionByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *DeleteSubscriptionByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// DeleteSubscriptionByIDResponseBody - a list of Subscription objects
+type DeleteSubscriptionByIDResponseBody struct {
+	Items []shared.Subscription `json:"items,omitempty"`
 }
 
 func (o *DeleteSubscriptionByIDResponseBody) GetItems() []shared.Subscription {

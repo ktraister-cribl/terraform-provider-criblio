@@ -227,6 +227,7 @@ func (r *PackResourceModel) RefreshFromOperationsGetPacksResponseBody(ctx contex
 		}
 		for itemsCount, itemsItem := range resp.Items {
 			var items tfTypes.PackInfo
+			itemsPriorData := items
 			items.Author = types.StringPointerValue(itemsItem.Author)
 			items.Description = types.StringPointerValue(itemsItem.Description)
 			items.DisplayName = types.StringPointerValue(itemsItem.DisplayName)
@@ -268,6 +269,7 @@ func (r *PackResourceModel) RefreshFromOperationsGetPacksResponseBody(ctx contex
 				}
 			}
 			items.Version = types.StringPointerValue(itemsItem.Version)
+			items.Warnings = itemsPriorData.Warnings
 			if itemsCount+1 > len(r.Items) {
 				r.Items = append(r.Items, items)
 			} else {
@@ -300,6 +302,7 @@ func (r *PackResourceModel) RefreshFromOperationsUpdatePacksByIDResponseBody(ctx
 		}
 		for itemsCount, itemsItem := range resp.Items {
 			var items tfTypes.PackInfo
+			itemsPriorData := items
 			items.Author = types.StringPointerValue(itemsItem.Author)
 			items.Description = types.StringPointerValue(itemsItem.Description)
 			items.DisplayName = types.StringPointerValue(itemsItem.DisplayName)
@@ -341,6 +344,7 @@ func (r *PackResourceModel) RefreshFromOperationsUpdatePacksByIDResponseBody(ctx
 				}
 			}
 			items.Version = types.StringPointerValue(itemsItem.Version)
+			items.Warnings = itemsPriorData.Warnings
 			if itemsCount+1 > len(r.Items) {
 				r.Items = append(r.Items, items)
 			} else {

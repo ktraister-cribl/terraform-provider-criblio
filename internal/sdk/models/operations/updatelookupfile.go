@@ -8,17 +8,16 @@ import (
 )
 
 type UpdateLookupFileRequest struct {
-	// query LookupFilenameSchema required Filename
-	Filename *string `queryParam:"style=form,explode=true,name=filename"`
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// CSV text
 	RequestBody string `request:"mediaType=text/csv"`
 }
 
-func (o *UpdateLookupFileRequest) GetFilename() *string {
+func (o *UpdateLookupFileRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Filename
+	return o.GroupID
 }
 
 func (o *UpdateLookupFileRequest) GetRequestBody() string {

@@ -1,19 +1,19 @@
 lockVersion: 2.0.0
 id: 1efe501f-0805-447e-ab12-75eb7c79386e
 management:
-  docChecksum: 9212a15c7dbd1643b8e076a44cead0df
+  docChecksum: e8e49b807a2c752e1d2b5fa2d39e222d
   docVersion: 1.0.0
-  speakeasyVersion: 1.555.3
-  generationVersion: 2.620.2
-  releaseVersion: 1.0.14
-  configChecksum: 074fdd59806ac677607ea019c19743b3
+  speakeasyVersion: 1.570.2
+  generationVersion: 2.638.5
+  releaseVersion: 1.0.41
+  configChecksum: 46035d573f39028d4cfff938ea7c7539
   published: true
 features:
   terraform:
     additionalDependencies: 0.1.0
     additionalProperties: 0.1.2
     constsAndDefaults: 0.2.1
-    core: 3.41.10
+    core: 3.41.12
     deprecations: 2.82.0
     globalSecurity: 2.81.12
     globalServerURLs: 2.82.2
@@ -28,28 +28,67 @@ generatedFiles:
   - .gitattributes
   - USAGE.md
   - examples/README.md
+  - examples/data-sources/criblio_appscope_config/data-source.tf
   - examples/data-sources/criblio_config_version/data-source.tf
+  - examples/data-sources/criblio_database_connection/data-source.tf
   - examples/data-sources/criblio_destination/data-source.tf
+  - examples/data-sources/criblio_event_breaker_ruleset/data-source.tf
+  - examples/data-sources/criblio_global_var/data-source.tf
+  - examples/data-sources/criblio_grok/data-source.tf
   - examples/data-sources/criblio_group/data-source.tf
+  - examples/data-sources/criblio_hmac_function/data-source.tf
+  - examples/data-sources/criblio_lookup_file/data-source.tf
   - examples/data-sources/criblio_pack/data-source.tf
   - examples/data-sources/criblio_pack_pipeline/data-source.tf
+  - examples/data-sources/criblio_parquet_schema/data-source.tf
+  - examples/data-sources/criblio_parser_lib_entry/data-source.tf
   - examples/data-sources/criblio_pipeline/data-source.tf
+  - examples/data-sources/criblio_project/data-source.tf
+  - examples/data-sources/criblio_regex/data-source.tf
+  - examples/data-sources/criblio_schema/data-source.tf
   - examples/data-sources/criblio_source/data-source.tf
+  - examples/data-sources/criblio_subscription/data-source.tf
   - examples/provider/provider.tf
+  - examples/resources/criblio_appscope_config/import.sh
+  - examples/resources/criblio_appscope_config/resource.tf
   - examples/resources/criblio_commit/resource.tf
+  - examples/resources/criblio_database_connection/import.sh
+  - examples/resources/criblio_database_connection/resource.tf
   - examples/resources/criblio_deploy/resource.tf
   - examples/resources/criblio_destination/import.sh
   - examples/resources/criblio_destination/resource.tf
+  - examples/resources/criblio_event_breaker_ruleset/import.sh
+  - examples/resources/criblio_event_breaker_ruleset/resource.tf
+  - examples/resources/criblio_global_var/import.sh
+  - examples/resources/criblio_global_var/resource.tf
+  - examples/resources/criblio_grok/import.sh
+  - examples/resources/criblio_grok/resource.tf
   - examples/resources/criblio_group/import.sh
   - examples/resources/criblio_group/resource.tf
+  - examples/resources/criblio_hmac_function/import.sh
+  - examples/resources/criblio_hmac_function/resource.tf
+  - examples/resources/criblio_lookup_file/import.sh
+  - examples/resources/criblio_lookup_file/resource.tf
   - examples/resources/criblio_pack/import.sh
   - examples/resources/criblio_pack/resource.tf
   - examples/resources/criblio_pack_pipeline/import.sh
   - examples/resources/criblio_pack_pipeline/resource.tf
+  - examples/resources/criblio_parquet_schema/import.sh
+  - examples/resources/criblio_parquet_schema/resource.tf
+  - examples/resources/criblio_parser_lib_entry/import.sh
+  - examples/resources/criblio_parser_lib_entry/resource.tf
   - examples/resources/criblio_pipeline/import.sh
   - examples/resources/criblio_pipeline/resource.tf
+  - examples/resources/criblio_project/import.sh
+  - examples/resources/criblio_project/resource.tf
+  - examples/resources/criblio_regex/import.sh
+  - examples/resources/criblio_regex/resource.tf
+  - examples/resources/criblio_schema/import.sh
+  - examples/resources/criblio_schema/resource.tf
   - examples/resources/criblio_source/import.sh
   - examples/resources/criblio_source/resource.tf
+  - examples/resources/criblio_subscription/import.sh
+  - examples/resources/criblio_subscription/resource.tf
   - go.mod
   - go.sum
   - internal/planmodifiers/boolplanmodifier/suppress_diff.go
@@ -64,20 +103,48 @@ generatedFiles:
   - internal/planmodifiers/setplanmodifier/suppress_diff.go
   - internal/planmodifiers/stringplanmodifier/suppress_diff.go
   - internal/planmodifiers/utils/state_check.go
+  - internal/provider/appscopeconfig_data_source.go
+  - internal/provider/appscopeconfig_data_source_sdk.go
+  - internal/provider/appscopeconfig_resource.go
+  - internal/provider/appscopeconfig_resource_sdk.go
   - internal/provider/commit_resource.go
   - internal/provider/commit_resource_sdk.go
   - internal/provider/configversion_data_source.go
   - internal/provider/configversion_data_source_sdk.go
+  - internal/provider/databaseconnection_data_source.go
+  - internal/provider/databaseconnection_data_source_sdk.go
+  - internal/provider/databaseconnection_resource.go
+  - internal/provider/databaseconnection_resource_sdk.go
   - internal/provider/deploy_resource.go
   - internal/provider/deploy_resource_sdk.go
   - internal/provider/destination_data_source.go
   - internal/provider/destination_data_source_sdk.go
   - internal/provider/destination_resource.go
   - internal/provider/destination_resource_sdk.go
+  - internal/provider/eventbreakerruleset_data_source.go
+  - internal/provider/eventbreakerruleset_data_source_sdk.go
+  - internal/provider/eventbreakerruleset_resource.go
+  - internal/provider/eventbreakerruleset_resource_sdk.go
+  - internal/provider/globalvar_data_source.go
+  - internal/provider/globalvar_data_source_sdk.go
+  - internal/provider/globalvar_resource.go
+  - internal/provider/globalvar_resource_sdk.go
+  - internal/provider/grok_data_source.go
+  - internal/provider/grok_data_source_sdk.go
+  - internal/provider/grok_resource.go
+  - internal/provider/grok_resource_sdk.go
   - internal/provider/group_data_source.go
   - internal/provider/group_data_source_sdk.go
   - internal/provider/group_resource.go
   - internal/provider/group_resource_sdk.go
+  - internal/provider/hmacfunction_data_source.go
+  - internal/provider/hmacfunction_data_source_sdk.go
+  - internal/provider/hmacfunction_resource.go
+  - internal/provider/hmacfunction_resource_sdk.go
+  - internal/provider/lookupfile_data_source.go
+  - internal/provider/lookupfile_data_source_sdk.go
+  - internal/provider/lookupfile_resource.go
+  - internal/provider/lookupfile_resource_sdk.go
   - internal/provider/pack_data_source.go
   - internal/provider/pack_data_source_sdk.go
   - internal/provider/pack_resource.go
@@ -86,10 +153,22 @@ generatedFiles:
   - internal/provider/packpipeline_data_source_sdk.go
   - internal/provider/packpipeline_resource.go
   - internal/provider/packpipeline_resource_sdk.go
+  - internal/provider/parquetschema_data_source.go
+  - internal/provider/parquetschema_data_source_sdk.go
+  - internal/provider/parquetschema_resource.go
+  - internal/provider/parquetschema_resource_sdk.go
+  - internal/provider/parserlibentry_data_source.go
+  - internal/provider/parserlibentry_data_source_sdk.go
+  - internal/provider/parserlibentry_resource.go
+  - internal/provider/parserlibentry_resource_sdk.go
   - internal/provider/pipeline_data_source.go
   - internal/provider/pipeline_data_source_sdk.go
   - internal/provider/pipeline_resource.go
   - internal/provider/pipeline_resource_sdk.go
+  - internal/provider/project_data_source.go
+  - internal/provider/project_data_source_sdk.go
+  - internal/provider/project_resource.go
+  - internal/provider/project_resource_sdk.go
   - internal/provider/provider.go
   - internal/provider/reflect/diags.go
   - internal/provider/reflect/doc.go
@@ -105,15 +184,56 @@ generatedFiles:
   - internal/provider/reflect/primitive.go
   - internal/provider/reflect/slice.go
   - internal/provider/reflect/struct.go
+  - internal/provider/regex_data_source.go
+  - internal/provider/regex_data_source_sdk.go
+  - internal/provider/regex_resource.go
+  - internal/provider/regex_resource_sdk.go
+  - internal/provider/schema_data_source.go
+  - internal/provider/schema_data_source_sdk.go
+  - internal/provider/schema_resource.go
+  - internal/provider/schema_resource_sdk.go
   - internal/provider/source_data_source.go
   - internal/provider/source_data_source_sdk.go
   - internal/provider/source_resource.go
   - internal/provider/source_resource_sdk.go
+  - internal/provider/subscription_data_source.go
+  - internal/provider/subscription_data_source_sdk.go
+  - internal/provider/subscription_resource.go
+  - internal/provider/subscription_resource_sdk.go
   - internal/provider/typeconvert/date.go
   - internal/provider/typeconvert/datetime.go
   - internal/provider/typeconvert/int.go
   - internal/provider/types/additional_property.go
   - internal/provider/types/allow.go
+  - internal/provider/types/appscope_config.go
+  - internal/provider/types/appscope_config_cribl.go
+  - internal/provider/types/appscope_config_event.go
+  - internal/provider/types/appscope_config_format_ndjson.go
+  - internal/provider/types/appscope_config_libscope.go
+  - internal/provider/types/appscope_config_log.go
+  - internal/provider/types/appscope_config_metric.go
+  - internal/provider/types/appscope_config_metric_format.go
+  - internal/provider/types/appscope_config_metric_watch.go
+  - internal/provider/types/appscope_config_payload.go
+  - internal/provider/types/appscope_config_protocol.go
+  - internal/provider/types/appscope_config_tag.go
+  - internal/provider/types/appscope_config_watch_ndjson.go
+  - internal/provider/types/appscope_config_with_custom.go
+  - internal/provider/types/appscope_config_with_custom_cribl.go
+  - internal/provider/types/appscope_config_with_custom_event.go
+  - internal/provider/types/appscope_config_with_custom_format_ndjson.go
+  - internal/provider/types/appscope_config_with_custom_libscope.go
+  - internal/provider/types/appscope_config_with_custom_log.go
+  - internal/provider/types/appscope_config_with_custom_metric.go
+  - internal/provider/types/appscope_config_with_custom_metric_format.go
+  - internal/provider/types/appscope_config_with_custom_metric_watch.go
+  - internal/provider/types/appscope_config_with_custom_payload.go
+  - internal/provider/types/appscope_config_with_custom_protocol.go
+  - internal/provider/types/appscope_config_with_custom_tag.go
+  - internal/provider/types/appscope_config_with_custom_watch_ndjson.go
+  - internal/provider/types/appscope_custom.go
+  - internal/provider/types/appscope_transport.go
+  - internal/provider/types/appscope_transport_tls.go
   - internal/provider/types/auth_elastic.go
   - internal/provider/types/auth_elastic_cloud.go
   - internal/provider/types/auth_token_metadatum_splunk_hec.go
@@ -134,6 +254,7 @@ generatedFiles:
   - internal/provider/types/checkpointing_s3.go
   - internal/provider/types/checkpointing_s3_inventory.go
   - internal/provider/types/checkpointing_security_lake.go
+  - internal/provider/types/cloud.go
   - internal/provider/types/collectors.go
   - internal/provider/types/commit.go
   - internal/provider/types/config_group.go
@@ -190,6 +311,7 @@ generatedFiles:
   - internal/provider/types/connection_windows_metrics.go
   - internal/provider/types/connection_wiz.go
   - internal/provider/types/connection_zscaler_hec.go
+  - internal/provider/types/consumers.go
   - internal/provider/types/container_filter.go
   - internal/provider/types/content_config_office365_mgmt.go
   - internal/provider/types/content_config_office365_service.go
@@ -207,6 +329,8 @@ generatedFiles:
   - internal/provider/types/dns.go
   - internal/provider/types/endpoint_header.go
   - internal/provider/types/endpoint_param.go
+  - internal/provider/types/event_breaker_ruleset_rule.go
+  - internal/provider/types/event_breaker_ruleset_timestamp_format.go
   - internal/provider/types/extent_tag.go
   - internal/provider/types/extra_http_header131.go
   - internal/provider/types/extra_http_header_azure_logs.go
@@ -237,6 +361,8 @@ generatedFiles:
   - internal/provider/types/extra_log_type.go
   - internal/provider/types/extra_param_elastic.go
   - internal/provider/types/extra_param_elastic_cloud.go
+  - internal/provider/types/field.go
+  - internal/provider/types/file_info.go
   - internal/provider/types/filter_appscope.go
   - internal/provider/types/firewall.go
   - internal/provider/types/git.go
@@ -384,6 +510,11 @@ generatedFiles:
   - internal/provider/types/loki_auth_oauth_header2.go
   - internal/provider/types/loki_auth_oauth_param1.go
   - internal/provider/types/loki_auth_oauth_param2.go
+  - internal/provider/types/lookup_file1.go
+  - internal/provider/types/lookup_file2.go
+  - internal/provider/types/lookup_file_input1.go
+  - internal/provider/types/lookup_file_input2.go
+  - internal/provider/types/lookup_file_union.go
   - internal/provider/types/memory_system_metrics.go
   - internal/provider/types/memory_windows_metrics.go
   - internal/provider/types/metadatum131.go
@@ -560,6 +691,8 @@ generatedFiles:
   - internal/provider/types/pack_info.go
   - internal/provider/types/pack_info1.go
   - internal/provider/types/pack_info_tags.go
+  - internal/provider/types/pending_task1.go
+  - internal/provider/types/pending_task2.go
   - internal/provider/types/persistence_appscope.go
   - internal/provider/types/persistence_kube_metrics.go
   - internal/provider/types/persistence_system_metrics.go
@@ -1275,6 +1408,7 @@ generatedFiles:
   - internal/sdk/models/operations/updateglobalvariablebyid.go
   - internal/sdk/models/operations/updateglobalvariablelibvarsbypackandid.go
   - internal/sdk/models/operations/updategrokfilebyid.go
+  - internal/sdk/models/operations/updategroupsbyid.go
   - internal/sdk/models/operations/updategroupsdeploybyid.go
   - internal/sdk/models/operations/updatehmacfunctionbyid.go
   - internal/sdk/models/operations/updateinputbyid.go
@@ -1386,7 +1520,6 @@ generatedFiles:
   - internal/sdk/models/shared/condition.go
   - internal/sdk/models/shared/configgroup.go
   - internal/sdk/models/shared/configgroupcloud.go
-  - internal/sdk/models/shared/connection.go
   - internal/sdk/models/shared/consumptionwindowv5.go
   - internal/sdk/models/shared/container.go
   - internal/sdk/models/shared/containerdcontainer.go
@@ -1473,6 +1606,7 @@ generatedFiles:
   - internal/sdk/models/shared/gitstatusresult.go
   - internal/sdk/models/shared/globalvar.go
   - internal/sdk/models/shared/grokfile.go
+  - internal/sdk/models/shared/group.go
   - internal/sdk/models/shared/hbcriblinfo.go
   - internal/sdk/models/shared/hbleaderinfo.go
   - internal/sdk/models/shared/healthstatus.go
@@ -1633,7 +1767,6 @@ generatedFiles:
   - internal/sdk/models/shared/stagedependency.go
   - internal/sdk/models/shared/stagedependencytype.go
   - internal/sdk/models/shared/subscription.go
-  - internal/sdk/models/shared/subscriptionconsumer.go
   - internal/sdk/models/shared/symlinkinfo.go
   - internal/sdk/models/shared/systemconf.go
   - internal/sdk/models/shared/systeminfo.go
@@ -2148,6 +2281,9 @@ examples:
           application/json: {}
   listProject:
     speakeasy-default-list-project:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -2155,6 +2291,9 @@ examples:
           application/json: {}
   createProject:
     speakeasy-default-create-project:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"destinations": ["<value 1>", "<value 2>", "<value 3>"], "id": "<id>", "subscriptions": ["<value 1>"]}
       responses:
@@ -2167,6 +2306,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -2177,6 +2317,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"destinations": ["<value 1>", "<value 2>"], "id": "<id>", "subscriptions": ["<value 1>"]}
       responses:
@@ -2189,6 +2330,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -2256,6 +2398,9 @@ examples:
           application/json: {}
   listSubscription:
     speakeasy-default-list-subscription:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -2263,6 +2408,11 @@ examples:
           application/json: {}
   createSubscription:
     speakeasy-default-create-subscription:
+      parameters:
+        path:
+          groupId: "<id>"
+      requestBody:
+        application/json: {"id": "<id>", "pipeline": "<value>"}
       responses:
         "200":
           application/json: {}
@@ -2273,6 +2423,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -2283,6 +2434,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -2293,6 +2445,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3696,6 +3849,9 @@ examples:
           application/json: {}
   listAppscopeLibEntry:
     speakeasy-default-list-appscope-lib-entry:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3703,6 +3859,9 @@ examples:
           application/json: {}
   createAppscopeLibEntry:
     speakeasy-default-create-appscope-lib-entry:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"config": {}, "description": "neatly floodlight athwart fearless scamper dispose", "id": "<id>", "lib": "cribl"}
       responses:
@@ -3715,6 +3874,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3725,6 +3885,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"config": {}, "description": "blaspheme failing smug yet part diver dramatize", "id": "<id>", "lib": "cribl"}
       responses:
@@ -3737,6 +3898,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3744,6 +3906,9 @@ examples:
           application/json: {}
   listGrokFile:
     speakeasy-default-list-grok-file:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3751,8 +3916,11 @@ examples:
           application/json: {}
   createGrokFile:
     speakeasy-default-create-grok-file:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
-        application/json: {"content": "<value>", "id": "<id>", "size": 8001.66}
+        application/json: {"content": "<value>", "id": "<id>"}
       responses:
         "200":
           application/json: {}
@@ -3763,6 +3931,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3773,8 +3942,9 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
-        application/json: {"content": "<value>", "id": "<id>", "size": 7435.13}
+        application/json: {"content": "<value>", "id": "<id>"}
       responses:
         "200":
           application/json: {}
@@ -3785,6 +3955,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3792,6 +3963,9 @@ examples:
           application/json: {}
   listLookupFile:
     speakeasy-default-list-lookup-file:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3799,6 +3973,9 @@ examples:
           application/json: {}
   createLookupFile:
     speakeasy-default-create-lookup-file:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "mode": "memory"}
       responses:
@@ -3808,6 +3985,9 @@ examples:
           application/json: {}
   updateLookupFile:
     speakeasy-default-update-lookup-file:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         text/csv: "<value>"
       responses:
@@ -3820,6 +4000,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3830,6 +4011,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "mode": "memory"}
       responses:
@@ -3842,6 +4024,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3849,6 +4032,9 @@ examples:
           application/json: {}
   listParser:
     speakeasy-default-list-parser:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3856,6 +4042,9 @@ examples:
           application/json: {}
   createParser:
     speakeasy-default-create-parser:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "type": "csv"}
       responses:
@@ -3868,6 +4057,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3878,6 +4068,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "type": "csv"}
       responses:
@@ -3890,6 +4081,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3938,6 +4130,9 @@ examples:
           application/json: {}
   listRegexLibEntry:
     speakeasy-default-list-regex-lib-entry:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3945,6 +4140,9 @@ examples:
           application/json: {}
   createRegexLibEntry:
     speakeasy-default-create-regex-lib-entry:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "regex": "<value>"}
       responses:
@@ -3957,6 +4155,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -3967,6 +4166,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "regex": "<value>"}
       responses:
@@ -3979,6 +4179,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4262,6 +4463,9 @@ examples:
           application/json: {}
   getDatabaseConnectionConfig:
     speakeasy-default-get-database-connection-config:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4269,6 +4473,9 @@ examples:
           application/json: {}
   createDatabaseConnectionConfig:
     speakeasy-default-create-database-connection-config:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"authType": "<value>", "databaseType": "postgres", "description": "besides investigate yowza skyline promptly daintily afore contravene meanwhile", "id": "<id>"}
       responses:
@@ -4281,6 +4488,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4291,6 +4499,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"authType": "<value>", "databaseType": "oracle", "description": "developmental oof hourly", "id": "<id>"}
       responses:
@@ -4303,6 +4512,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4319,6 +4529,9 @@ examples:
           application/json: {}
   listEventBreakerRuleset:
     speakeasy-default-list-event-breaker-ruleset:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4326,6 +4539,9 @@ examples:
           application/json: {}
   createEventBreakerRuleset:
     speakeasy-default-create-event-breaker-ruleset:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "lib": "custom", "minRawLength": 256}
       responses:
@@ -4338,6 +4554,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4348,6 +4565,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "lib": "custom", "minRawLength": 256}
       responses:
@@ -4360,6 +4578,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4367,6 +4586,9 @@ examples:
           application/json: {}
   getGlobalVariable:
     speakeasy-default-get-global-variable:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4374,6 +4596,9 @@ examples:
           application/json: {}
   createGlobalVariable:
     speakeasy-default-create-global-variable:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "type": "any"}
       responses:
@@ -4386,6 +4611,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4396,6 +4622,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "type": "any"}
       responses:
@@ -4408,6 +4635,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4473,6 +4701,9 @@ examples:
           application/json: {}
   listHmacFunction:
     speakeasy-default-list-hmac-function:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4480,6 +4711,9 @@ examples:
           application/json: {}
   createHmacFunction:
     speakeasy-default-create-hmac-function:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"headerExpression": "<value>", "headerName": "<value>", "id": "<id>", "lib": "custom", "stringBuilders": ["<value 1>"]}
       responses:
@@ -4492,6 +4726,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4502,6 +4737,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"headerExpression": "<value>", "headerName": "<value>", "id": "<id>", "lib": "cribl", "stringBuilders": ["<value 1>"]}
       responses:
@@ -4514,6 +4750,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4742,6 +4979,9 @@ examples:
           application/json: {}
   listSchema:
     speakeasy-default-list-schema:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4749,6 +4989,9 @@ examples:
           application/json: {}
   createSchema:
     speakeasy-default-create-schema:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "schema": "<value>"}
       responses:
@@ -4761,6 +5004,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4771,6 +5015,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "schema": "<value>"}
       responses:
@@ -4783,6 +5028,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4926,6 +5172,9 @@ examples:
           application/json: {}
   listLibSchemas:
     speakeasy-default-list-lib-schemas:
+      parameters:
+        path:
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4933,6 +5182,9 @@ examples:
           application/json: {}
   createLibSchemas:
     speakeasy-default-create-lib-schemas:
+      parameters:
+        path:
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "schema": "<value>"}
       responses:
@@ -4945,6 +5197,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -4955,6 +5208,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       requestBody:
         application/json: {"id": "<id>", "schema": "<value>"}
       responses:
@@ -4967,6 +5221,7 @@ examples:
       parameters:
         path:
           id: "<id>"
+          groupId: "<id>"
       responses:
         "200":
           application/json: {}
@@ -6070,7 +6325,7 @@ examples:
         path:
           product: "stream"
       requestBody:
-        application/json: {"configVersion": "<value>", "id": "<id>"}
+        application/json: {"provisioned": true, "id": "<id>"}
       responses:
         "200":
           application/json: {}
@@ -6112,6 +6367,16 @@ examples:
           application/json: {}
   deleteGroupsById:
     speakeasy-default-delete-groups-by-id:
+      parameters:
+        path:
+          id: "<id>"
+      responses:
+        "200":
+          application/json: {}
+        "500":
+          application/json: {}
+  updateGroupsById:
+    speakeasy-default-update-groups-by-id:
       parameters:
         path:
           id: "<id>"

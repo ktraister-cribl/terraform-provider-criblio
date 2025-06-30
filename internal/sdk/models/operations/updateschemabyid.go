@@ -10,6 +10,8 @@ import (
 type UpdateSchemaByIDRequest struct {
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Schema object to be updated
 	SchemaLibEntry shared.SchemaLibEntry `request:"mediaType=application/json"`
 }
@@ -21,6 +23,13 @@ func (o *UpdateSchemaByIDRequest) GetID() string {
 	return o.ID
 }
 
+func (o *UpdateSchemaByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
+}
+
 func (o *UpdateSchemaByIDRequest) GetSchemaLibEntry() shared.SchemaLibEntry {
 	if o == nil {
 		return shared.SchemaLibEntry{}
@@ -30,16 +39,7 @@ func (o *UpdateSchemaByIDRequest) GetSchemaLibEntry() shared.SchemaLibEntry {
 
 // UpdateSchemaByIDResponseBody - a list of Schema objects
 type UpdateSchemaByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                  `json:"count,omitempty"`
 	Items []shared.SchemaLibEntry `json:"items,omitempty"`
-}
-
-func (o *UpdateSchemaByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateSchemaByIDResponseBody) GetItems() []shared.SchemaLibEntry {

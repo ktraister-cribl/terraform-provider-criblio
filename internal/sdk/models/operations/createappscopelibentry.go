@@ -7,18 +7,29 @@ import (
 	"net/http"
 )
 
-// CreateAppscopeLibEntryResponseBody - a list of AppscopeLibEntry objects
-type CreateAppscopeLibEntryResponseBody struct {
-	// number of items present in the items array
-	Count *int64                    `json:"count,omitempty"`
-	Items []shared.AppscopeLibEntry `json:"items,omitempty"`
+type CreateAppscopeLibEntryRequest struct {
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// New AppscopeLibEntry object
+	AppscopeLibEntry shared.AppscopeLibEntry `request:"mediaType=application/json"`
 }
 
-func (o *CreateAppscopeLibEntryResponseBody) GetCount() *int64 {
+func (o *CreateAppscopeLibEntryRequest) GetGroupID() string {
 	if o == nil {
-		return nil
+		return ""
 	}
-	return o.Count
+	return o.GroupID
+}
+
+func (o *CreateAppscopeLibEntryRequest) GetAppscopeLibEntry() shared.AppscopeLibEntry {
+	if o == nil {
+		return shared.AppscopeLibEntry{}
+	}
+	return o.AppscopeLibEntry
+}
+
+// CreateAppscopeLibEntryResponseBody - a list of AppscopeLibEntry objects
+type CreateAppscopeLibEntryResponseBody struct {
+	Items []shared.AppscopeLibEntry `json:"items,omitempty"`
 }
 
 func (o *CreateAppscopeLibEntryResponseBody) GetItems() []shared.AppscopeLibEntry {

@@ -10,6 +10,8 @@ import (
 type GetParserByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to GET
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *GetParserByIDRequest) GetID() string {
@@ -17,6 +19,13 @@ func (o *GetParserByIDRequest) GetID() string {
 		return ""
 	}
 	return o.ID
+}
+
+func (o *GetParserByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 // GetParserByIDResponseBody - a list of Parser objects

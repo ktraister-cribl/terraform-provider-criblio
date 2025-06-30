@@ -16,8 +16,12 @@ generation:
   auth:
     oAuth2ClientCredentialsEnabled: true
     oAuth2PasswordEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+    skipResponseBodyAssertions: false
 terraform:
-  version: 1.0.14
+  version: 1.0.41
   additionalDataSources: []
   additionalDependencies: {}
   additionalEphemeralResources: []
@@ -27,6 +31,7 @@ terraform:
   additionalResources: []
   allowUnknownFieldsInWeakUnions: false
   author: speakeasy
+  baseErrorName: CriblIoError
   defaultErrorName: APIError
   enableTypeDeduplication: false
   environmentVariables:

@@ -10,6 +10,8 @@ import (
 type DeleteEventBreakerRulesetByIDRequest struct {
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
+	// Group ID to DELETE
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
 func (o *DeleteEventBreakerRulesetByIDRequest) GetID() string {
@@ -19,18 +21,16 @@ func (o *DeleteEventBreakerRulesetByIDRequest) GetID() string {
 	return o.ID
 }
 
-// DeleteEventBreakerRulesetByIDResponseBody - a list of Event Breaker Ruleset objects
-type DeleteEventBreakerRulesetByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                       `json:"count,omitempty"`
-	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
+func (o *DeleteEventBreakerRulesetByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
-func (o *DeleteEventBreakerRulesetByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
+// DeleteEventBreakerRulesetByIDResponseBody - a list of Event Breaker Ruleset objects
+type DeleteEventBreakerRulesetByIDResponseBody struct {
+	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
 }
 
 func (o *DeleteEventBreakerRulesetByIDResponseBody) GetItems() []shared.EventBreakerRuleset {

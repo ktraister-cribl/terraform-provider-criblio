@@ -8,10 +8,19 @@ import (
 )
 
 type UpdateAppscopeLibEntryByIDRequest struct {
+	// Group ID to PATCH
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Unique ID to PATCH
 	ID string `pathParam:"style=simple,explode=false,name=id"`
 	// AppscopeLibEntry object to be updated
 	AppscopeLibEntry shared.AppscopeLibEntry `request:"mediaType=application/json"`
+}
+
+func (o *UpdateAppscopeLibEntryByIDRequest) GetGroupID() string {
+	if o == nil {
+		return ""
+	}
+	return o.GroupID
 }
 
 func (o *UpdateAppscopeLibEntryByIDRequest) GetID() string {
@@ -30,16 +39,7 @@ func (o *UpdateAppscopeLibEntryByIDRequest) GetAppscopeLibEntry() shared.Appscop
 
 // UpdateAppscopeLibEntryByIDResponseBody - a list of AppscopeLibEntry objects
 type UpdateAppscopeLibEntryByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                    `json:"count,omitempty"`
 	Items []shared.AppscopeLibEntry `json:"items,omitempty"`
-}
-
-func (o *UpdateAppscopeLibEntryByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
 }
 
 func (o *UpdateAppscopeLibEntryByIDResponseBody) GetItems() []shared.AppscopeLibEntry {
