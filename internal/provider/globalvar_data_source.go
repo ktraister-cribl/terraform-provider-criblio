@@ -22,6 +22,7 @@ func NewGlobalVarDataSource() datasource.DataSource {
 
 // GlobalVarDataSource is the data source implementation.
 type GlobalVarDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

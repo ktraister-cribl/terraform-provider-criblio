@@ -25,6 +25,7 @@ func NewRegexResource() resource.Resource {
 
 // RegexResource defines the resource implementation.
 type RegexResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

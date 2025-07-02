@@ -27,6 +27,7 @@ func NewGlobalVarResource() resource.Resource {
 
 // GlobalVarResource defines the resource implementation.
 type GlobalVarResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

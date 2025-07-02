@@ -22,6 +22,7 @@ func NewDatabaseConnectionDataSource() datasource.DataSource {
 
 // DatabaseConnectionDataSource is the data source implementation.
 type DatabaseConnectionDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

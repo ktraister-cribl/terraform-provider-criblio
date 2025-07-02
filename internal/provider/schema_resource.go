@@ -23,6 +23,7 @@ func NewSchemaResource() resource.Resource {
 
 // SchemaResource defines the resource implementation.
 type SchemaResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

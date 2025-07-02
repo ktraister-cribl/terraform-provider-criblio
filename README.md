@@ -16,7 +16,7 @@ terraform {
   required_providers {
     criblio = {
       source  = "criblio/criblio"
-      version = "1.0.41"
+      version = "0.0.1"
     }
   }
 }
@@ -231,3 +231,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the terms of the license included in the repository.
+

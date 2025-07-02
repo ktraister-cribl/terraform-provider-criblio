@@ -22,6 +22,7 @@ func NewHmacFunctionDataSource() datasource.DataSource {
 
 // HmacFunctionDataSource is the data source implementation.
 type HmacFunctionDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

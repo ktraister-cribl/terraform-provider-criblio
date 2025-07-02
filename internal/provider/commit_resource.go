@@ -27,6 +27,7 @@ func NewCommitResource() resource.Resource {
 
 // CommitResource defines the resource implementation.
 type CommitResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

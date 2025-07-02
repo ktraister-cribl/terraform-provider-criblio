@@ -22,6 +22,7 @@ func NewSchemaDataSource() datasource.DataSource {
 
 // SchemaDataSource is the data source implementation.
 type SchemaDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

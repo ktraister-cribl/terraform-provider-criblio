@@ -23,6 +23,7 @@ func NewPackDataSource() datasource.DataSource {
 
 // PackDataSource is the data source implementation.
 type PackDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

@@ -22,6 +22,7 @@ func NewParquetSchemaDataSource() datasource.DataSource {
 
 // ParquetSchemaDataSource is the data source implementation.
 type ParquetSchemaDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 
