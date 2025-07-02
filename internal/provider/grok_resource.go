@@ -23,6 +23,7 @@ func NewGrokResource() resource.Resource {
 
 // GrokResource defines the resource implementation.
 type GrokResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

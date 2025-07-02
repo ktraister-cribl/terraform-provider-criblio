@@ -23,6 +23,7 @@ func NewParquetSchemaResource() resource.Resource {
 
 // ParquetSchemaResource defines the resource implementation.
 type ParquetSchemaResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

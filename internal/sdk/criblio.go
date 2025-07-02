@@ -2,7 +2,7 @@
 
 package sdk
 
-// Generated from OpenAPI doc version 1.0.0 and generator version 2.638.5
+// Generated from OpenAPI doc version 1.0.0 and generator version 2.647.2
 
 import (
 	"context"
@@ -391,9 +391,9 @@ func WithTimeout(timeout time.Duration) SDKOption {
 // New creates a new instance of the SDK with the provided options
 func New(opts ...SDKOption) *CriblIo {
 	sdk := &CriblIo{
-		SDKVersion: "1.0.41",
+		SDKVersion: "0.0.1",
 		sdkConfiguration: config.SDKConfiguration{
-			UserAgent:  "speakeasy-sdk/terraform 1.0.41 2.638.5 1.0.0 github.com/speakeasy/terraform-provider-criblio/internal/sdk",
+			UserAgent:  "speakeasy-sdk/terraform 0.0.1 2.647.2 1.0.0 github.com/speakeasy/terraform-provider-criblio/internal/sdk",
 			ServerList: ServerList,
 			ServerVariables: map[string]map[string]string{
 				"cloud": {

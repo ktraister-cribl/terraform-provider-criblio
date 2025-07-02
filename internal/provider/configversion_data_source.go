@@ -22,6 +22,7 @@ func NewConfigVersionDataSource() datasource.DataSource {
 
 // ConfigVersionDataSource is the data source implementation.
 type ConfigVersionDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

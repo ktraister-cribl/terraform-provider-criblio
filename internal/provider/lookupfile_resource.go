@@ -29,6 +29,7 @@ func NewLookupFileResource() resource.Resource {
 
 // LookupFileResource defines the resource implementation.
 type LookupFileResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

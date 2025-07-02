@@ -31,6 +31,7 @@ func NewAppscopeConfigResource() resource.Resource {
 
 // AppscopeConfigResource defines the resource implementation.
 type AppscopeConfigResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

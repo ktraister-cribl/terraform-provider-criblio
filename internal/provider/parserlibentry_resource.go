@@ -27,6 +27,7 @@ func NewParserLibEntryResource() resource.Resource {
 
 // ParserLibEntryResource defines the resource implementation.
 type ParserLibEntryResource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

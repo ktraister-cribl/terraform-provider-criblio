@@ -23,6 +23,7 @@ func NewLookupFileDataSource() datasource.DataSource {
 
 // LookupFileDataSource is the data source implementation.
 type LookupFileDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 

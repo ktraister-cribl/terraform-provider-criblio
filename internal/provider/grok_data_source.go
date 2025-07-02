@@ -22,6 +22,7 @@ func NewGrokDataSource() datasource.DataSource {
 
 // GrokDataSource is the data source implementation.
 type GrokDataSource struct {
+	// Provider configured SDK client.
 	client *sdk.CriblIo
 }
 
