@@ -7,6 +7,7 @@ description: |-
 ---
 
 # criblio Provider
+> **Warning**: This provider is currently in beta and may experience issues. It is primarily implemented for internal Cribl use cases and should be used with caution in production environments.
 
 
 
@@ -17,7 +18,7 @@ terraform {
   required_providers {
     criblio = {
       source  = "criblio/criblio"
-      version = "0.0.1"
+      version = "1.0.45"
     }
   }
 }
