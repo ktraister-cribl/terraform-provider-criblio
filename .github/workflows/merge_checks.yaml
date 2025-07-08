@@ -1,0 +1,127 @@
+name: Test PR commit
+on:
+  pull_request:
+    types: [synchronize]
+
+jobs:
+  terraform_fmt_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.1.7"
+
+      - name: Terraform fmt
+        run: | 
+          dir_check(){ for i in `ls`; do cd $i; terraform fmt -check; cd ..; done }
+
+          echo "Checking path tests/e2e..."
+          cd tests/e2e
+          terraform fmt -check
+          cd ../..
+          echo "Path tests/e2e passed!"
+
+          echo "Checking path examples/resources..."
+          cd examples/resources
+          dir_check
+          cd ..
+          echo "Path examples/resources passed!"
+
+          echo "Checking path examples/data-sources..."
+          cd data-sources
+          dir_check
+          echo "Path examples/data-sources passed!"
+
+
+  go_fmt_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-go@v4.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Run Go Fmt Checks
+        run: | 
+          echo "Checking path tests/acceptance"
+          cd tests/acceptance
+          if [[ `gofmt -l .` ]]; then 
+            gofmt -l . && exit 1
+          else
+            echo "fmt check passed"
+          fi
+          cd ../..
+
+          echo "Checking path internal/sdk/internal/hooks"
+          cd internal/sdk/internal/hooks
+          if [[ `gofmt -l .` ]]; then 
+            gofmt -l . && exit 1
+          else
+            echo "fmt check passed"
+          fi
+
+
+  acceptance_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.1.7"
+
+      - uses: actions/setup-go@v4.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Run Acceptance Tests
+        env:
+          CRIBL_CLIENT_ID: ${{ secrets.CRIBL_CLIENT_ID }}
+          CRIBL_CLIENT_SECRET: ${{ secrets.CRIBL_CLIENT_SECRET }}
+        run: | 
+          export CRIBL_CLIENT_ID CRIBL_CLIENT_SECRET
+          make acceptance-test
+
+
+  unit_test_internal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-go@v4.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Run Unit Tests
+        run: | 
+          make unit-test
+
+
+#  speakeasy_test:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4.2.2
+#
+#      - name: Install Speakeasy
+#        uses: mheap/setup-go-cli@v1
+#        with:
+#          owner: speakeasy-api
+#          repo: speakeasy
+#          cli_name: speakeasy
+#          package_type: zip
+#
+#      - name: Configure speakeasy CLI
+#        run: |
+#          mkdir -p ~/.speakeasy
+#          echo 'speakeasy_api_key: ${{ secrets.SPEAKEASY_API_KEY }}' > ~/.speakeasy/config.yaml
+#
+#      - name: Run Speakeasy Tests
+#        run: | 
+#          make test-speakeasy
+#

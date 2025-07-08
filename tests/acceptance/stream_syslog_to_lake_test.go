@@ -1,14 +1,36 @@
-terraform {
-  required_providers {
-    criblio = {
-      source = "criblio/criblio"
-    }
-  }
+package tests
+
+import (
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func TestStreamSyslogToLake(t *testing.T) {
+	t.Run("plan-diff", func(t *testing.T) {
+		resource.Test(t, resource.TestCase{
+			ProtoV6ProviderFactories:  providerFactory,
+			PreventPostDestroyRefresh: true,
+			Steps: []resource.TestStep{
+				{
+					Config:             s3Config,
+					ExpectNonEmptyPlan: true,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("criblio_group.syslog_worker_group", "id", "syslog-workers"),
+						resource.TestCheckResourceAttr("criblio_group.syslog_worker_group", "name", "syslog-workers"),
+						resource.TestCheckResourceAttr("criblio_group.syslog_worker_group", "product", "stream"),
+						resource.TestCheckResourceAttr("criblio_source.syslog_source", "id", "syslog-input"),
+						resource.TestCheckResourceAttr("criblio_source.syslog_source", "group_id", "syslog-workers"),
+						resource.TestCheckResourceAttr("criblio_destination.cribl_lake", "id", "cribl-lake-2"),
+						resource.TestCheckResourceAttr("criblio_destination.cribl_lake", "group_id", "syslog-workers"),
+					),
+				},
+			},
+		})
+	})
 }
 
-provider "criblio" {
-  
-}
+var s3Config = `
 
 # Worker Group Configuration
 resource "criblio_group" "syslog_worker_group" {
@@ -184,4 +206,12 @@ output "pack_details" {
   value = {
     id = criblio_pack.syslog_pack.id
   }
-} 
+}
+
+provider "criblio" {
+  server_url = "https://app.cribl-playground.cloud"
+  organization_id = "beautiful-nguyen-y8y4azd"
+  workspace_id = "tfprovider"
+  version = "999.99.9"
+}
+`
