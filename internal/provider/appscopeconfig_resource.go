@@ -336,10 +336,9 @@ func (r *AppscopeConfigResource) Schema(ctx context.Context, req resource.Schema
 																Computed: true,
 																Optional: true,
 															},
-															"headers": schema.ListAttribute{
-																Computed:    true,
-																Optional:    true,
-																ElementType: types.StringType,
+															"headers": schema.StringAttribute{
+																Computed: true,
+																Optional: true,
 															},
 															"name": schema.StringAttribute{
 																Computed: true,
@@ -548,15 +547,10 @@ func (r *AppscopeConfigResource) Schema(ctx context.Context, req resource.Schema
 														speakeasy_objectvalidators.NotNull(),
 													},
 												},
-												"watch": schema.ListNestedAttribute{
-													Computed: true,
-													Optional: true,
-													NestedObject: schema.NestedAttributeObject{
-														Validators: []validator.Object{
-															speakeasy_objectvalidators.NotNull(),
-														},
-														Attributes: map[string]schema.Attribute{},
-													},
+												"watch": schema.ListAttribute{
+													Computed:    true,
+													Optional:    true,
+													ElementType: types.StringType,
 													Description: `Not Null`,
 													Validators: []validator.List{
 														speakeasy_listvalidators.NotNull(),
@@ -819,10 +813,9 @@ func (r *AppscopeConfigResource) Schema(ctx context.Context, req resource.Schema
 											Computed: true,
 											Optional: true,
 										},
-										"headers": schema.ListAttribute{
-											Computed:    true,
-											Optional:    true,
-											ElementType: types.StringType,
+										"headers": schema.StringAttribute{
+											Computed: true,
+											Optional: true,
 										},
 										"name": schema.StringAttribute{
 											Computed: true,
@@ -1031,15 +1024,10 @@ func (r *AppscopeConfigResource) Schema(ctx context.Context, req resource.Schema
 									speakeasy_objectvalidators.NotNull(),
 								},
 							},
-							"watch": schema.ListNestedAttribute{
-								Computed: true,
-								Optional: true,
-								NestedObject: schema.NestedAttributeObject{
-									Validators: []validator.Object{
-										speakeasy_objectvalidators.NotNull(),
-									},
-									Attributes: map[string]schema.Attribute{},
-								},
+							"watch": schema.ListAttribute{
+								Computed:    true,
+								Optional:    true,
+								ElementType: types.StringType,
 								Description: `Not Null`,
 								Validators: []validator.List{
 									speakeasy_listvalidators.NotNull(),
@@ -1162,7 +1150,7 @@ func (r *AppscopeConfigResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group ID to PATCH`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
 				Required:    true,

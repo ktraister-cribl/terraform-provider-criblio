@@ -36,6 +36,7 @@ type SourceDataSourceModel struct {
 	InputConfluentCloud       *tfTypes.InputConfluentCloud       `queryParam:"inline" tfsdk:"input_confluent_cloud" tfPlanOnly:"true"`
 	InputCribl                *tfTypes.InputCribl                `queryParam:"inline" tfsdk:"input_cribl" tfPlanOnly:"true"`
 	InputCriblHTTP            *tfTypes.InputCriblHTTP            `queryParam:"inline" tfsdk:"input_cribl_http" tfPlanOnly:"true"`
+	InputCriblLakeHTTP        *tfTypes.InputCriblLakeHTTP        `queryParam:"inline" tfsdk:"input_cribl_lake_http" tfPlanOnly:"true"`
 	InputCriblmetrics         *tfTypes.InputCriblmetrics         `queryParam:"inline" tfsdk:"input_criblmetrics" tfPlanOnly:"true"`
 	InputCriblTCP             *tfTypes.InputCriblTCP             `queryParam:"inline" tfsdk:"input_cribl_tcp" tfPlanOnly:"true"`
 	InputCrowdstrike          *tfTypes.InputCrowdstrike          `queryParam:"inline" tfsdk:"input_crowdstrike" tfPlanOnly:"true"`
@@ -101,7 +102,8 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 
 		Attributes: map[string]schema.Attribute{
 			"group_id": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"input_appscope": schema.SingleNestedAttribute{
 				Computed: true,
@@ -272,7 +274,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -303,24 +305,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"stale_channel_flush_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -354,12 +338,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -396,8 +378,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
 					"auth_type": schema.StringAttribute{
+						Computed: true,
+					},
+					"azure_cloud": schema.StringAttribute{
 						Computed:    true,
-						Description: `Enter connection string directly, or select a stored secret`,
+						Description: `The Azure cloud to use. Defaults to Azure Public Cloud.`,
 					},
 					"breaker_rulesets": schema.ListAttribute{
 						Computed:    true,
@@ -447,7 +432,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"endpoint_suffix": schema.StringAttribute{
 						Computed:    true,
-						Description: `Endpoint suffix for the service URL. Defaults to core.windows.net.`,
+						Description: `Endpoint suffix for the service URL. Takes precedence over the Azure Cloud setting. Defaults to core.windows.net.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -521,7 +506,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -535,7 +520,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"queue_name": schema.StringAttribute{
 						Computed:    true,
-						Description: `The storage account queue name blob notifications will be read from. Value must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `myQueue-${C.vars.myVar}` + "`" + ``,
+						Description: `The storage account queue name blob notifications will be read from. Value must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at initialization time. Example referencing a Global Variable: ` + "`" + `myQueue-${C.vars.myVar}` + "`" + ``,
 					},
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
@@ -552,24 +537,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"stale_channel_flush_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"storage_account_name": schema.StringAttribute{
 						Computed:    true,
@@ -678,7 +645,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -714,24 +681,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"stale_channel_flush_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -801,17 +750,17 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"from_beginning": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Leave toggled to 'Yes' if you want the Source, upon first subscribing to a topic, to read starting with the earliest available message`,
+						Description: `Leave enabled if you want the Source, upon first subscribing to a topic, to read starting with the earliest available message`,
 					},
 					"group_id": schema.StringAttribute{
 						Computed:    true,
-						Description: `Specifies the consumer group to which this instance belongs. Defaults to 'Cribl'.`,
+						Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 					},
 					"heartbeat_interval": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Expected time between heartbeats to the consumer coordinator when using Kafka's group management facilities.` + "\n" +
-							`      Value must be lower than sessionTimeout, and typically should not exceed 1/3 of the sessionTimeout value.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#consumerconfigs_heartbeat.interval.ms).`,
+						MarkdownDescription: `Expected time between heartbeats to the consumer coordinator when using Kafka's group-management facilities.` + "\n" +
+							`      Value must be lower than sessionTimeout and typically should not exceed 1/3 of the sessionTimeout value.` + "\n" +
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#consumerconfigs_heartbeat.interval.ms) for details.`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -832,8 +781,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 										Description: `Select or create a secret that references your credentials`,
 									},
 									"disabled": schema.BoolAttribute{
-										Computed:    true,
-										Description: `Enable authentication`,
+										Computed: true,
 									},
 								},
 								Description: `Credentials to use when authenticating with the schema registry using basic HTTP authentication`,
@@ -843,8 +791,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Description: `Maximum time to wait for a Schema Registry connection to complete successfully`,
 							},
 							"disabled": schema.BoolAttribute{
-								Computed:    true,
-								Description: `Enable Schema Registry`,
+								Computed: true,
 							},
 							"max_retries": schema.Float64Attribute{
 								Computed:    true,
@@ -871,22 +818,20 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"certificate_name": schema.StringAttribute{
 										Computed:    true,
-										Description: `The name of the predefined certificate.`,
+										Description: `The name of the predefined certificate`,
 									},
 									"disabled": schema.BoolAttribute{
 										Computed: true,
 									},
 									"max_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Maximum TLS version to use when connecting`,
+										Computed: true,
 									},
 									"min_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Minimum TLS version to use when connecting`,
+										Computed: true,
 									},
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
-										Description: `Passphrase to use to decrypt private key.`,
+										Description: `Passphrase to use to decrypt private key`,
 									},
 									"priv_key_path": schema.StringAttribute{
 										Computed:    true,
@@ -894,8 +839,8 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"reject_unauthorized": schema.BoolAttribute{
 										Computed: true,
-										MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-											`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.`,
+										MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+											`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.`,
 									},
 									"servername": schema.StringAttribute{
 										Computed:    true,
@@ -923,7 +868,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"max_socket_errors": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of network errors before the consumer recreates a socket.`,
+						Description: `Maximum number of network errors before the consumer re-creates a socket`,
 					},
 					"metadata": schema.ListNestedAttribute{
 						Computed: true,
@@ -969,7 +914,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -983,13 +928,13 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"reauthentication_threshold": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backwards from the moment when credentials are set to expire.`,
+						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backward from the moment when credentials are set to expire.`,
 					},
 					"rebalance_timeout": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Maximum allowed time for each worker to join the group after a rebalance has begun.` + "\n" +
+						MarkdownDescription: `Maximum allowed time for each worker to join the group after a rebalance begins.` + "\n" +
 							`      If the timeout is exceeded, the coordinator broker will remove the worker from the group.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#connectconfigs_rebalance.timeout.ms).`,
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#connectconfigs_rebalance.timeout.ms) for details.`,
 					},
 					"request_timeout": schema.Float64Attribute{
 						Computed:    true,
@@ -999,12 +944,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed: true,
 						Attributes: map[string]schema.Attribute{
 							"disabled": schema.BoolAttribute{
-								Computed:    true,
-								Description: `Enable Authentication`,
+								Computed: true,
 							},
 							"mechanism": schema.StringAttribute{
-								Computed:    true,
-								Description: `SASL authentication mechanism to use.`,
+								Computed: true,
 							},
 						},
 						Description: `Authentication parameters to use when connecting to brokers. Using TLS is highly recommended.`,
@@ -1015,29 +958,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"session_timeout": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Timeout used to detect client failures when using Kafka's group management facilities.` + "\n" +
-							`      If the client sends the broker no heartbeats before this timeout expires, ` + "\n" +
-							`      the broker will remove this client from the group, and will initiate a rebalance.` + "\n" +
+						MarkdownDescription: `Timeout used to detect client failures when using Kafka's group-management facilities.` + "\n" +
+							`      If the client sends no heartbeats to the broker before the timeout expires, ` + "\n" +
+							`      the broker will remove the client from the group and initiate a rebalance.` + "\n" +
 							`      Value must be between the broker's configured group.min.session.timeout.ms and group.max.session.timeout.ms.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#consumerconfigs_session.timeout.ms).`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#consumerconfigs_session.timeout.ms) for details.`,
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -1057,22 +982,20 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to use when connecting`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to use when connecting`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -1080,8 +1003,8 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"reject_unauthorized": schema.BoolAttribute{
 								Computed: true,
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.`,
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.`,
 							},
 							"servername": schema.StringAttribute{
 								Computed:    true,
@@ -1092,7 +1015,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"topics": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
-						Description: `Topic to subscribe to. Warning: To optimize performance, Cribl suggests subscribing each Kafka Source to only a single topic.`,
+						Description: `Topic to subscribe to. Warning: To optimize performance, Cribl suggests subscribing each Kafka Source to a single topic only.`,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -1177,7 +1100,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -1192,24 +1115,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -1259,11 +1164,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -1287,11 +1192,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -1345,7 +1250,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -1368,24 +1273,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"socket_timeout": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -1415,12 +1302,214 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
+								Computed: true,
+							},
+							"passphrase": schema.StringAttribute{
 								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Description: `Passphrase to use to decrypt private key`,
+							},
+							"priv_key_path": schema.StringAttribute{
+								Computed:    true,
+								Description: `Path on server containing the private key to use. PEM format. Can reference $ENV_VARS.`,
+							},
+							"reject_unauthorized": schema.StringAttribute{
+								Computed:    true,
+								Description: `Parsed as JSON.`,
+							},
+							"request_cert": schema.BoolAttribute{
+								Computed:    true,
+								Description: `Require clients to present their certificates. Used to perform client authentication using SSL certs.`,
+							},
+						},
+					},
+					"type": schema.StringAttribute{
+						Computed: true,
+					},
+				},
+			},
+			"input_cribl_lake_http": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"activity_log_sample_rate": schema.Float64Attribute{
+						Computed:    true,
+						Description: `How often request activity is logged at the ` + "`" + `info` + "`" + ` level. A value of 1 would log every request, 10 every 10th request, etc.`,
+					},
+					"auth_tokens": schema.ListAttribute{
+						Computed:    true,
+						ElementType: types.StringType,
+						Description: `Shared secrets to be provided by any client (Authorization: <token>). If empty, unauthorized access is permitted.`,
+					},
+					"capture_headers": schema.BoolAttribute{
+						Computed:    true,
+						Description: `Add request headers to events, in the __headers field`,
+					},
+					"connections": schema.ListNestedAttribute{
+						Computed: true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"output": schema.StringAttribute{
+									Computed: true,
+								},
+								"pipeline": schema.StringAttribute{
+									Computed: true,
+								},
+							},
+						},
+						Description: `Direct connections to Destinations, and optionally via a Pipeline or a Pack`,
+					},
+					"description": schema.StringAttribute{
+						Computed: true,
+					},
+					"disabled": schema.BoolAttribute{
+						Computed: true,
+					},
+					"enable_health_check": schema.BoolAttribute{
+						Computed:    true,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+					},
+					"enable_proxy_header": schema.BoolAttribute{
+						Computed:    true,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
+					},
+					"environment": schema.StringAttribute{
+						Computed:    true,
+						Description: `Optionally, enable this config only on a specified Git branch. If empty, will be enabled everywhere.`,
+					},
+					"host": schema.StringAttribute{
+						Computed:    true,
+						Description: `Address to bind on. Defaults to 0.0.0.0 (all addresses).`,
+					},
+					"id": schema.StringAttribute{
+						Computed:    true,
+						Description: `Unique ID for this input`,
+					},
+					"ip_allowlist_regex": schema.StringAttribute{
+						Computed:    true,
+						Description: `Messages from matched IP addresses will be processed, unless also matched by the denylist`,
+					},
+					"ip_denylist_regex": schema.StringAttribute{
+						Computed:    true,
+						Description: `Messages from matched IP addresses will be ignored. This takes precedence over the allowlist.`,
+					},
+					"keep_alive_timeout": schema.Float64Attribute{
+						Computed:    true,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
+					},
+					"max_active_req": schema.Float64Attribute{
+						Computed:    true,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
+					},
+					"max_requests_per_socket": schema.Int64Attribute{
+						Computed:    true,
+						Description: `Maximum number of requests per socket before @{product} instructs the client to close the connection. Default is 0 (unlimited).`,
+					},
+					"metadata": schema.ListNestedAttribute{
+						Computed: true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"name": schema.StringAttribute{
+									Computed: true,
+								},
+								"value": schema.StringAttribute{
+									Computed:    true,
+									Description: `JavaScript expression to compute field's value, enclosed in quotes or backticks. (Can evaluate to a constant.)`,
+								},
+							},
+						},
+						Description: `Fields to add to events from this input`,
+					},
+					"pipeline": schema.StringAttribute{
+						Computed:    true,
+						Description: `Pipeline to process data from this Source before sending it through the Routes`,
+					},
+					"port": schema.Float64Attribute{
+						Computed:    true,
+						Description: `Port to listen on`,
+					},
+					"pq": schema.SingleNestedAttribute{
+						Computed: true,
+						Attributes: map[string]schema.Attribute{
+							"commit_frequency": schema.Float64Attribute{
+								Computed:    true,
+								Description: `The number of events to send downstream before committing that Stream has read them`,
+							},
+							"compress": schema.StringAttribute{
+								Computed:    true,
+								Description: `Codec to use to compress the persisted data`,
+							},
+							"max_buffer_size": schema.Float64Attribute{
+								Computed:    true,
+								Description: `The maximum number of events to hold in memory before writing the events to disk`,
+							},
+							"max_file_size": schema.StringAttribute{
+								Computed:    true,
+								Description: `The maximum size to store in each queue file before closing and optionally compressing. Enter a numeral with units of KB, MB, etc.`,
+							},
+							"max_size": schema.StringAttribute{
+								Computed:    true,
+								Description: `The maximum disk space that the queue can consume (as an average per Worker Process) before queueing stops. Enter a numeral with units of KB, MB, etc.`,
+							},
+							"mode": schema.StringAttribute{
+								Computed:    true,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+							},
+							"path": schema.StringAttribute{
+								Computed:    true,
+								Description: `The location for the persistent queue files. To this field's value, the system will append: /<worker-id>/inputs/<input-id>`,
+							},
+						},
+					},
+					"pq_enabled": schema.BoolAttribute{
+						Computed:    true,
+						Description: `Use a disk queue to minimize data loss when connected services block. See [Cribl Docs](https://docs.cribl.io/stream/persistent-queues) for PQ defaults (Cribl-managed Cloud Workers) and configuration options (on-prem and hybrid Workers).`,
+					},
+					"request_timeout": schema.Float64Attribute{
+						Computed:    true,
+						Description: `How long to wait for an incoming request to complete before aborting it. Use 0 to disable.`,
+					},
+					"send_to_routes": schema.BoolAttribute{
+						Computed:    true,
+						Description: `Select whether to send data to Routes, or directly to Destinations.`,
+					},
+					"socket_timeout": schema.Float64Attribute{
+						Computed:    true,
+						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
+					},
+					"streamtags": schema.ListAttribute{
+						Computed:    true,
+						ElementType: types.StringType,
+						Description: `Tags for filtering and grouping in @{product}`,
+					},
+					"tls": schema.SingleNestedAttribute{
+						Computed: true,
+						Attributes: map[string]schema.Attribute{
+							"ca_path": schema.StringAttribute{
+								Computed:    true,
+								Description: `Path on server containing CA certificates to use. PEM format. Can reference $ENV_VARS.`,
+							},
+							"cert_path": schema.StringAttribute{
+								Computed:    true,
+								Description: `Path on server containing certificates to use. PEM format. Can reference $ENV_VARS.`,
+							},
+							"certificate_name": schema.StringAttribute{
+								Computed:    true,
+								Description: `The name of the predefined certificate`,
+							},
+							"common_name_regex": schema.StringAttribute{
+								Computed:    true,
+								Description: `Parsed as JSON.`,
+							},
+							"disabled": schema.BoolAttribute{
+								Computed: true,
+							},
+							"max_version": schema.StringAttribute{
+								Computed: true,
+							},
+							"min_version": schema.StringAttribute{
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -1474,7 +1563,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"full_fidelity": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Include granular metrics.  Disabling this will drop the following metrics events: ` + "`" + `cribl.logstream.host.(in_bytes,in_events,out_bytes,out_events)` + "`" + `, ` + "`" + `cribl.logstream.index.(in_bytes,in_events,out_bytes,out_events)` + "`" + `, ` + "`" + `cribl.logstream.source.(in_bytes,in_events,out_bytes,out_events)` + "`" + `, ` + "`" + `cribl.logstream.sourcetype.(in_bytes,in_events,out_bytes,out_events)` + "`" + `.`,
+						Description: `Include granular metrics. Disabling this will drop the following metrics events: ` + "`" + `cribl.logstream.host.(in_bytes,in_events,out_bytes,out_events)` + "`" + `, ` + "`" + `cribl.logstream.index.(in_bytes,in_events,out_bytes,out_events)` + "`" + `, ` + "`" + `cribl.logstream.source.(in_bytes,in_events,out_bytes,out_events)` + "`" + `, ` + "`" + `cribl.logstream.sourcetype.(in_bytes,in_events,out_bytes,out_events)` + "`" + `.`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -1524,7 +1613,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -1543,24 +1632,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -1667,7 +1738,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -1694,24 +1765,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"socket_max_lifespan": schema.Float64Attribute{
 						Computed:    true,
 						Description: `The maximum duration a socket can remain open, even if active. This helps manage resources and mitigate issues caused by TCP pinning. Set to 0 to disable.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -1741,12 +1794,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -1814,7 +1865,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"retries": schema.Float64Attribute{
 								Computed:    true,
-								Description: `If checkpointing is enabled, the number of times to retry processing when a processing error occurs. If skip file on error is enabled, this setting is ignored.`,
+								Description: `The number of times to retry processing when a processing error occurs. If Skip file on error is enabled, this setting is ignored.`,
 							},
 						},
 					},
@@ -1844,11 +1895,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_assume_role": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Use Assume Role credentials to access S3`,
+						Description: `Use Assume Role credentials to access Amazon S3`,
 					},
 					"enable_sqs_assume_role": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Use Assume Role credentials when accessing SQS`,
+						Description: `Use Assume Role credentials when accessing Amazon SQS`,
 					},
 					"encoding": schema.StringAttribute{
 						Computed:    true,
@@ -1926,7 +1977,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -1954,6 +2005,14 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 						},
+					},
+					"processed_tag_key": schema.StringAttribute{
+						Computed:    true,
+						Description: `The key for the S3 object tag applied after processing. This field accepts an expression for dynamic generation.`,
+					},
+					"processed_tag_value": schema.StringAttribute{
+						Computed:    true,
+						Description: `The value for the S3 object tag applied after processing. This field accepts an expression for dynamic generation.`,
 					},
 					"queue_name": schema.StringAttribute{
 						Computed:    true,
@@ -1991,28 +2050,13 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
 						Description: `Tags for filtering and grouping in @{product}`,
+					},
+					"tag_after_processing": schema.StringAttribute{
+						Computed: true,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -2056,11 +2100,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -2088,11 +2132,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -2146,7 +2190,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -2183,24 +2227,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -2229,12 +2255,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -2334,7 +2358,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -2352,37 +2376,17 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							Attributes: map[string]schema.Attribute{
 								"events_per_sec": schema.Float64Attribute{
 									Computed:    true,
-									Description: `Maximum no. of events to generate per second per worker node. Defaults to 10.`,
+									Description: `Maximum number of events to generate per second per Worker Node. Defaults to 10.`,
 								},
 								"sample": schema.StringAttribute{
-									Computed:    true,
-									Description: `Name of the datagen file`,
+									Computed: true,
 								},
 							},
 						},
-						Description: `List of datagens`,
 					},
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -2569,7 +2573,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -2646,24 +2650,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `Signature version to use for signing EC2 requests`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -2718,7 +2704,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"api_version": schema.StringAttribute{
 						Computed:    true,
-						Description: `The API version to use for communicating with the server.`,
+						Description: `The API version to use for communicating with the server`,
 					},
 					"auth_tokens": schema.ListAttribute{
 						Computed:    true,
@@ -2726,8 +2712,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Description: `Bearer tokens to include in the authorization header`,
 					},
 					"auth_type": schema.StringAttribute{
-						Computed:    true,
-						Description: `Elastic authentication type`,
+						Computed: true,
 					},
 					"capture_headers": schema.BoolAttribute{
 						Computed:    true,
@@ -2763,15 +2748,15 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"elastic_api": schema.StringAttribute{
 						Computed:    true,
-						Description: `Absolute path on which to listen for Elasticsearch API requests. Defaults to /. _bulk will be appended automatically, e.g., /myPath becomes /myPath/_bulk. Requests can then be made to either /myPath/_bulk or /myPath/<myIndexName>/_bulk. Other entries are faked as success.`,
+						Description: `Absolute path on which to listen for Elasticsearch API requests. Defaults to /. _bulk will be appended automatically. For example, /myPath becomes /myPath/_bulk. Requests can then be made to either /myPath/_bulk or /myPath/<myIndexName>/_bulk. Other entries are faked as success.`,
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -2782,16 +2767,14 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Description: `Field name`,
+									Computed: true,
 								},
 								"value": schema.StringAttribute{
-									Computed:    true,
-									Description: `Field value`,
+									Computed: true,
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"host": schema.StringAttribute{
 						Computed:    true,
@@ -2800,10 +2783,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"id": schema.StringAttribute{
 						Computed:    true,
 						Description: `Unique ID for this input`,
-					},
-					"ignore_standard_headers": schema.BoolAttribute{
-						Computed:    true,
-						Description: `Whether to ignore extra HTTP headers that don't start with X- or x-`,
 					},
 					"ip_allowlist_regex": schema.StringAttribute{
 						Computed:    true,
@@ -2815,11 +2794,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -2841,8 +2820,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Description: `Fields to add to events from this input`,
 					},
 					"password": schema.StringAttribute{
-						Computed:    true,
-						Description: `Password for Basic authentication`,
+						Computed: true,
 					},
 					"pipeline": schema.StringAttribute{
 						Computed:    true,
@@ -2877,7 +2855,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -2898,11 +2876,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"enabled": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Enable proxying of non-bulk API requests to an external Elastic server. Enable this only if you understand the implications; see docs for more details.`,
+								Description: `Enable proxying of non-bulk API requests to an external Elastic server. Enable this only if you understand the implications. See [Cribl Docs](https://docs.cribl.io/stream/sources-elastic/#proxy-mode) for more details.`,
 							},
 							"reject_unauthorized": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Whether to reject certificates that cannot be verified against a valid CA (e.g., self-signed certificates).`,
+								Description: `Reject certificates that cannot be verified against a valid CA (such as self-signed certificates)`,
 							},
 							"remove_headers": schema.ListAttribute{
 								Computed:    true,
@@ -2911,11 +2889,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"timeout_sec": schema.Float64Attribute{
 								Computed:    true,
-								Description: `Amount of time, in seconds, to wait for a proxy request to complete before canceling it.`,
+								Description: `Amount of time, in seconds, to wait for a proxy request to complete before canceling it`,
 							},
 							"url": schema.StringAttribute{
 								Computed:    true,
-								Description: `URL of the Elastic server to proxy non-bulk requests to, e.g., http://elastic:9200`,
+								Description: `URL of the Elastic server to proxy non-bulk requests to, such as http://elastic:9200`,
 							},
 						},
 					},
@@ -2930,24 +2908,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"socket_timeout": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -2977,12 +2937,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -3006,8 +2964,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed: true,
 					},
 					"username": schema.StringAttribute{
-						Computed:    true,
-						Description: `Username for Basic authentication`,
+						Computed: true,
 					},
 				},
 			},
@@ -3033,7 +2990,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"brokers": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
-						Description: `List of Event Hubs Kafka brokers to connect to, e.g., yourdomain.servicebus.windows.net:9093. The hostname can be found in the host portion of the primary or secondary connection string in Shared Access Policies.`,
+						Description: `List of Event Hubs Kafka brokers to connect to (example: yourdomain.servicebus.windows.net:9093). The hostname can be found in the host portion of the primary or secondary connection string in Shared Access Policies.`,
 					},
 					"connection_timeout": schema.Float64Attribute{
 						Computed:    true,
@@ -3065,17 +3022,17 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"from_beginning": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Whether to start reading from earliest available data, relevant only during initial subscription.`,
+						Description: `Start reading from earliest available data; relevant only during initial subscription`,
 					},
 					"group_id": schema.StringAttribute{
 						Computed:    true,
-						Description: `Specifies the consumer group this instance belongs to, default is 'Cribl'.`,
+						Description: `The consumer group this instance belongs to. Default is 'Cribl'.`,
 					},
 					"heartbeat_interval": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Expected time (a.k.a heartbeat.interval.ms in Kafka domain) between heartbeats to the consumer coordinator when using Kafka's group management facilities.` + "\n" +
-							`      Value must be lower than sessionTimeout, and typically should not exceed 1/3 of the sessionTimeout value.` + "\n" +
-							`      See details [here](https://github.com/Azure/azure-event-hubs-for-kafka/blob/master/CONFIGURATION.md).`,
+						MarkdownDescription: `Expected time (heartbeat.interval.ms in Kafka domain) between heartbeats to the consumer coordinator when using Kafka's group-management facilities.` + "\n" +
+							`      Value must be lower than sessionTimeout and typically should not exceed 1/3 of the sessionTimeout value.` + "\n" +
+							`      See [Recommended configurations](https://github.com/Azure/azure-event-hubs-for-kafka/blob/master/CONFIGURATION.md).`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -3103,7 +3060,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"max_socket_errors": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of network errors before the consumer recreates a socket.`,
+						Description: `Maximum number of network errors before the consumer re-creates a socket`,
 					},
 					"metadata": schema.ListNestedAttribute{
 						Computed: true,
@@ -3122,7 +3079,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"minimize_duplicates": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable feature to minimize duplicate events by only starting one consumer for each topic partition.`,
+						Description: `Minimize duplicate events by starting only one consumer for each topic partition`,
 					},
 					"pipeline": schema.StringAttribute{
 						Computed:    true,
@@ -3153,7 +3110,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -3167,13 +3124,13 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"reauthentication_threshold": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backwards from the moment when credentials are set to expire.`,
+						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backward from the moment when credentials are set to expire.`,
 					},
 					"rebalance_timeout": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Maximum allowed time (a.k.a rebalance.timeout.ms in Kafka domain) for each worker to join the group after a rebalance has begun.` + "\n" +
+						MarkdownDescription: `Maximum allowed time (rebalance.timeout.ms in Kafka domain) for each worker to join the group after a rebalance begins.` + "\n" +
 							`      If the timeout is exceeded, the coordinator broker will remove the worker from the group.` + "\n" +
-							`      See details [here](https://github.com/Azure/azure-event-hubs-for-kafka/blob/master/CONFIGURATION.md).`,
+							`      See [Recommended configurations](https://github.com/Azure/azure-event-hubs-for-kafka/blob/master/CONFIGURATION.md).`,
 					},
 					"request_timeout": schema.Float64Attribute{
 						Computed:    true,
@@ -3183,12 +3140,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed: true,
 						Attributes: map[string]schema.Attribute{
 							"disabled": schema.BoolAttribute{
-								Computed:    true,
-								Description: `Enable authentication.`,
+								Computed: true,
 							},
 							"mechanism": schema.StringAttribute{
-								Computed:    true,
-								Description: `SASL authentication mechanism to use`,
+								Computed: true,
 							},
 						},
 						Description: `Authentication parameters to use when connecting to brokers. Using TLS is highly recommended.`,
@@ -3199,28 +3154,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"session_timeout": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Timeout (a.k.a session.timeout.ms in Kafka domain) used to detect client failures when using Kafka's group management facilities.` + "\n" +
-							`      If the client sends the broker no heartbeats before this timeout expires, the broker will remove this client from the group, and will initiate a rebalance.` + "\n" +
+						MarkdownDescription: `Timeout (session.timeout.ms in Kafka domain) used to detect client failures when using Kafka's group-management facilities.` + "\n" +
+							`      If the client sends no heartbeats to the broker before the timeout expires, the broker will remove the client from the group and initiate a rebalance.` + "\n" +
 							`      Value must be lower than rebalanceTimeout.` + "\n" +
 							`      See details [here](https://github.com/Azure/azure-event-hubs-for-kafka/blob/master/CONFIGURATION.md).`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -3235,14 +3172,14 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"reject_unauthorized": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Reject certs that are not authorized by a CA in the CA certificate path, or by another trusted CA (e.g., the system's CA).`,
+								Description: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another trusted CA (such as the system's)`,
 							},
 						},
 					},
 					"topics": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
-						Description: `The name of the Event Hub (a.k.a. Kafka topic) to subscribe to. Warning: To optimize performance, Cribl suggests subscribing each Event Hubs Source to only a single topic.`,
+						Description: `The name of the Event Hub (Kafka topic) to subscribe to. Warning: To optimize performance, Cribl suggests subscribing each Event Hubs Source to only a single topic.`,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -3341,7 +3278,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -3368,24 +3305,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"stale_channel_flush_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -3526,7 +3445,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -3545,24 +3464,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"stale_channel_flush_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -3619,11 +3520,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -3647,11 +3548,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -3705,7 +3606,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -3728,24 +3629,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"socket_timeout": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -3775,12 +3658,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -3828,11 +3709,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"create_subscription": schema.BoolAttribute{
 						Computed:    true,
-						Description: `If enabled, create subscription if it does not exist`,
+						Description: `Create subscription if it does not exist`,
 					},
 					"create_topic": schema.BoolAttribute{
 						Computed:    true,
-						Description: `If enabled, create topic if it does not exist`,
+						Description: `Create topic if it does not exist`,
 					},
 					"description": schema.StringAttribute{
 						Computed: true,
@@ -3846,7 +3727,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"google_auth_method": schema.StringAttribute{
 						Computed:    true,
-						Description: `Google authentication method. Choose Auto to use Google Application Default Credentials.`,
+						Description: `Choose Auto to use Google Application Default Credentials (ADC), Manual to enter Google service account credentials directly, or Secret to select or create a stored secret that references Google service account credentials.`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -3854,7 +3735,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"max_backlog": schema.Float64Attribute{
 						Computed:    true,
-						Description: `If Destination exerts backpressure, this setting limits how many inbound events Stream will queue for processing before it stops retrieving events.`,
+						Description: `If Destination exerts backpressure, this setting limits how many inbound events Stream will queue for processing before it stops retrieving events`,
 					},
 					"metadata": schema.ListNestedAttribute{
 						Computed: true,
@@ -3873,7 +3754,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"ordered_delivery": schema.BoolAttribute{
 						Computed:    true,
-						Description: `If enabled, receive events in the order they were added to the queue. For this to work correctly, the process sending events must have ordering enabled.`,
+						Description: `Receive events in the order they were added to the queue. The process sending events must have ordering enabled.`,
 					},
 					"pipeline": schema.StringAttribute{
 						Computed:    true,
@@ -3904,7 +3785,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -3922,7 +3803,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"request_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Pull request timeout, in milliseconds.`,
+						Description: `Pull request timeout, in milliseconds`,
 					},
 					"secret": schema.StringAttribute{
 						Computed:    true,
@@ -3936,24 +3817,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `Contents of service account credentials (JSON keys) file downloaded from Google Cloud. To upload a file, click the upload button at this field's upper right.`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -3961,11 +3824,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"subscription_name": schema.StringAttribute{
 						Computed:    true,
-						Description: `ID of the subscription to use when receiving events.`,
+						Description: `ID of the subscription to use when receiving events`,
 					},
 					"topic_name": schema.StringAttribute{
 						Computed:    true,
-						Description: `ID of the topic to receive events from.`,
+						Description: `ID of the topic to receive events from`,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -4008,11 +3871,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"enable_health_check": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+								Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 							},
 							"enable_proxy_header": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+								Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 							},
 							"environment": schema.StringAttribute{
 								Computed:    true,
@@ -4127,7 +3990,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"max_active_req": schema.Float64Attribute{
 								Computed:    true,
-								Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+								Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 							},
 							"max_requests_per_socket": schema.Int64Attribute{
 								Computed:    true,
@@ -4181,7 +4044,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"mode": schema.StringAttribute{
 										Computed:    true,
-										Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+										Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 									},
 									"path": schema.StringAttribute{
 										Computed:    true,
@@ -4292,24 +4155,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed:    true,
 								Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
 							},
-							"status": schema.SingleNestedAttribute{
-								Computed: true,
-								Attributes: map[string]schema.Attribute{
-									"health": schema.StringAttribute{
-										Computed: true,
-									},
-									"metrics": schema.MapAttribute{
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-									"timestamp": schema.Float64Attribute{
-										Computed: true,
-									},
-									"use_status_from_lb": schema.BoolAttribute{
-										Computed: true,
-									},
-								},
-							},
 							"streamtags": schema.ListAttribute{
 								Computed:    true,
 								ElementType: types.StringType,
@@ -4338,12 +4183,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 										Computed: true,
 									},
 									"max_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Maximum TLS version to accept from connections`,
+										Computed: true,
 									},
 									"min_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Minimum TLS version to accept from connections`,
+										Computed: true,
 									},
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
@@ -4401,11 +4244,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"enable_health_check": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+								Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 							},
 							"enable_proxy_header": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+								Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 							},
 							"environment": schema.StringAttribute{
 								Computed:    true,
@@ -4520,7 +4363,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"max_active_req": schema.Float64Attribute{
 								Computed:    true,
-								Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+								Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 							},
 							"max_requests_per_socket": schema.Int64Attribute{
 								Computed:    true,
@@ -4574,7 +4417,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"mode": schema.StringAttribute{
 										Computed:    true,
-										Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+										Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 									},
 									"path": schema.StringAttribute{
 										Computed:    true,
@@ -4685,24 +4528,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed:    true,
 								Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
 							},
-							"status": schema.SingleNestedAttribute{
-								Computed: true,
-								Attributes: map[string]schema.Attribute{
-									"health": schema.StringAttribute{
-										Computed: true,
-									},
-									"metrics": schema.MapAttribute{
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-									"timestamp": schema.Float64Attribute{
-										Computed: true,
-									},
-									"use_status_from_lb": schema.BoolAttribute{
-										Computed: true,
-									},
-								},
-							},
 							"streamtags": schema.ListAttribute{
 								Computed:    true,
 								ElementType: types.StringType,
@@ -4731,12 +4556,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 										Computed: true,
 									},
 									"max_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Maximum TLS version to accept from connections`,
+										Computed: true,
 									},
 									"min_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Minimum TLS version to accept from connections`,
+										Computed: true,
 									},
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
@@ -4799,7 +4622,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								},
 								"token": schema.StringAttribute{
 									Computed:    true,
-									Description: `Shared secret to be provided by any client (Authorization: <token>).`,
+									Description: `Shared secret to be provided by any client (Authorization: <token>)`,
 								},
 							},
 						},
@@ -4825,7 +4648,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"cribl_api": schema.StringAttribute{
 						Computed:    true,
-						Description: `Absolute path on which to listen for the Cribl HTTP API requests. At the moment, only _bulk (default /cribl/_bulk) is available. Use empty string to disable.`,
+						Description: `Absolute path on which to listen for the Cribl HTTP API requests. Only _bulk (default /cribl/_bulk) is available. Use empty string to disable.`,
 					},
 					"description": schema.StringAttribute{
 						Computed: true,
@@ -4839,11 +4662,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -4867,11 +4690,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -4925,7 +4748,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -4956,24 +4779,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `Absolute path on which listen for the Splunk HTTP Event Collector API requests. Use empty string to disable.`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -5002,12 +4807,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -5042,7 +4845,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"allowed_methods": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
-						Description: `List of HTTP methods accepted by this input, wildcards are supported, e.g. P*, GET. Defaults to allow all.`,
+						Description: `List of HTTP methods accepted by this input. Wildcards are supported (such as P*, GET). Defaults to allow all.`,
 					},
 					"allowed_paths": schema.ListAttribute{
 						Computed:    true,
@@ -5115,11 +4918,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -5143,11 +4946,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -5201,7 +5004,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -5228,24 +5031,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"stale_channel_flush_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -5275,12 +5060,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -5401,7 +5184,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -5432,24 +5215,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -5515,17 +5280,17 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"from_beginning": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Leave toggled to 'Yes' if you want the Source, upon first subscribing to a topic, to read starting with the earliest available message`,
+						Description: `Leave enabled if you want the Source, upon first subscribing to a topic, to read starting with the earliest available message`,
 					},
 					"group_id": schema.StringAttribute{
 						Computed:    true,
-						Description: `Specifies the consumer group to which this instance belongs. Defaults to 'Cribl'.`,
+						Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 					},
 					"heartbeat_interval": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Expected time between heartbeats to the consumer coordinator when using Kafka's group management facilities.` + "\n" +
-							`      Value must be lower than sessionTimeout, and typically should not exceed 1/3 of the sessionTimeout value.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#consumerconfigs_heartbeat.interval.ms).`,
+						MarkdownDescription: `Expected time between heartbeats to the consumer coordinator when using Kafka's group-management facilities.` + "\n" +
+							`      Value must be lower than sessionTimeout and typically should not exceed 1/3 of the sessionTimeout value.` + "\n" +
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#consumerconfigs_heartbeat.interval.ms) for details.`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -5546,8 +5311,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 										Description: `Select or create a secret that references your credentials`,
 									},
 									"disabled": schema.BoolAttribute{
-										Computed:    true,
-										Description: `Enable authentication`,
+										Computed: true,
 									},
 								},
 								Description: `Credentials to use when authenticating with the schema registry using basic HTTP authentication`,
@@ -5557,8 +5321,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Description: `Maximum time to wait for a Schema Registry connection to complete successfully`,
 							},
 							"disabled": schema.BoolAttribute{
-								Computed:    true,
-								Description: `Enable Schema Registry`,
+								Computed: true,
 							},
 							"max_retries": schema.Float64Attribute{
 								Computed:    true,
@@ -5585,22 +5348,20 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"certificate_name": schema.StringAttribute{
 										Computed:    true,
-										Description: `The name of the predefined certificate.`,
+										Description: `The name of the predefined certificate`,
 									},
 									"disabled": schema.BoolAttribute{
 										Computed: true,
 									},
 									"max_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Maximum TLS version to use when connecting`,
+										Computed: true,
 									},
 									"min_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Minimum TLS version to use when connecting`,
+										Computed: true,
 									},
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
-										Description: `Passphrase to use to decrypt private key.`,
+										Description: `Passphrase to use to decrypt private key`,
 									},
 									"priv_key_path": schema.StringAttribute{
 										Computed:    true,
@@ -5608,8 +5369,8 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"reject_unauthorized": schema.BoolAttribute{
 										Computed: true,
-										MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-											`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.`,
+										MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+											`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.`,
 									},
 									"servername": schema.StringAttribute{
 										Computed:    true,
@@ -5637,7 +5398,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"max_socket_errors": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of network errors before the consumer recreates a socket.`,
+						Description: `Maximum number of network errors before the consumer re-creates a socket`,
 					},
 					"metadata": schema.ListNestedAttribute{
 						Computed: true,
@@ -5683,7 +5444,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -5697,13 +5458,13 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"reauthentication_threshold": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backwards from the moment when credentials are set to expire.`,
+						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backward from the moment when credentials are set to expire.`,
 					},
 					"rebalance_timeout": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Maximum allowed time for each worker to join the group after a rebalance has begun.` + "\n" +
+						MarkdownDescription: `Maximum allowed time for each worker to join the group after a rebalance begins.` + "\n" +
 							`      If the timeout is exceeded, the coordinator broker will remove the worker from the group.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#connectconfigs_rebalance.timeout.ms).`,
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#connectconfigs_rebalance.timeout.ms) for details.`,
 					},
 					"request_timeout": schema.Float64Attribute{
 						Computed:    true,
@@ -5713,12 +5474,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed: true,
 						Attributes: map[string]schema.Attribute{
 							"disabled": schema.BoolAttribute{
-								Computed:    true,
-								Description: `Enable Authentication`,
+								Computed: true,
 							},
 							"mechanism": schema.StringAttribute{
-								Computed:    true,
-								Description: `SASL authentication mechanism to use.`,
+								Computed: true,
 							},
 						},
 						Description: `Authentication parameters to use when connecting to brokers. Using TLS is highly recommended.`,
@@ -5729,29 +5488,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"session_timeout": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Timeout used to detect client failures when using Kafka's group management facilities.` + "\n" +
-							`      If the client sends the broker no heartbeats before this timeout expires, ` + "\n" +
-							`      the broker will remove this client from the group, and will initiate a rebalance.` + "\n" +
+						MarkdownDescription: `Timeout used to detect client failures when using Kafka's group-management facilities.` + "\n" +
+							`      If the client sends no heartbeats to the broker before the timeout expires, ` + "\n" +
+							`      the broker will remove the client from the group and initiate a rebalance.` + "\n" +
 							`      Value must be between the broker's configured group.min.session.timeout.ms and group.max.session.timeout.ms.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#consumerconfigs_session.timeout.ms).`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#consumerconfigs_session.timeout.ms) for details.`,
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -5771,22 +5512,20 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to use when connecting`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to use when connecting`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -5794,8 +5533,8 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"reject_unauthorized": schema.BoolAttribute{
 								Computed: true,
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.`,
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.`,
 							},
 							"servername": schema.StringAttribute{
 								Computed:    true,
@@ -5806,7 +5545,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"topics": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
-						Description: `Topic to subscribe to. Warning: To optimize performance, Cribl suggests subscribing each Kafka Source to only a single topic.`,
+						Description: `Topic to subscribe to. Warning: To optimize performance, Cribl suggests subscribing each Kafka Source to a single topic only.`,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -5826,7 +5565,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"avoid_duplicates": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Yes means: when resuming streaming from a stored state, Stream will read the next available record, rather than rereading the last-read record. Enabling this can cause data loss after a Worker Node's unexpected shutdown or restart.`,
+						Description: `When resuming streaming from a stored state, Stream will read the next available record, rather than rereading the last-read record. Enabling this setting can cause data loss after a Worker Node's unexpected shutdown or restart.`,
 					},
 					"aws_api_key": schema.StringAttribute{
 						Computed: true,
@@ -5942,7 +5681,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -5976,37 +5715,19 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"shard_expr": schema.StringAttribute{
 						Computed:    true,
-						Description: `A JS expression to be called with each shardId for the stream, if the expression evalutates to a truthy value the shard will be processed.`,
+						Description: `A JavaScript expression to be called with each shardId for the stream. If the expression evaluates to a truthy value, the shard will be processed.`,
 					},
 					"shard_iterator_type": schema.StringAttribute{
 						Computed:    true,
-						Description: `Location at which to start reading a shard for the first time.`,
+						Description: `Location at which to start reading a shard for the first time`,
 					},
 					"signature_version": schema.StringAttribute{
 						Computed:    true,
 						Description: `Signature version to use for signing Kinesis stream requests`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"stream_name": schema.StringAttribute{
 						Computed:    true,
-						Description: `Kinesis stream name to read data from.`,
+						Description: `Kinesis Data Stream to read data from`,
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -6097,7 +5818,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -6128,24 +5849,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -6270,7 +5973,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -6305,24 +6008,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"stale_channel_flush_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -6445,7 +6130,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -6476,24 +6161,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -6550,11 +6217,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -6578,7 +6245,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"login_url": schema.StringAttribute{
 						Computed:    true,
@@ -6590,7 +6257,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -6679,7 +6346,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -6710,24 +6377,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"socket_timeout": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -6761,12 +6410,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -6897,7 +6544,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -6912,24 +6559,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -6963,12 +6592,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -7088,7 +6715,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -7107,24 +6734,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"shutdown_timeout_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `Time in milliseconds to allow the server to shutdown gracefully before forcing shutdown. Defaults to 5000.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -7154,12 +6763,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -7268,17 +6875,17 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"from_beginning": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Leave toggled to 'Yes' if you want the Source, upon first subscribing to a topic, to read starting with the earliest available message`,
+						Description: `Leave enabled if you want the Source, upon first subscribing to a topic, to read starting with the earliest available message`,
 					},
 					"group_id": schema.StringAttribute{
 						Computed:    true,
-						Description: `Specifies the consumer group to which this instance belongs. Defaults to 'Cribl'.`,
+						Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 					},
 					"heartbeat_interval": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Expected time between heartbeats to the consumer coordinator when using Kafka's group management facilities.` + "\n" +
-							`      Value must be lower than sessionTimeout, and typically should not exceed 1/3 of the sessionTimeout value.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#consumerconfigs_heartbeat.interval.ms).`,
+						MarkdownDescription: `Expected time between heartbeats to the consumer coordinator when using Kafka's group-management facilities.` + "\n" +
+							`      Value must be lower than sessionTimeout and typically should not exceed 1/3 of the sessionTimeout value.` + "\n" +
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#consumerconfigs_heartbeat.interval.ms) for details.`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -7299,8 +6906,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 										Description: `Select or create a secret that references your credentials`,
 									},
 									"disabled": schema.BoolAttribute{
-										Computed:    true,
-										Description: `Enable authentication`,
+										Computed: true,
 									},
 								},
 								Description: `Credentials to use when authenticating with the schema registry using basic HTTP authentication`,
@@ -7310,8 +6916,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Description: `Maximum time to wait for a Schema Registry connection to complete successfully`,
 							},
 							"disabled": schema.BoolAttribute{
-								Computed:    true,
-								Description: `Enable Schema Registry`,
+								Computed: true,
 							},
 							"max_retries": schema.Float64Attribute{
 								Computed:    true,
@@ -7338,22 +6943,20 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"certificate_name": schema.StringAttribute{
 										Computed:    true,
-										Description: `The name of the predefined certificate.`,
+										Description: `The name of the predefined certificate`,
 									},
 									"disabled": schema.BoolAttribute{
 										Computed: true,
 									},
 									"max_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Maximum TLS version to use when connecting`,
+										Computed: true,
 									},
 									"min_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Minimum TLS version to use when connecting`,
+										Computed: true,
 									},
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
-										Description: `Passphrase to use to decrypt private key.`,
+										Description: `Passphrase to use to decrypt private key`,
 									},
 									"priv_key_path": schema.StringAttribute{
 										Computed:    true,
@@ -7361,8 +6964,8 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"reject_unauthorized": schema.BoolAttribute{
 										Computed: true,
-										MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-											`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.`,
+										MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+											`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.`,
 									},
 									"servername": schema.StringAttribute{
 										Computed:    true,
@@ -7390,7 +6993,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"max_socket_errors": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of network errors before the consumer recreates a socket.`,
+						Description: `Maximum number of network errors before the consumer re-creates a socket`,
 					},
 					"metadata": schema.ListNestedAttribute{
 						Computed: true,
@@ -7436,7 +7039,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -7450,13 +7053,13 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"reauthentication_threshold": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backwards from the moment when credentials are set to expire.`,
+						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backward from the moment when credentials are set to expire.`,
 					},
 					"rebalance_timeout": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Maximum allowed time for each worker to join the group after a rebalance has begun.` + "\n" +
+						MarkdownDescription: `Maximum allowed time for each worker to join the group after a rebalance begins.` + "\n" +
 							`      If the timeout is exceeded, the coordinator broker will remove the worker from the group.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#connectconfigs_rebalance.timeout.ms).`,
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#connectconfigs_rebalance.timeout.ms) for details.`,
 					},
 					"region": schema.StringAttribute{
 						Computed:    true,
@@ -7480,33 +7083,15 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"session_timeout": schema.Float64Attribute{
 						Computed: true,
-						MarkdownDescription: `Timeout used to detect client failures when using Kafka's group management facilities.` + "\n" +
-							`      If the client sends the broker no heartbeats before this timeout expires, ` + "\n" +
-							`      the broker will remove this client from the group, and will initiate a rebalance.` + "\n" +
+						MarkdownDescription: `Timeout used to detect client failures when using Kafka's group-management facilities.` + "\n" +
+							`      If the client sends no heartbeats to the broker before the timeout expires, ` + "\n" +
+							`      the broker will remove the client from the group and initiate a rebalance.` + "\n" +
 							`      Value must be between the broker's configured group.min.session.timeout.ms and group.max.session.timeout.ms.` + "\n" +
-							`      See details [here](https://kafka.apache.org/documentation/#consumerconfigs_session.timeout.ms).`,
+							`      See [Kafka's documentation](https://kafka.apache.org/documentation/#consumerconfigs_session.timeout.ms) for details.`,
 					},
 					"signature_version": schema.StringAttribute{
 						Computed:    true,
 						Description: `Signature version to use for signing MSK cluster requests`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -7526,22 +7111,20 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to use when connecting`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to use when connecting`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -7549,8 +7132,8 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"reject_unauthorized": schema.BoolAttribute{
 								Computed: true,
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.`,
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.`,
 							},
 							"servername": schema.StringAttribute{
 								Computed:    true,
@@ -7561,7 +7144,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"topics": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
-						Description: `Topic to subscribe to. Warning: To optimize performance, Cribl suggests subscribing each Kafka Source to only a single topic.`,
+						Description: `Topic to subscribe to. Warning: To optimize performance, Cribl suggests subscribing each Kafka Source to a single topic only.`,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -7667,7 +7250,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -7682,24 +7265,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -7796,6 +7361,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `Unique ID for this input`,
 					},
+					"ignore_group_jobs_limit": schema.BoolAttribute{
+						Computed:    true,
+						Description: `When enabled, this job's artifacts are not counted toward the Worker Group's finished job artifacts limit. Artifacts will be removed only after the Collector's configured time to live.`,
+					},
 					"ingestion_lag": schema.Float64Attribute{
 						Computed:    true,
 						Description: `Use this setting to account for ingestion lag. This is necessary because there can be a lag of 60 - 90 minutes (or longer) before Office 365 events are available for retrieval.`,
@@ -7860,7 +7429,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -7917,24 +7486,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -8038,6 +7589,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `Unique ID for this input`,
 					},
+					"ignore_group_jobs_limit": schema.BoolAttribute{
+						Computed:    true,
+						Description: `When enabled, this job's artifacts are not counted toward the Worker Group's finished job artifacts limit. Artifacts will be removed only after the Collector's configured time to live.`,
+					},
 					"interval": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How often (in minutes) to run the report. Must divide evenly into 60 minutes to create a predictable schedule, or Save will fail.`,
@@ -8114,7 +7669,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -8179,24 +7734,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"start_date": schema.StringAttribute{
 						Computed:    true,
 						Description: `Backward offset for the search range's head. (E.g.: -3h@h) Message Trace data is delayed; this parameter (with Date range end) compensates for delay and gaps.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -8301,6 +7838,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `Unique ID for this input`,
 					},
+					"ignore_group_jobs_limit": schema.BoolAttribute{
+						Computed:    true,
+						Description: `When enabled, this job's artifacts are not counted toward the Worker Group's finished job artifacts limit. Artifacts will be removed only after the Collector's configured time to live.`,
+					},
 					"job_timeout": schema.StringAttribute{
 						Computed:    true,
 						Description: `Maximum time the job is allowed to run (e.g., 30, 45s or 15m). Units are seconds, if not specified. Enter 0 for unlimited time.`,
@@ -8361,7 +7902,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -8414,24 +7955,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -8556,7 +8079,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -8649,7 +8172,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -8685,24 +8208,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -8735,12 +8240,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -8855,6 +8358,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `Unique ID for this input`,
 					},
+					"ignore_group_jobs_limit": schema.BoolAttribute{
+						Computed:    true,
+						Description: `When enabled, this job's artifacts are not counted toward the Worker Group's finished job artifacts limit. Artifacts will be removed only after the Collector's configured time to live.`,
+					},
 					"interval": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How often in minutes to scrape targets for metrics, 60 must be evenly divisible by the value or save will fail.`,
@@ -8928,7 +8435,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -8992,24 +8499,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"signature_version": schema.StringAttribute{
 						Computed:    true,
 						Description: `Signature version to use for signing EC2 requests`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -9083,11 +8572,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -9111,7 +8600,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"login_url": schema.StringAttribute{
 						Computed:    true,
@@ -9119,7 +8608,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -9208,7 +8697,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -9244,24 +8733,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -9294,12 +8765,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -9434,7 +8903,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -9453,24 +8922,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"single_msg_udp_packets": schema.BoolAttribute{
 						Computed:    true,
 						Description: `If true, each UDP packet is assumed to contain a single message. If false, each UDP packet is assumed to contain multiple messages, separated by newlines.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -9529,7 +8980,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"retries": schema.Float64Attribute{
 								Computed:    true,
-								Description: `If checkpointing is enabled, the number of times to retry processing when a processing error occurs. If skip file on error is enabled, this setting is ignored.`,
+								Description: `The number of times to retry processing when a processing error occurs. If Skip file on error is enabled, this setting is ignored.`,
 							},
 						},
 					},
@@ -9559,11 +9010,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_assume_role": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Use Assume Role credentials to access S3`,
+						Description: `Use Assume Role credentials to access Amazon S3`,
 					},
 					"enable_sqs_assume_role": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Use Assume Role credentials when accessing SQS`,
+						Description: `Use Assume Role credentials when accessing Amazon SQS`,
 					},
 					"encoding": schema.StringAttribute{
 						Computed:    true,
@@ -9649,7 +9100,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -9677,6 +9128,14 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 						},
+					},
+					"processed_tag_key": schema.StringAttribute{
+						Computed:    true,
+						Description: `The key for the S3 object tag applied after processing. This field accepts an expression for dynamic generation.`,
+					},
+					"processed_tag_value": schema.StringAttribute{
+						Computed:    true,
+						Description: `The value for the S3 object tag applied after processing. This field accepts an expression for dynamic generation.`,
 					},
 					"queue_name": schema.StringAttribute{
 						Computed:    true,
@@ -9714,28 +9173,14 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
 						Description: `Tags for filtering and grouping in @{product}`,
+					},
+					"tag_after_processing": schema.BoolAttribute{
+						Computed:    true,
+						Description: `Add a tag to processed S3 objects. Requires s3:GetObjectTagging and s3:PutObjectTagging AWS permissions.`,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -9789,7 +9234,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"retries": schema.Float64Attribute{
 								Computed:    true,
-								Description: `If checkpointing is enabled, the number of times to retry processing when a processing error occurs. If skip file on error is enabled, this setting is ignored.`,
+								Description: `The number of times to retry processing when a processing error occurs. If Skip file on error is enabled, this setting is ignored.`,
 							},
 						},
 					},
@@ -9823,11 +9268,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_assume_role": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Use Assume Role credentials to access S3`,
+						Description: `Use Assume Role credentials to access Amazon S3`,
 					},
 					"enable_sqs_assume_role": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Use Assume Role credentials when accessing SQS`,
+						Description: `Use Assume Role credentials when accessing Amazon SQS`,
 					},
 					"endpoint": schema.StringAttribute{
 						Computed:    true,
@@ -9913,7 +9358,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -9941,6 +9386,14 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 						},
+					},
+					"processed_tag_key": schema.StringAttribute{
+						Computed:    true,
+						Description: `The key for the S3 object tag applied after processing. This field accepts an expression for dynamic generation.`,
+					},
+					"processed_tag_value": schema.StringAttribute{
+						Computed:    true,
+						Description: `The value for the S3 object tag applied after processing. This field accepts an expression for dynamic generation.`,
 					},
 					"queue_name": schema.StringAttribute{
 						Computed:    true,
@@ -9978,28 +9431,13 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
 						Description: `Tags for filtering and grouping in @{product}`,
+					},
+					"tag_after_processing": schema.StringAttribute{
+						Computed: true,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -10057,7 +9495,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"retries": schema.Float64Attribute{
 								Computed:    true,
-								Description: `If checkpointing is enabled, the number of times to retry processing when a processing error occurs. If skip file on error is enabled, this setting is ignored.`,
+								Description: `The number of times to retry processing when a processing error occurs. If Skip file on error is enabled, this setting is ignored.`,
 							},
 						},
 					},
@@ -10087,11 +9525,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_assume_role": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Use Assume Role credentials to access S3`,
+						Description: `Use Assume Role credentials to access Amazon S3`,
 					},
 					"enable_sqs_assume_role": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Use Assume Role credentials when accessing SQS`,
+						Description: `Use Assume Role credentials when accessing Amazon SQS`,
 					},
 					"encoding": schema.StringAttribute{
 						Computed:    true,
@@ -10177,7 +9615,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -10205,6 +9643,14 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 						},
+					},
+					"processed_tag_key": schema.StringAttribute{
+						Computed:    true,
+						Description: `The key for the S3 object tag applied after processing. This field accepts an expression for dynamic generation.`,
+					},
+					"processed_tag_value": schema.StringAttribute{
+						Computed:    true,
+						Description: `The value for the S3 object tag applied after processing. This field accepts an expression for dynamic generation.`,
 					},
 					"queue_name": schema.StringAttribute{
 						Computed:    true,
@@ -10242,28 +9688,13 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
 						Description: `Tags for filtering and grouping in @{product}`,
+					},
+					"tag_after_processing": schema.StringAttribute{
+						Computed: true,
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -10277,6 +9708,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 			"input_snmp": schema.SingleNestedAttribute{
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
+					"best_effort_parsing": schema.BoolAttribute{
+						Computed:    true,
+						Description: `If enabled, the parser will attempt to parse varbind octet strings as UTF-8, first, otherwise will fallback to other methods`,
+					},
 					"connections": schema.ListNestedAttribute{
 						Computed: true,
 						NestedObject: schema.NestedAttributeObject{
@@ -10365,7 +9800,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -10406,7 +9841,8 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 											Computed: true,
 										},
 										"priv_protocol": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: `Parsed as JSON.`,
 										},
 									},
 								},
@@ -10414,24 +9850,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 						},
 						Description: `Authentication parameters for SNMPv3 trap. Set the log level to debug if you are experiencing authentication or decryption issues.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -10463,11 +9881,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								},
 								"token": schema.StringAttribute{
 									Computed:    true,
-									Description: `Shared secrets to be provided by any Splunk forwarder. If empty, unauthorized access is permitted.`,
+									Description: `Shared secrets to be provided by any Splunk forwarder. If empty, unauthorized access is permitted.`,
 								},
 							},
 						},
-						Description: `Shared secrets to be provided by any Splunk forwarder. If empty, unauthorized access is permitted.`,
+						Description: `Shared secrets to be provided by any Splunk forwarder. If empty, unauthorized access is permitted.`,
 					},
 					"breaker_rulesets": schema.ListAttribute{
 						Computed:    true,
@@ -10582,7 +10000,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -10614,24 +10032,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -10660,12 +10060,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -10806,7 +10204,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -10834,11 +10232,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -10892,7 +10290,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -10928,24 +10326,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -10974,12 +10354,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -11073,7 +10451,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
-									Description: `JavaScript expression to compute the header's value, normally enclosed in backticks (e.g., ` + "`" + `${earliest}` + "`" + `). If a constant, use single quotes (e.g., 'earliest'). Values without delimiters (e.g., earliest) are evaluated as strings.`,
+									Description: `JavaScript expression to compute the header's value, normally enclosed in backticks (e.g., ` + "`" + `${earliest}` + "`" + `). If a constant, use single quotes (e.g., 'earliest'). Values without delimiters (e.g., earliest) are evaluated as strings.`,
 								},
 							},
 						},
@@ -11088,7 +10466,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
-									Description: `JavaScript expression to compute the parameter's value, normally enclosed in backticks (e.g., ` + "`" + `${earliest}` + "`" + `). If a constant, use single quotes (e.g., 'earliest'). Values without delimiters (e.g., earliest) are evaluated as strings.`,
+									Description: `JavaScript expression to compute the parameter's value, normally enclosed in backticks (e.g., ` + "`" + `${earliest}` + "`" + `). If a constant, use single quotes (e.g., 'earliest'). Values without delimiters (e.g., earliest) are evaluated as strings.`,
 								},
 							},
 						},
@@ -11101,6 +10479,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"id": schema.StringAttribute{
 						Computed:    true,
 						Description: `Unique ID for this input`,
+					},
+					"ignore_group_jobs_limit": schema.BoolAttribute{
+						Computed:    true,
+						Description: `When enabled, this job's artifacts are not counted toward the Worker Group's finished job artifacts limit. Artifacts will be removed only after the Collector's configured time to live.`,
 					},
 					"job_timeout": schema.StringAttribute{
 						Computed:    true,
@@ -11209,7 +10591,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -11290,24 +10672,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"stale_channel_flush_ms": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -11391,7 +10755,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"create_queue": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Create queue if it does not exist.`,
+						Description: `Create queue if it does not exist`,
 					},
 					"description": schema.StringAttribute{
 						Computed: true,
@@ -11475,7 +10839,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -11493,7 +10857,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"queue_type": schema.StringAttribute{
 						Computed:    true,
-						Description: `The queue type used (or created). Defaults to Standard`,
+						Description: `The queue type used (or created)`,
 					},
 					"region": schema.StringAttribute{
 						Computed:    true,
@@ -11514,24 +10878,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"signature_version": schema.StringAttribute{
 						Computed:    true,
 						Description: `Signature version to use for signing SQS requests`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -11576,6 +10922,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"disabled": schema.BoolAttribute{
 								Computed: true,
+							},
+							"enable_enhanced_proxy_header_parsing": schema.BoolAttribute{
+								Computed:    true,
+								Description: `When enabled, parses PROXY protocol headers during the TLS handshake. Disable if compatibility issues arise.`,
 							},
 							"enable_load_balancing": schema.BoolAttribute{
 								Computed:    true,
@@ -11666,7 +11016,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"mode": schema.StringAttribute{
 										Computed:    true,
-										Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+										Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 									},
 									"path": schema.StringAttribute{
 										Computed:    true,
@@ -11697,24 +11047,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							"socket_max_lifespan": schema.Float64Attribute{
 								Computed:    true,
 								Description: `The maximum duration a socket can remain open, even if active. This helps manage resources and mitigate issues caused by TCP pinning. Set to 0 to disable.`,
-							},
-							"status": schema.SingleNestedAttribute{
-								Computed: true,
-								Attributes: map[string]schema.Attribute{
-									"health": schema.StringAttribute{
-										Computed: true,
-									},
-									"metrics": schema.MapAttribute{
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-									"timestamp": schema.Float64Attribute{
-										Computed: true,
-									},
-									"use_status_from_lb": schema.BoolAttribute{
-										Computed: true,
-									},
-								},
 							},
 							"streamtags": schema.ListAttribute{
 								Computed:    true,
@@ -11756,12 +11088,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 										Computed: true,
 									},
 									"max_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Maximum TLS version to accept from connections`,
+										Computed: true,
 									},
 									"min_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Minimum TLS version to accept from connections`,
+										Computed: true,
 									},
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
@@ -11821,6 +11151,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							"disabled": schema.BoolAttribute{
 								Computed: true,
 							},
+							"enable_enhanced_proxy_header_parsing": schema.BoolAttribute{
+								Computed:    true,
+								Description: `When enabled, parses PROXY protocol headers during the TLS handshake. Disable if compatibility issues arise.`,
+							},
 							"enable_load_balancing": schema.BoolAttribute{
 								Computed:    true,
 								Description: `Load balance traffic across all Worker Processes`,
@@ -11910,7 +11244,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									},
 									"mode": schema.StringAttribute{
 										Computed:    true,
-										Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+										Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 									},
 									"path": schema.StringAttribute{
 										Computed:    true,
@@ -11941,24 +11275,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							"socket_max_lifespan": schema.Float64Attribute{
 								Computed:    true,
 								Description: `The maximum duration a socket can remain open, even if active. This helps manage resources and mitigate issues caused by TCP pinning. Set to 0 to disable.`,
-							},
-							"status": schema.SingleNestedAttribute{
-								Computed: true,
-								Attributes: map[string]schema.Attribute{
-									"health": schema.StringAttribute{
-										Computed: true,
-									},
-									"metrics": schema.MapAttribute{
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-									"timestamp": schema.Float64Attribute{
-										Computed: true,
-									},
-									"use_status_from_lb": schema.BoolAttribute{
-										Computed: true,
-									},
-								},
 							},
 							"streamtags": schema.ListAttribute{
 								Computed:    true,
@@ -12000,12 +11316,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 										Computed: true,
 									},
 									"max_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Maximum TLS version to accept from connections`,
+										Computed: true,
 									},
 									"min_version": schema.StringAttribute{
-										Computed:    true,
-										Description: `Minimum TLS version to accept from connections`,
+										Computed: true,
 									},
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
@@ -12303,7 +11617,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -12340,24 +11654,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -12493,6 +11789,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"description": schema.StringAttribute{
 						Computed: true,
 					},
+					"disable_native_module": schema.BoolAttribute{
+						Computed:    true,
+						Description: `Enable to use built-in tools (PowerShell) to collect events instead of native API (default) [Learn more](https://docs.cribl.io/edge/sources-system-state/#advanced-tab)`,
+					},
 					"disabled": schema.BoolAttribute{
 						Computed: true,
 					},
@@ -12580,7 +11880,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -12595,24 +11895,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -12732,7 +12014,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -12781,24 +12063,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `How long (in milliseconds) the Event Breaker will wait for new data to be sent to a specific channel before flushing the data stream out, as is, to the Pipelines`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						ElementType: types.StringType,
@@ -12827,12 +12091,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -12964,7 +12226,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -12991,24 +12253,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"socket_max_lifespan": schema.Float64Attribute{
 						Computed:    true,
 						Description: `The maximum duration a socket can remain open, even if active. This helps manage resources and mitigate issues caused by TCP pinning. Set to 0 to disable.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -13042,12 +12286,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
@@ -13077,11 +12319,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Attributes: map[string]schema.Attribute{
 					"allow_machine_id_mismatch": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Allow events to be ingested even if their MachineID does not match the client certificate CN.`,
+						Description: `Allow events to be ingested even if their MachineID does not match the client certificate CN`,
 					},
 					"auth_method": schema.StringAttribute{
 						Computed:    true,
-						Description: `Method by which to authenticate incoming client connections.`,
+						Description: `How to authenticate incoming client connections`,
 					},
 					"ca_fingerprint": schema.StringAttribute{
 						Computed:    true,
@@ -13113,11 +12355,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_health_check": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable to expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
+						Description: `Expose the /cribl_health endpoint, which returns 200 OK when this Source is healthy`,
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Preserve the client’s original IP address in the __srcIpPort field when connecting through an HTTP proxy that supports the X-Forwarded-For header. This does not apply to TCP-layer Proxy Protocol v1/v2.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -13133,7 +12375,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"ip_allowlist_regex": schema.StringAttribute{
 						Computed:    true,
-						Description: `Messages from matched IP addresses will be processed, unless also matched by the denylist.`,
+						Description: `Messages from matched IP addresses will be processed, unless also matched by the denylist`,
 					},
 					"ip_denylist_regex": schema.StringAttribute{
 						Computed:    true,
@@ -13141,15 +12383,19 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"keytab": schema.StringAttribute{
 						Computed:    true,
 						Description: `Path to the keytab file containing the service principal credentials. @{product} will use ` + "`" + `/etc/krb5.keytab` + "`" + ` if not provided.`,
 					},
+					"log_fingerprint_mismatch": schema.BoolAttribute{
+						Computed:    true,
+						Description: `Log a warning if the client certificate authority (CA) fingerprint does not match the expected value. A mismatch prevents Cribl from receiving events from the Windows Event Forwarder.`,
+					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -13203,7 +12449,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -13217,7 +12463,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"principal": schema.StringAttribute{
 						Computed:    true,
-						Description: `Kerberos principal used for authentication, typically in the form HTTP/<hostname>@<REALM>.`,
+						Description: `Kerberos principal used for authentication, typically in the form HTTP/<hostname>@<REALM>`,
 					},
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
@@ -13226,24 +12472,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"socket_timeout": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -13256,19 +12484,19 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							Attributes: map[string]schema.Attribute{
 								"batch_timeout": schema.Float64Attribute{
 									Computed:    true,
-									Description: `Interval (in seconds) over which the endpoint should collect events before sending them to Stream.`,
+									Description: `Interval (in seconds) over which the endpoint should collect events before sending them to Stream`,
 								},
 								"compress": schema.BoolAttribute{
 									Computed:    true,
-									Description: `If toggled to Yes, Stream will receive compressed events from the source.`,
+									Description: `Receive compressed events from the source`,
 								},
 								"content_format": schema.StringAttribute{
 									Computed:    true,
-									Description: `Content format in which the endpoint should deliver events.`,
+									Description: `Content format in which the endpoint should deliver events`,
 								},
 								"heartbeat_interval": schema.Float64Attribute{
 									Computed:    true,
-									Description: `Maximum time (in seconds) between endpoint checkins before considering it unavailable.`,
+									Description: `Maximum time (in seconds) between endpoint checkins before considering it unavailable`,
 								},
 								"locale": schema.StringAttribute{
 									Computed:    true,
@@ -13290,25 +12518,23 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 									Description: `Fields to add to events ingested under this subscription`,
 								},
 								"query_selector": schema.StringAttribute{
-									Computed:    true,
-									Description: `Select the query builder mode.`,
+									Computed: true,
 								},
 								"read_existing_events": schema.BoolAttribute{
 									Computed:    true,
-									Description: `Set to Yes if a newly-subscribed endpoint should send previously existing events. Set to No to only receive new events`,
+									Description: `Newly subscribed endpoints will send previously existing events. Disable to receive new events only.`,
 								},
 								"send_bookmarks": schema.BoolAttribute{
 									Computed:    true,
-									Description: `If toggled to Yes, @{product} will keep track of which events have been received, resuming from that point after a re-subscription. This setting takes precedence over 'Read existing events' -- see the documentation for details.`,
+									Description: `Keep track of which events have been received, resuming from that point after a re-subscription. This setting takes precedence over 'Read existing events'. See [Cribl Docs](https://docs.cribl.io/stream/sources-wef/#subscriptions) for more details.`,
 								},
 								"subscription_name": schema.StringAttribute{
-									Computed:    true,
-									Description: `Friendly name for this subscription.`,
+									Computed: true,
 								},
 								"targets": schema.ListAttribute{
 									Computed:    true,
 									ElementType: types.StringType,
-									Description: `Enter the DNS names of the endpoints that should forward these events. You may use wildcards, for example: *.mydomain.com`,
+									Description: `The DNS names of the endpoints that should forward these events. You may use wildcards, such as *.mydomain.com`,
 								},
 								"version": schema.StringAttribute{
 									Computed:    true,
@@ -13316,7 +12542,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								},
 							},
 						},
-						Description: `Subscriptions to events on forwarding endpoints.`,
+						Description: `Subscriptions to events on forwarding endpoints`,
 					},
 					"tls": schema.SingleNestedAttribute{
 						Computed: true,
@@ -13331,11 +12557,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
-								Description: `Name of the predefined certificate.`,
+								Description: `Name of the predefined certificate`,
 							},
 							"common_name_regex": schema.StringAttribute{
 								Computed:    true,
-								Description: `Regex matching allowable common names in peer certificates' subject attribute.`,
+								Description: `Regex matching allowable common names in peer certificates' subject attribute`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -13346,12 +12572,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Description: `Parsed as JSON.`,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections.`,
+								Computed: true,
 							},
 							"ocsp_check": schema.BoolAttribute{
 								Computed:    true,
@@ -13363,7 +12587,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"principal": schema.StringAttribute{
 								Computed:    true,
@@ -13375,11 +12599,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"reject_unauthorized": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Required for WEF certificate authentication.`,
+								Description: `Required for WEF certificate authentication`,
 							},
 							"request_cert": schema.BoolAttribute{
 								Computed:    true,
-								Description: `Required for WEF certificate authentication.`,
+								Description: `Required for WEF certificate authentication`,
 							},
 						},
 					},
@@ -13600,7 +12824,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -13637,24 +12861,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -13766,7 +12972,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -13785,24 +12991,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -13886,6 +13074,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						Computed:    true,
 						Description: `Unique ID for this input`,
 					},
+					"ignore_group_jobs_limit": schema.BoolAttribute{
+						Computed:    true,
+						Description: `When enabled, this job's artifacts are not counted toward the Worker Group's finished job artifacts limit. Artifacts will be removed only after the Collector's configured time to live.`,
+					},
 					"keep_alive_time": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How often workers should check in with the scheduler to keep job subscription alive`,
@@ -13938,7 +13130,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -13995,24 +13187,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"send_to_routes": schema.BoolAttribute{
 						Computed:    true,
 						Description: `Select whether to send data to Routes, or directly to Destinations.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -14134,7 +13308,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"enable_proxy_header": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Enable when clients are connecting through a proxy that supports the x-forwarded-for header to keep the client's original IP address on the event instead of the proxy's IP address`,
+						Description: `Extract the client IP and port from PROXY protocol v1/v2. When enabled, the X-Forwarded-For header is ignored. Disable to use the X-Forwarded-For header for client IP extraction.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -14142,7 +13316,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"hec_acks": schema.BoolAttribute{
 						Computed:    true,
-						Description: `Whether to enable zscaler HEC acknowledgements`,
+						Description: `Whether to enable Zscaler HEC acknowledgements`,
 					},
 					"hec_api": schema.StringAttribute{
 						Computed:    true,
@@ -14166,11 +13340,11 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					},
 					"keep_alive_timeout": schema.Float64Attribute{
 						Computed:    true,
-						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 sec.; maximum 600 sec. (10 min.).`,
+						Description: `After the last response is sent, @{product} will wait this long for additional data before closing the socket connection. Minimum 1 second, maximum 600 seconds (10 minutes).`,
 					},
 					"max_active_req": schema.Float64Attribute{
 						Computed:    true,
-						Description: `Maximum number of active requests per Worker Process. Use 0 for unlimited.`,
+						Description: `Maximum number of active requests allowed per Worker Process. Set to 0 for unlimited. Caution: Increasing the limit above the default value, or setting it to unlimited, may degrade performance and reduce throughput.`,
 					},
 					"max_requests_per_socket": schema.Int64Attribute{
 						Computed:    true,
@@ -14224,7 +13398,7 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							},
 							"mode": schema.StringAttribute{
 								Computed:    true,
-								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
+								Description: `With Smart mode, PQ will write events to the filesystem only when it detects backpressure from the processing engine. With Always On mode, PQ will always write events directly to the queue before forwarding them to the processing engine.`,
 							},
 							"path": schema.StringAttribute{
 								Computed:    true,
@@ -14247,24 +13421,6 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 					"socket_timeout": schema.Float64Attribute{
 						Computed:    true,
 						Description: `How long @{product} should wait before assuming that an inactive socket has timed out. To wait forever, set to 0.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed: true,
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed: true,
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -14294,12 +13450,10 @@ func (r *SourceDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								Computed: true,
 							},
 							"max_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Maximum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"min_version": schema.StringAttribute{
-								Computed:    true,
-								Description: `Minimum TLS version to accept from connections`,
+								Computed: true,
 							},
 							"passphrase": schema.StringAttribute{
 								Computed:    true,

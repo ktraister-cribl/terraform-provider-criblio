@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -28,7 +27,6 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/validators"
 	speakeasy_float64validators "github.com/speakeasy/terraform-provider-criblio/internal/validators/float64validators"
 	speakeasy_listvalidators "github.com/speakeasy/terraform-provider-criblio/internal/validators/listvalidators"
-	speakeasy_mapvalidators "github.com/speakeasy/terraform-provider-criblio/internal/validators/mapvalidators"
 	speakeasy_objectvalidators "github.com/speakeasy/terraform-provider-criblio/internal/validators/objectvalidators"
 	speakeasy_stringvalidators "github.com/speakeasy/terraform-provider-criblio/internal/validators/stringvalidators"
 	"regexp"
@@ -127,7 +125,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 		Attributes: map[string]schema.Attribute{
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group Id`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
 				Required:    true,
@@ -141,13 +139,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"auth_type": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`manual`),
-						Description: `Enter connection string directly, or select a stored secret. Default: "manual"; must be one of ["manual", "secret", "clientSecret", "clientCert"]`,
+						Description: `Default: "manual"; must be one of ["manual", "secret", "clientSecret", "clientCert"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"manual",
@@ -162,6 +160,11 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
 						Description: `Automatically calculate the schema based on the events of each Parquet file generated. Default: false`,
+					},
+					"azure_cloud": schema.StringAttribute{
+						Computed:    true,
+						Optional:    true,
+						Description: `The Azure cloud to use. Defaults to Azure Public Cloud.`,
 					},
 					"base_file_name": schema.StringAttribute{
 						Computed:    true,
@@ -197,7 +200,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`gzip`),
-						Description: `Choose data compression format to apply before moving files to final destination. Default: "gzip"; must be one of ["none", "gzip"]`,
+						Description: `Data compression format to apply to HTTP content before it is delivered. Default: "gzip"; must be one of ["none", "gzip"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -226,7 +229,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"container_name": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `A container organizes a set of blobs, similar to a directory in a file system. Value can be a JavaScript expression enclosed in quotes or backticks. @{product} evaluates the expression at init time. The expression can evaluate to a constant value, and can reference Global Variables, e.g., ` + "`" + `myContainer-${C.env["CRIBL_WORKER_ID"]}` + "`" + `. Not Null`,
+						Description: `The Azure Blob Storage container name. Name can include only lowercase letters, numbers, and hyphens. For dynamic container names, enter a JavaScript expression within quotes or backtickss, to be evaluated at initialization. The expression can evaluate to a constant value and can reference Global Variables, such as ` + "`" + `myContainer-${C.env["CRIBL_WORKER_ID"]}` + "`" + `. Not Null`,
 						Validators: []validator.String{
 							speakeasy_stringvalidators.NotNull(),
 						},
@@ -235,13 +238,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Creates the configured container in Azure Blob Storage if it does not already exist. Default: false`,
+						Description: `Create the configured container in Azure Blob Storage if it does not already exist. Default: false`,
 					},
 					"deadletter_enabled": schema.BoolAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -256,13 +259,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"dest_path": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Root directory prepended to path before uploading. Value can be a JavaScript expression enclosed in quotes or backticks. @{product} evaluates the expression at init time. The expression can evaluate to a constant value, and can reference Global Variables, e.g., ` + "`" + `myBlobPrefix-${C.env["CRIBL_WORKER_ID"]}` + "`" + ``,
+						Description: `Root directory prepended to path before uploading. Value can be a JavaScript expression enclosed in quotes or backticks, to be evaluated at initialization. The expression can evaluate to a constant value and can reference Global Variables, such as ` + "`" + `myBlobPrefix-${C.env["CRIBL_WORKER_ID"]}` + "`" + `.`,
 					},
 					"empty_dir_cleanup_sec": schema.Float64Attribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -288,7 +291,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"endpoint_suffix": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Endpoint suffix for the service URL. Defaults to core.windows.net.`,
+						Description: `Endpoint suffix for the service URL. Takes precedence over the Azure Cloud setting. Defaults to core.windows.net.`,
 					},
 					"environment": schema.StringAttribute{
 						Computed:    true,
@@ -349,7 +352,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging, e.g., "key":"OCSF Event Class", "value":"9001".`,
+						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging. Examples: "key":"OCSF Event Class", "value":"9001"`,
 					},
 					"max_concurrent_file_parts": schema.Float64Attribute{
 						Computed:    true,
@@ -409,7 +412,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -421,7 +424,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -498,48 +501,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
-						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Filesystem location in which to buffer files before compressing and moving to final destination. Use performant and stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
 					},
 					"storage_account_name": schema.StringAttribute{
 						Computed:    true,
@@ -679,7 +641,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"additional_properties": schema.ListNestedAttribute{
 						Computed: true,
@@ -708,7 +670,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Optionally, enter additional configuration properties to send to the ingestion service.`,
+						Description: `Optionally, enter additional configuration properties to send to the ingestion service`,
 					},
 					"certificate": schema.SingleNestedAttribute{
 						Computed: true,
@@ -717,7 +679,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The certificate you registered as credentials for your app in the Azure portal.`,
+								Description: `The certificate you registered as credentials for your app in the Azure portal`,
 							},
 						},
 					},
@@ -732,7 +694,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"client_secret": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `The client secret that you generated for your app in the Azure portal.`,
+						Description: `The client secret that you generated for your app in the Azure portal`,
 					},
 					"cluster_url": schema.StringAttribute{
 						Computed:    true,
@@ -747,7 +709,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`gzip`),
-						Description: `Choose data compression format to apply to HTTP content before it is delivered. Default: "gzip"; must be one of ["none", "gzip"]`,
+						Description: `Data compression format to apply to HTTP content before it is delivered. Default: "gzip"; must be one of ["none", "gzip"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -778,7 +740,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"description": schema.StringAttribute{
 						Computed: true,
@@ -818,7 +780,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Strings or tags associated with the extent (ingested data shard).`,
+						Description: `Strings or tags associated with the extent (ingested data shard)`,
 					},
 					"file_name_suffix": schema.StringAttribute{
 						Computed:    true,
@@ -830,13 +792,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enable to bypass the data management service's aggregation mechanism. Default: false`,
+						Description: `Bypass the data management service's aggregation mechanism. Default: false`,
 					},
 					"flush_period_sec": schema.Float64Attribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"format": schema.StringAttribute{
 						Computed:    true,
@@ -874,13 +836,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Prevents duplicate ingestion by checking if an extent with the specified ingest-by tag already exists.`,
+						Description: `Prevents duplicate ingestion by verifying whether an extent with the specified ingest-by tag already exists`,
 					},
 					"ingest_mode": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`batching`),
-						Description: `Method to use for ingesting data. Default: "batching"; must be one of ["batching", "streaming"]`,
+						Description: `Default: "batching"; must be one of ["batching", "streaming"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"batching",
@@ -900,7 +862,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enable if you want to send a (JSON) mapping object instead of specifying an existing named data mapping. Default: false`,
+						Description: `Send a JSON mapping object instead of specifying an existing named data mapping. Default: false`,
 					},
 					"keep_alive": schema.BoolAttribute{
 						Computed:    true,
@@ -1006,7 +968,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -1019,7 +981,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -1070,7 +1032,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -1083,7 +1045,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -1102,7 +1064,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -1190,13 +1152,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"retain_blob_on_success": schema.BoolAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enable to prevent blob deletion after ingestion is complete. Default: false`,
+						Description: `Prevent blob deletion after ingestion is complete. Default: false`,
 					},
 					"scope": schema.StringAttribute{
 						Computed:    true,
@@ -1210,48 +1172,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
-						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Filesystem location in which to buffer files before compressing and moving to final destination. Use performant and stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -1324,7 +1245,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -1351,13 +1272,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"validate_database_settings": schema.BoolAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `When you save or start the Destination, validates database name and credentials; also validates table name except when creating a new table. Disable if your Azure app does not have both the Database Viewer and the Table Viewer role. Default: true`,
+						Description: `When saving or starting the Destination, validate the database name and credentials; also validate table name, except when creating a new table. Disable if your Azure app does not have both the Database Viewer and the Table Viewer role. Default: true`,
 					},
 				},
 				Validators: []validator.Object{
@@ -1540,7 +1461,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(768),
-						Description: `Maximum size (KB) of each record batch before compression. Setting should be < message.max.bytes settings in Event Hubs brokers. Default: 768`,
+						Description: `Maximum size of each record batch before compression. Setting should be < message.max.bytes settings in Event Hubs brokers. Default: 768`,
 						Validators: []validator.Float64{
 							float64validator.AtLeast(1),
 						},
@@ -1558,7 +1479,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -1610,7 +1531,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -1623,7 +1544,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -1641,7 +1562,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(10000),
-						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backwards from the moment when credentials are set to expire. Default: 10000`,
+						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backward from the moment when credentials are set to expire. Default: 10000`,
 						Validators: []validator.Float64{
 							float64validator.Between(1000, 1800000),
 						},
@@ -1663,13 +1584,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable authentication. Default: false`,
+								Description: `Default: false`,
 							},
 							"mechanism": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`plain`),
-								Description: `SASL authentication mechanism to use. Default: "plain"; must be one of ["plain", "oauthbearer"]`,
+								Description: `Default: "plain"; must be one of ["plain", "oauthbearer"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"plain",
@@ -1679,47 +1600,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 						},
 						Description: `Authentication parameters to use when connecting to brokers. Using TLS is highly recommended.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -1748,14 +1628,14 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(true),
-								Description: `Reject certs that are not authorized by a CA in the CA certificate path, or by another trusted CA (e.g., the system's CA). Default: true`,
+								Description: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another trusted CA (such as the system's). Default: true`,
 							},
 						},
 					},
 					"topic": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `The name of the Event Hub (a.k.a. Kafka Topic) to publish events. Can be overwritten using field __topicOut. Not Null`,
+						Description: `The name of the Event Hub (Kafka Topic) to publish events. Can be overwritten using field __topicOut. Not Null`,
 						Validators: []validator.String{
 							speakeasy_stringvalidators.NotNull(),
 						},
@@ -1846,7 +1726,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`.ods.opinsights.azure.com`),
-						Description: `Enter the DNS name of the Log API endpoint that sends log data to a Log Analytics workspace in Azure Monitor. Defaults to .ods.opinsights.azure.com. @{product} will add a prefix and suffix around this DNS name to construct a URI in this format: <https://<Workspace_ID><your_DNS_name>/api/logs?api-version=<API version>. Default: ".ods.opinsights.azure.com"`,
+						Description: `The DNS name of the Log API endpoint that sends log data to a Log Analytics workspace in Azure Monitor. Defaults to .ods.opinsights.azure.com. @{product} will add a prefix and suffix to construct a URI in this format: <https://<Workspace_ID><your_DNS_name>/api/logs?api-version=<API version>. Default: ".ods.opinsights.azure.com"`,
 						Validators: []validator.String{
 							stringvalidator.RegexMatches(regexp.MustCompile(`^\.[^\/]+$`), "must match pattern "+regexp.MustCompile(`^\.[^\/]+$`).String()),
 						},
@@ -1894,21 +1774,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -1927,7 +1806,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -1967,7 +1846,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -2019,7 +1898,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -2032,7 +1911,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -2051,7 +1930,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -2112,7 +1991,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -2120,47 +1999,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -2210,7 +2048,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -2238,17 +2076,17 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"workspace_id": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Azure Log Analytics Workspace ID. See Azure Dashboard Workspace > Advanced settings.`,
+						Description: `Azure Log Analytics Workspace ID. See Azure Dashboard Workspace > Advanced settings.`,
 					},
 					"workspace_key": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Azure Log Analytics Workspace Primary or Secondary Shared Key. See Azure Dashboard Workspace > Advanced settings.`,
+						Description: `Azure Log Analytics Workspace Primary or Secondary Shared Key. See Azure Dashboard Workspace > Advanced settings.`,
 					},
 				},
 				Validators: []validator.Object{
@@ -2447,21 +2285,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -2480,7 +2317,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"format": schema.StringAttribute{
 						Computed:    true,
@@ -2594,7 +2431,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -2650,7 +2487,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -2663,7 +2500,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -2682,7 +2519,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -2738,7 +2575,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -2761,47 +2598,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Username for certificate authentication`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -2865,7 +2661,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -2895,7 +2691,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -2906,7 +2702,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -2919,7 +2715,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -2932,7 +2728,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -2987,7 +2783,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"username": schema.StringAttribute{
 						Computed: true,
@@ -3189,7 +2985,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -3241,7 +3037,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -3254,7 +3050,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -3287,47 +3083,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
 						Description: `Reuse connections between requests, which can improve performance. Default: true`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -3552,7 +3307,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     booldefault.StaticBool(true),
-										Description: `Enable authentication. Default: true`,
+										Description: `Default: true`,
 									},
 								},
 								Description: `Credentials to use when authenticating with the schema registry using basic HTTP authentication`,
@@ -3580,7 +3335,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(true),
-								Description: `Enable Schema Registry. Default: true`,
+								Description: `Default: true`,
 							},
 							"max_retries": schema.Float64Attribute{
 								Computed:    true,
@@ -3623,7 +3378,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"certificate_name": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `The name of the predefined certificate.`,
+										Description: `The name of the predefined certificate`,
 									},
 									"disabled": schema.BoolAttribute{
 										Computed:    true,
@@ -3634,7 +3389,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"max_version": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+										Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"TLSv1",
@@ -3647,7 +3402,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"min_version": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+										Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"TLSv1",
@@ -3660,7 +3415,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Passphrase to use to decrypt private key.`,
+										Description: `Passphrase to use to decrypt private key`,
 									},
 									"priv_key_path": schema.StringAttribute{
 										Computed:    true,
@@ -3671,8 +3426,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed: true,
 										Optional: true,
 										Default:  booldefault.StaticBool(true),
-										MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-											`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+										MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+											`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 											`Default: true`,
 									},
 									"servername": schema.StringAttribute{
@@ -3715,7 +3470,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -3767,7 +3522,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -3780,7 +3535,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -3803,7 +3558,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(10000),
-						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backwards from the moment when credentials are set to expire. Default: 10000`,
+						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backward from the moment when credentials are set to expire. Default: 10000`,
 						Validators: []validator.Float64{
 							float64validator.Between(1000, 1800000),
 						},
@@ -3825,13 +3580,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(true),
-								Description: `Enable Authentication. Default: true`,
+								Description: `Default: true`,
 							},
 							"mechanism": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`plain`),
-								Description: `SASL authentication mechanism to use. Default: "plain"; must be one of ["plain", "scram-sha-256", "scram-sha-512", "kerberos"]`,
+								Description: `Default: "plain"; must be one of ["plain", "scram-sha-256", "scram-sha-512", "kerberos"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"plain",
@@ -3843,47 +3598,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 						},
 						Description: `Authentication parameters to use when connecting to brokers. Using TLS is highly recommended.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -3915,7 +3629,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -3926,7 +3640,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -3939,7 +3653,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -3952,7 +3666,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -3963,8 +3677,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -4093,7 +3807,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(600),
-						Description: `Re-resolve any hostnames every this many seconds and pick up destinations from A records. Default: 600`,
+						Description: `The interval in which to re-resolve any hostnames and pick up destinations from A records. Default: 600`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(86400),
 						},
@@ -4107,7 +3821,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						ElementType: types.StringType,
-						Description: `Fields to exclude from the event. By default, all internal fields except ` + "`" + `__output` + "`" + ` are sent. E.g.: ` + "`" + `cribl_pipe` + "`" + `, ` + "`" + `c*` + "`" + `. Wildcards supported.`,
+						Description: `Fields to exclude from the event. By default, all internal fields except ` + "`" + `__output` + "`" + ` are sent. Example: ` + "`" + `cribl_pipe` + "`" + `, ` + "`" + `c*` + "`" + `. Wildcards supported.`,
 					},
 					"exclude_self": schema.BoolAttribute{
 						Computed:    true,
@@ -4124,21 +3838,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -4157,7 +3870,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -4201,7 +3914,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -4253,7 +3966,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -4266,7 +3979,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -4285,7 +3998,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -4341,7 +4054,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -4349,47 +4062,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -4439,7 +4111,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -4469,7 +4141,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -4480,7 +4152,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -4493,7 +4165,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -4506,7 +4178,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -4517,8 +4189,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -4532,7 +4204,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(60),
-						Description: `The number of minutes before the internally generated authentication token expires, valid values between 1 and 60. Default: 60`,
+						Description: `The number of minutes before the internally generated authentication token expires. Valid values are between 1 and 60. Default: 60`,
 						Validators: []validator.Float64{
 							float64validator.Between(1, 60),
 						},
@@ -4551,7 +4223,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"url": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `URL of a Cribl Worker to send events to, e.g., http://localhost:10200`,
+						Description: `URL of a Cribl Worker to send events to, such as http://localhost:10200`,
 						Validators: []validator.String{
 							stringvalidator.RegexMatches(regexp.MustCompile(`^https?://.*`), "must match pattern "+regexp.MustCompile(`^https?://.*`).String()),
 						},
@@ -4567,7 +4239,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"url": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `URL of a Cribl Worker to send events to, e.g., http://localhost:10200. Not Null`,
+									Description: `URL of a Cribl Worker to send events to, such as http://localhost:10200. Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 										stringvalidator.RegexMatches(regexp.MustCompile(`^https?://.*`), "must match pattern "+regexp.MustCompile(`^https?://.*`).String()),
@@ -4589,7 +4261,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -4667,15 +4339,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
-					},
-					"additional_properties": schema.StringAttribute{
-						Computed:    true,
-						Optional:    true,
-						Description: `Parsed as JSON.`,
-						Validators: []validator.String{
-							validators.IsValidJSON(),
-						},
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"assume_role_arn": schema.StringAttribute{
 						Computed:    true,
@@ -4707,7 +4371,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"aws_secret_key": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Secret key. This value can be a constant or a JavaScript expression(e.g., ` + "`" + `${C.env.SOME_SECRET}` + "`" + `).`,
+						Description: `Secret key. This value can be a constant or a JavaScript expression. Example: ` + "`" + `${C.env.SOME_SECRET}` + "`" + `)`,
 					},
 					"base_file_name": schema.StringAttribute{
 						Computed:    true,
@@ -4718,13 +4382,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"bucket": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Name of the destination S3 bucket. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `.`,
+						Description: `Name of the destination S3 bucket. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at initialization time. Example referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + ``,
 					},
 					"deadletter_enabled": schema.BoolAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -4739,10 +4403,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"dest_path": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Lake dataset to send the data to. Not Null`,
-						Validators: []validator.String{
-							speakeasy_stringvalidators.NotNull(),
-						},
+						Description: `Lake dataset to send the data to.`,
 					},
 					"duration_seconds": schema.Float64Attribute{
 						Computed:    true,
@@ -4757,7 +4418,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -4805,7 +4466,10 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"id": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Unique ID for this output`,
+						Description: `Unique ID for this output. Not Null`,
+						Validators: []validator.String{
+							speakeasy_stringvalidators.NotNull(),
+						},
 					},
 					"kms_key_id": schema.StringAttribute{
 						Computed:    true,
@@ -4896,7 +4560,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -4908,7 +4572,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -4924,7 +4588,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"region": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Region where the S3 bucket is located.`,
+						Description: `Region where the S3 bucket is located`,
 					},
 					"reject_unauthorized": schema.BoolAttribute{
 						Computed:    true,
@@ -4947,7 +4611,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"server_side_encryption": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Server-side encryption for uploaded objects. must be one of ["AES256", "aws:kms"]`,
+						Description: `must be one of ["AES256", "aws:kms"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"AES256",
@@ -4968,48 +4632,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
-						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant and stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
 					},
 					"storage_class": schema.StringAttribute{
 						Computed:    true,
@@ -5165,7 +4788,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(600),
-						Description: `Re-resolve any hostnames every this many seconds and pick up destinations from A records. Default: 600`,
+						Description: `The interval in which to re-resolve any hostnames and pick up destinations from A records. Default: 600`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(86400),
 						},
@@ -5179,7 +4802,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						ElementType: types.StringType,
-						Description: `Fields to exclude from the event. By default, all internal fields except ` + "`" + `__output` + "`" + ` are sent. E.g.: ` + "`" + `cribl_pipe` + "`" + `, ` + "`" + `c*` + "`" + `. Wildcards supported.`,
+						Description: `Fields to exclude from the event. By default, all internal fields except ` + "`" + `__output` + "`" + ` are sent. Example: ` + "`" + `cribl_pipe` + "`" + `, ` + "`" + `c*` + "`" + `. Wildcards supported.`,
 					},
 					"exclude_self": schema.BoolAttribute{
 						Computed:    true,
@@ -5220,17 +4843,17 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"servername": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Servername to use if establishing a TLS connection. If not specified, defaults to connection host (iff not an IP); otherwise, to the global TLS settings.`,
+									Description: `Servername to use if establishing a TLS connection. If not specified, defaults to connection host (if not an IP); otherwise, uses the global TLS settings.`,
 								},
 								"tls": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
 									Default:     stringdefault.StaticString(`inherit`),
-									Description: `Whether to inherit TLS configs from group setting or disable TLS. Default: "inherit"; must be one of ["inherit", "false"]`,
+									Description: `Whether to inherit TLS configs from group setting or disable TLS. Default: "inherit"; must be one of ["inherit", "off"]`,
 									Validators: []validator.String{
 										stringvalidator.OneOf(
 											"inherit",
-											"false",
+											"off",
 										),
 									},
 								},
@@ -5242,7 +4865,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Set of hosts to load-balance data to.`,
+						Description: `Set of hosts to load-balance data to`,
 						Validators: []validator.List{
 							listvalidator.SizeAtLeast(1),
 						},
@@ -5280,13 +4903,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(0),
-						Description: `Maximum number of concurrent connections (per worker process). A random set of IPs will be picked on every DNS resolution period. Use 0 for unlimited. Default: 0`,
+						Description: `Maximum number of concurrent connections (per Worker Process). A random set of IPs will be picked on every DNS resolution period. Use 0 for unlimited. Default: 0`,
 					},
 					"on_backpressure": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -5347,7 +4970,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -5360,7 +4983,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -5373,47 +4996,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/queues`),
 						Description: `The location for the persistent queue files. To this field's value, the system will append: /<worker-id>/<output-id>. Default: "$CRIBL_HOME/state/queues"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -5454,7 +5036,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -5465,7 +5047,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -5478,7 +5060,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -5491,7 +5073,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -5502,8 +5084,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -5656,21 +5238,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -5689,7 +5270,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"format": schema.StringAttribute{
 						Computed:    true,
@@ -5727,7 +5308,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -5779,7 +5360,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -5792,7 +5373,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -5811,7 +5392,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -5867,7 +5448,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -5875,47 +5456,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -5970,7 +5510,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -5984,9 +5524,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						},
 					},
 					"token": schema.StringAttribute{
-						Computed:    true,
-						Optional:    true,
-						Description: `CrowdStrike Next-Gen SIEM authentication token`,
+						Computed: true,
+						Optional: true,
 					},
 					"type": schema.StringAttribute{
 						Computed:    true,
@@ -5999,9 +5538,11 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						},
 					},
 					"url": schema.StringAttribute{
-						Computed:    true,
-						Optional:    true,
-						Description: `URL provided from a CrowdStrike data connector, e.g. https://<your-api-key>.ingest.<your-region>.crowdstrike.com/services/collector. Not Null`,
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: `URL provided from a CrowdStrike data connector. ` + "\n" +
+							`Example: https://ingest.<region>.crowdstrike.com/api/ingest/hec/<connection-id>/v1/services/collector` + "\n" +
+							`Not Null`,
 						Validators: []validator.String{
 							speakeasy_stringvalidators.NotNull(),
 							stringvalidator.RegexMatches(regexp.MustCompile(`^https?://.*`), "must match pattern "+regexp.MustCompile(`^https?://.*`).String()),
@@ -6011,7 +5552,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: true`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: true`,
 					},
 				},
 				Validators: []validator.Object{
@@ -6089,7 +5630,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If enabled, the API key can be set from the event's '__agent_api_key' field. Default: false`,
+						Description: `Allow API key to be set from the event's '__agent_api_key' field. Default: false`,
 					},
 					"api_key": schema.StringAttribute{
 						Computed:    true,
@@ -6112,7 +5653,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `When enabled, batches events by API key and the ddtags field on the event. When disabled, batches events only by API key. If incoming events have high cardinality in the ddtags field, disabling this setting may improve Destination performance. Default: true`,
+						Description: `Batch events by API key and the ddtags field on the event. When disabled, batches events only by API key. If incoming events have high cardinality in the ddtags field, disabling this setting may improve Destination performance. Default: true`,
 					},
 					"compress": schema.BoolAttribute{
 						Computed:    true,
@@ -6163,21 +5704,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -6196,7 +5736,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"host": schema.StringAttribute{
 						Computed:    true,
@@ -6235,7 +5775,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -6287,7 +5827,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -6300,7 +5840,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -6319,7 +5859,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -6375,7 +5915,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -6434,47 +5974,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Description: `Name of the source to send with logs. When you send logs as JSON objects, the event's 'source' field (if set) will override this value.`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						Optional:    true,
@@ -6493,7 +5992,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `List of tags to send with logs (e.g., 'env:prod', 'env_staging:east').`,
+						Description: `List of tags to send with logs, such as 'env:prod' and 'env_staging:east'`,
 					},
 					"text_secret": schema.StringAttribute{
 						Computed:    true,
@@ -6535,7 +6034,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -6566,7 +6065,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -6720,21 +6219,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -6753,7 +6251,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -6787,7 +6285,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -6839,7 +6337,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -6852,7 +6350,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -6871,7 +6369,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -6927,7 +6425,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -6952,47 +6450,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"eu",
 								"custom",
 							),
-						},
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
 						},
 					},
 					"streamtags": schema.ListAttribute{
@@ -7048,7 +6505,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -7084,7 +6541,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -7180,47 +6637,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Pipeline to process data before sending out to this output`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -7333,47 +6749,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Pipeline to process data before sending out to this output`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -7526,47 +6901,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Description: `Pipeline to process data before sending out to this output`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						Optional:    true,
@@ -7673,7 +7007,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"assume_role_arn": schema.StringAttribute{
 						Computed:    true,
@@ -7721,7 +7055,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"aws_secret_key": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Secret key. This value can be a constant or a JavaScript expression(e.g., ` + "`" + `${C.env.SOME_SECRET}` + "`" + `).`,
+						Description: `Secret key. This value can be a constant or a JavaScript expression. Example: ` + "`" + `${C.env.SOME_SECRET}` + "`" + `)`,
 					},
 					"base_file_name": schema.StringAttribute{
 						Computed:    true,
@@ -7732,7 +7066,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"bucket": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Name of the destination S3 bucket. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `. Not Null`,
+						Description: `Name of the destination S3 bucket. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at initialization time. Example referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `. Not Null`,
 						Validators: []validator.String{
 							speakeasy_stringvalidators.NotNull(),
 						},
@@ -7741,7 +7075,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`gzip`),
-						Description: `Choose data compression format to apply before moving files to final destination. Default: "gzip"; must be one of ["none", "gzip"]`,
+						Description: `Data compression format to apply to HTTP content before it is delivered. Default: "gzip"; must be one of ["none", "gzip"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -7766,7 +7100,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -7782,7 +7116,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(``),
-						Description: `Prefix to append to files before uploading. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `myKeyPrefix-${C.vars.myVar}` + "`" + `. Default: ""`,
+						Description: `Prefix to append to files before uploading. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. Example referencing a Global Variable: ` + "`" + `myKeyPrefix-${C.vars.myVar}` + "`" + `. Default: ""`,
 					},
 					"duration_seconds": schema.Float64Attribute{
 						Computed:    true,
@@ -7797,7 +7131,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -7890,7 +7224,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging, e.g., "key":"OCSF Event Class", "value":"9001".`,
+						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging. Examples: "key":"OCSF Event Class", "value":"9001"`,
 					},
 					"kms_key_id": schema.StringAttribute{
 						Computed:    true,
@@ -7981,7 +7315,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -7993,7 +7327,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -8059,7 +7393,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"region": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Region where the S3 bucket is located.`,
+						Description: `Region where the S3 bucket is located`,
 					},
 					"reject_unauthorized": schema.BoolAttribute{
 						Computed:    true,
@@ -8082,7 +7416,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"server_side_encryption": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Server-side encryption for uploaded objects. must be one of ["AES256", "aws:kms"]`,
+						Description: `must be one of ["AES256", "aws:kms"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"AES256",
@@ -8108,48 +7442,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
-						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant and stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
 					},
 					"storage_class": schema.StringAttribute{
 						Computed:    true,
@@ -8344,21 +7637,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events. You can also add headers dynamically on a per-event basis in the __headers field, as explained [here](https://docs.cribl.io/stream/destinations-webhook/#internal-fields).`,
+						Description: `Headers to add to all events. You can also add headers dynamically on a per-event basis in the __headers field, as explained in [Cribl Docs](https://docs.cribl.io/stream/destinations-webhook/#internal-fields).`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -8377,7 +7669,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"format": schema.StringAttribute{
 						Computed:    true,
@@ -8424,7 +7716,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`POST`),
-						Description: `The method to use when sending events. Defaults to POST. Default: "POST"; must be one of ["POST", "PUT", "PATCH"]`,
+						Description: `The method to use when sending events. Default: "POST"; must be one of ["POST", "PUT", "PATCH"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"POST",
@@ -8437,7 +7729,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -8489,7 +7781,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -8502,7 +7794,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -8521,7 +7813,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -8577,7 +7869,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -8585,47 +7877,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -8692,7 +7943,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -8737,7 +7988,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -8881,21 +8132,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -8914,7 +8164,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"http_compress": schema.StringAttribute{
 						Computed:    true,
@@ -9002,7 +8252,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -9063,7 +8313,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -9076,7 +8326,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -9104,7 +8354,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -9160,7 +8410,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -9168,47 +8418,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -9258,7 +8467,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -9293,7 +8502,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -9416,7 +8625,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(600),
-						Description: `Re-resolve any hostnames every this many seconds and pick up destinations from A records. Default: 600`,
+						Description: `The interval in which to re-resolve any hostnames and pick up destinations from A records. Default: 600`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(86400),
 						},
@@ -9424,7 +8633,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"doc_type": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Document type to use for events. Can be overwritten by an event's __type field`,
+						Description: `Document type to use for events. Can be overwritten by an event's __type field.`,
 					},
 					"elastic_pipeline": schema.StringAttribute{
 						Computed:    true,
@@ -9464,21 +8673,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"extra_params": schema.ListNestedAttribute{
 						Computed: true,
@@ -9491,7 +8699,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"name": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field name. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
@@ -9499,14 +8707,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Extra Parameters.`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -9525,7 +8732,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -9536,7 +8743,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Toggle this off when sending events to an Elastic TSDS (time series data stream) or to allow Elastic to generate document IDs. Default: false`,
+						Description: `Include the ` + "`" + `document_id` + "`" + ` field when sending events to an Elastic TSDS (time series data stream). Default: false`,
 					},
 					"index": schema.StringAttribute{
 						Computed:    true,
@@ -9580,7 +8787,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -9632,7 +8839,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -9645,7 +8852,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -9664,7 +8871,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -9720,7 +8927,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"retry_partial_errors": schema.BoolAttribute{
 						Computed:    true,
@@ -9734,47 +8941,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -9824,7 +8990,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -9883,7 +9049,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"write_action": schema.StringAttribute{
 						Computed:    true,
@@ -10033,21 +9199,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"extra_params": schema.ListNestedAttribute{
 						Computed: true,
@@ -10060,7 +9225,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"name": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field name. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
@@ -10068,7 +9233,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
@@ -10094,7 +9259,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -10105,7 +9270,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Toggle to No when sending events to an Elastic TSDS (time series data stream). Default: true`,
+						Description: `Include the ` + "`" + `document_id` + "`" + ` field when sending events to an Elastic TSDS (time series data stream). Default: true`,
 					},
 					"index": schema.StringAttribute{
 						Computed:    true,
@@ -10134,7 +9299,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -10186,7 +9351,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -10199,7 +9364,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -10218,7 +9383,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -10274,7 +9439,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -10282,47 +9447,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -10372,7 +9496,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -10479,7 +9603,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"aws_api_key": schema.StringAttribute{
 						Computed:    true,
@@ -10511,7 +9635,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -10527,7 +9651,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -10535,7 +9659,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"encoded_configuration": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Enter an encoded string containing Exabeam configurations.`,
+						Description: `Enter an encoded string containing Exabeam configurations`,
 					},
 					"endpoint": schema.StringAttribute{
 						Computed:    true,
@@ -10618,7 +9742,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -10630,7 +9754,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -10655,7 +9779,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Whether to reject certificates that cannot be verified against a valid CA (e.g., self-signed certificates). Default: true`,
+						Description: `Reject certificates that cannot be verified against a valid CA, such as self-signed certificates. Default: true`,
 					},
 					"remove_empty_dirs": schema.BoolAttribute{
 						Computed:    true,
@@ -10667,7 +9791,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Whether to reuse connections between requests, which can improve performance. Default: true`,
+						Description: `Reuse connections between requests, which can improve performance. Default: true`,
 					},
 					"signature_version": schema.StringAttribute{
 						Computed:    true,
@@ -10692,48 +9816,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
-						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant and stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
 					},
 					"storage_class": schema.StringAttribute{
 						Computed:    true,
@@ -10762,9 +9845,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Description: `Fields to automatically add to events, such as cribl_pipe. Supports wildcards.`,
 					},
 					"timezone_offset": schema.StringAttribute{
-						Computed:    true,
-						Optional:    true,
-						Description: `Exabeam timezone offset.`,
+						Computed: true,
+						Optional: true,
 					},
 					"type": schema.StringAttribute{
 						Computed:    true,
@@ -10850,7 +9932,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"automatic_schema": schema.BoolAttribute{
 						Computed:    true,
@@ -10868,7 +9950,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`gzip`),
-						Description: `Choose data compression format to apply before moving files to final destination. Default: "gzip"; must be one of ["none", "gzip"]`,
+						Description: `Data compression format to apply to HTTP content before it is delivered. Default: "gzip"; must be one of ["none", "gzip"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -10893,7 +9975,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -10917,7 +9999,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -10999,7 +10081,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging, e.g., "key":"OCSF Event Class", "value":"9001".`,
+						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging. Examples: "key":"OCSF Event Class", "value":"9001"`,
 					},
 					"max_file_idle_time_sec": schema.Float64Attribute{
 						Computed:    true,
@@ -11050,7 +10132,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -11062,7 +10144,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -11139,47 +10221,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Filesystem location in which to buffer files before compressing and moving to final destination. Use performant, stable storage.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -11345,7 +10386,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"key": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Label key. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
@@ -11353,14 +10394,14 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Label value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Custom labels to be added to every batch.`,
+						Description: `Custom labels to be added to every batch`,
 					},
 					"customer_id": schema.StringAttribute{
 						Computed:    true,
@@ -11385,21 +10426,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"extra_log_types": schema.ListNestedAttribute{
 						Computed: true,
@@ -11410,14 +10450,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"description": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Log type description`,
+									Computed: true,
+									Optional: true,
 								},
 								"log_type": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Log type. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 										stringvalidator.RegexMatches(regexp.MustCompile(`^[A-Z0-9_]+$`), "must match pattern "+regexp.MustCompile(`^[A-Z0-9_]+$`).String()),
@@ -11444,7 +10483,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -11497,7 +10536,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -11549,7 +10588,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -11562,7 +10601,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -11586,7 +10625,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -11642,7 +10681,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -11660,47 +10699,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Select or create a stored text secret`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -11750,7 +10748,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -11783,7 +10781,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -11926,7 +10924,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`manual`),
-						Description: `Google authentication method. Choose Auto to use Google Application Default Credentials. Default: "manual"; must be one of ["auto", "manual", "secret"]`,
+						Description: `Choose Auto to use Google Application Default Credentials (ADC), Manual to enter Google service account credentials directly, or Secret to select or create a stored secret that references Google service account credentials. Default: "manual"; must be one of ["auto", "manual", "secret"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"auto",
@@ -12047,7 +11045,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -12116,7 +11114,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -12129,7 +11127,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -12240,47 +11238,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `A JavaScript expression that evaluates to the ID of the cloud trace span associated with the current operation in which the log is being written as a string. See the [documentation](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) for details.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"status_expression": schema.StringAttribute{
 						Computed:    true,
@@ -12433,7 +11390,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"automatic_schema": schema.BoolAttribute{
 						Computed:    true,
@@ -12444,7 +11401,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"aws_api_key": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `HMAC access key. This value can be a constant or a JavaScript expression (e.g., ` + "`" + `${C.env.GCS_ACCESS_KEY}` + "`" + `).`,
+						Description: `HMAC access key. This value can be a constant or a JavaScript expression, such as ` + "`" + `${C.env.GCS_ACCESS_KEY}` + "`" + `.`,
 					},
 					"aws_authentication_method": schema.StringAttribute{
 						Computed:    true,
@@ -12467,7 +11424,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"aws_secret_key": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `HMAC secret. This value can be a constant or a JavaScript expression (e.g., ` + "`" + `${C.env.GCS_SECRET}` + "`" + `).`,
+						Description: `HMAC secret. This value can be a constant or a JavaScript expression, such as ` + "`" + `${C.env.GCS_SECRET}` + "`" + `.`,
 					},
 					"base_file_name": schema.StringAttribute{
 						Computed:    true,
@@ -12487,7 +11444,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`gzip`),
-						Description: `Choose data compression format to apply before moving files to final destination. Default: "gzip"; must be one of ["none", "gzip"]`,
+						Description: `Data compression format to apply to HTTP content before it is delivered. Default: "gzip"; must be one of ["none", "gzip"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -12512,7 +11469,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -12528,13 +11485,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(``),
-						Description: `Prefix to append to files before uploading. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `myKeyPrefix-${C.vars.myVar}` + "`" + `. Default: ""`,
+						Description: `Prefix to append to files before uploading. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. Example referencing a Global Variable: ` + "`" + `myKeyPrefix-${C.vars.myVar}` + "`" + `. Default: ""`,
 					},
 					"empty_dir_cleanup_sec": schema.Float64Attribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -12622,7 +11579,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging, e.g., "key":"OCSF Event Class", "value":"9001".`,
+						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging. Examples: "key":"OCSF Event Class", "value":"9001"`,
 					},
 					"max_file_idle_time_sec": schema.Float64Attribute{
 						Computed:    true,
@@ -12689,7 +11646,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -12701,7 +11658,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -12775,7 +11732,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Whether to reject certificates that cannot be verified against a valid CA (e.g., self-signed certificates). Default: true`,
+						Description: `Reject certificates that cannot be verified against a valid CA, such as self-signed certificates. Default: true`,
 					},
 					"remove_empty_dirs": schema.BoolAttribute{
 						Computed:    true,
@@ -12787,7 +11744,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Whether to reuse connections between requests, which can improve performance. Default: true`,
+						Description: `Reuse connections between requests, which can improve performance. Default: true`,
 					},
 					"should_log_invalid_rows": schema.BoolAttribute{
 						Computed:    true,
@@ -12807,48 +11764,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
-						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant and stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
 					},
 					"storage_class": schema.StringAttribute{
 						Computed:    true,
@@ -13006,17 +11922,19 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Description: `Optionally, enable this config only on a specified Git branch. If empty, will be enabled everywhere.`,
 					},
-					"flush_period_sec": schema.Float64Attribute{
+					"flush_period_sec": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time to wait before sending a batch (when batch size limit is not reached). Default: 1`,
+						Description: `Maximum time to wait before sending a batch (when batch size limit is not reached). Parsed as JSON.`,
+						Validators: []validator.String{
+							validators.IsValidJSON(),
+						},
 					},
 					"google_auth_method": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`manual`),
-						Description: `Google authentication method. Choose Auto to use Google Application Default Credentials. Default: "manual"; must be one of ["auto", "manual", "secret"]`,
+						Description: `Choose Auto to use Google Application Default Credentials (ADC), Manual to enter Google service account credentials directly, or Secret to select or create a stored secret that references Google service account credentials. Default: "manual"; must be one of ["auto", "manual", "secret"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"auto",
@@ -13061,7 +11979,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -13119,7 +12037,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -13132,7 +12050,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -13160,47 +12078,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Contents of service account credentials (JSON keys) file downloaded from Google Cloud. To upload a file, click the upload button at this field's upper right.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -13314,7 +12191,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(true),
-								Description: `Whether to compress the payload body before sending. Applies only to Loki's JSON payloads, as both Prometheus' and Loki's Protobuf variant are snappy-compressed by default. Default: true`,
+								Description: `Compress the payload body before sending. Applies only to JSON payloads; the Protobuf variant for both Prometheus and Loki are snappy-compressed by default. Default: true`,
 							},
 							"concurrency": schema.Float64Attribute{
 								Computed:    true,
@@ -13343,21 +12220,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									},
 									Attributes: map[string]schema.Attribute{
 										"name": schema.StringAttribute{
-											Computed:    true,
-											Optional:    true,
-											Description: `Field name`,
+											Computed: true,
+											Optional: true,
 										},
 										"value": schema.StringAttribute{
 											Computed:    true,
 											Optional:    true,
-											Description: `Field value. Not Null`,
+											Description: `Not Null`,
 											Validators: []validator.String{
 												speakeasy_stringvalidators.NotNull(),
 											},
 										},
 									},
 								},
-								Description: `Headers to add to all events.`,
+								Description: `Headers to add to all events`,
 							},
 							"failed_request_logging_mode": schema.StringAttribute{
 								Computed:    true,
@@ -13398,19 +12274,19 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 											Computed:    true,
 											Optional:    true,
 											Default:     stringdefault.StaticString(``),
-											Description: `Name of the label. Default: ""`,
+											Description: `Default: ""`,
 										},
 										"value": schema.StringAttribute{
 											Computed:    true,
 											Optional:    true,
-											Description: `Value of the label. Not Null`,
+											Description: `Not Null`,
 											Validators: []validator.String{
 												speakeasy_stringvalidators.NotNull(),
 											},
 										},
 									},
 								},
-								Description: `List of labels to send with logs. Labels define Loki streams, so use static labels to avoid proliferating label value combinations and streams. Can be merged and/or overridden by the event's __labels field (e.g.: '__labels: {host: "cribl.io", level: "error"}').`,
+								Description: `List of labels to send with logs. Labels define Loki streams, so use static labels to avoid proliferating label value combinations and streams. Can be merged and/or overridden by the event's __labels field. Example: '__labels: {host: "cribl.io", level: "error"}'`,
 							},
 							"loki_auth": schema.SingleNestedAttribute{
 								Computed: true,
@@ -13420,7 +12296,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     stringdefault.StaticString(`basic`),
-										Description: `The authentication method to use for the HTTP requests. Default: "basic"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
+										Description: `Default: "basic"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"none",
@@ -13439,7 +12315,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"password": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Password (a.k.a API key in Grafana Cloud domain) for authentication`,
+										Description: `Password (API key in Grafana Cloud domain) for authentication`,
 									},
 									"text_secret": schema.StringAttribute{
 										Computed:    true,
@@ -13449,7 +12325,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"token": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. E.g.: <your-username>:<your-api-key>.`,
+										Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. Example: <your-username>:<your-api-key>`,
 									},
 									"username": schema.StringAttribute{
 										Computed:    true,
@@ -13461,7 +12337,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"loki_url": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The endpoint to send logs to, e.g.: https://logs-prod-us-central1.grafana.net. Not Null`,
+								Description: `The endpoint to send logs to, such as https://logs-prod-us-central1.grafana.net. Not Null`,
 								Validators: []validator.String{
 									speakeasy_stringvalidators.NotNull(),
 									stringvalidator.RegexMatches(regexp.MustCompile(`^https?://`), "must match pattern "+regexp.MustCompile(`^https?://`).String()),
@@ -13491,7 +12367,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`protobuf`),
-								Description: `Which format to use when sending logs to Loki (Protobuf or JSON).  Defaults to Protobuf. Default: "protobuf"; must be one of ["protobuf", "json"]`,
+								Description: `Format to use when sending logs to Loki (Protobuf or JSON). Default: "protobuf"; must be one of ["protobuf", "json"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"protobuf",
@@ -13503,13 +12379,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`name.replace(/[^a-zA-Z0-9_]/g, '_')`),
-								Description: `A JS expression that can be used to rename metrics. E.g.: name.replace(/\./g, '_') will replace all '.' characters in a metric's name with the supported '_' character. Use the 'name' global variable to access the metric's name.  You can access event fields' values via __e.<fieldName>. Default: "name.replace(/[^a-zA-Z0-9_]/g, '_')"`,
+								Description: `JavaScript expression that can be used to rename metrics. For example, name.replace(/\./g, '_') will replace all '.' characters in a metric's name with the supported '_' character. Use the 'name' global variable to access the metric's name. You can access event fields' values via __e.<fieldName>. Default: "name.replace(/[^a-zA-Z0-9_]/g, '_')"`,
 							},
 							"on_backpressure": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`block`),
-								Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+								Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"block",
@@ -13561,7 +12437,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`error`),
-								Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+								Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"error",
@@ -13574,7 +12450,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`block`),
-								Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+								Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"block",
@@ -13596,7 +12472,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     stringdefault.StaticString(`basic`),
-										Description: `The authentication method to use for the HTTP requests. Default: "basic"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
+										Description: `Default: "basic"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"none",
@@ -13615,7 +12491,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"password": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Password (a.k.a API key in Grafana Cloud domain) for authentication`,
+										Description: `Password (API key in Grafana Cloud domain) for authentication`,
 									},
 									"text_secret": schema.StringAttribute{
 										Computed:    true,
@@ -13625,7 +12501,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"token": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. E.g.: <your-username>:<your-api-key>.`,
+										Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. Example: <your-username>:<your-api-key>`,
 									},
 									"username": schema.StringAttribute{
 										Computed:    true,
@@ -13637,7 +12513,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"prometheus_url": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The remote_write endpoint to send Prometheus metrics to, e.g.: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push`,
+								Description: `The remote_write endpoint to send Prometheus metrics to, such as https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push`,
 								Validators: []validator.String{
 									stringvalidator.RegexMatches(regexp.MustCompile(`^https?://`), "must match pattern "+regexp.MustCompile(`^https?://`).String()),
 								},
@@ -13647,7 +12523,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
 								MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-									`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+									`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 									`        that value will take precedence.` + "\n" +
 									`Default: true`,
 							},
@@ -13703,7 +12579,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										},
 									},
 								},
-								Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+								Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 							},
 							"safe_headers": schema.ListAttribute{
 								Computed:    true,
@@ -13711,47 +12587,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 								ElementType: types.StringType,
 								Description: `List of headers that are safe to log in plain text`,
-							},
-							"status": schema.SingleNestedAttribute{
-								Computed: true,
-								Optional: true,
-								Attributes: map[string]schema.Attribute{
-									"health": schema.StringAttribute{
-										Computed:    true,
-										Optional:    true,
-										Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-										Validators: []validator.String{
-											speakeasy_stringvalidators.NotNull(),
-											stringvalidator.OneOf(
-												"Green",
-												"Yellow",
-												"Red",
-											),
-										},
-									},
-									"metrics": schema.MapAttribute{
-										Computed:    true,
-										Optional:    true,
-										ElementType: types.StringType,
-										Description: `Not Null`,
-										Validators: []validator.Map{
-											speakeasy_mapvalidators.NotNull(),
-											mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-										},
-									},
-									"timestamp": schema.Float64Attribute{
-										Computed:    true,
-										Optional:    true,
-										Description: `Not Null`,
-										Validators: []validator.Float64{
-											speakeasy_float64validators.NotNull(),
-										},
-									},
-									"use_status_from_lb": schema.BoolAttribute{
-										Computed: true,
-										Optional: true,
-									},
-								},
 							},
 							"streamtags": schema.ListAttribute{
 								Computed:    true,
@@ -13801,7 +12636,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     booldefault.StaticBool(false),
-										Description: `Enable to retry on request timeout. Default: false`,
+										Description: `Default: false`,
 									},
 								},
 							},
@@ -13829,7 +12664,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+								Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 							},
 						},
 						Validators: []validator.Object{
@@ -13846,7 +12681,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(true),
-								Description: `Whether to compress the payload body before sending. Applies only to Loki's JSON payloads, as both Prometheus' and Loki's Protobuf variant are snappy-compressed by default. Default: true`,
+								Description: `Compress the payload body before sending. Applies only to JSON payloads; the Protobuf variant for both Prometheus and Loki are snappy-compressed by default. Default: true`,
 							},
 							"concurrency": schema.Float64Attribute{
 								Computed:    true,
@@ -13875,21 +12710,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									},
 									Attributes: map[string]schema.Attribute{
 										"name": schema.StringAttribute{
-											Computed:    true,
-											Optional:    true,
-											Description: `Field name`,
+											Computed: true,
+											Optional: true,
 										},
 										"value": schema.StringAttribute{
 											Computed:    true,
 											Optional:    true,
-											Description: `Field value. Not Null`,
+											Description: `Not Null`,
 											Validators: []validator.String{
 												speakeasy_stringvalidators.NotNull(),
 											},
 										},
 									},
 								},
-								Description: `Headers to add to all events.`,
+								Description: `Headers to add to all events`,
 							},
 							"failed_request_logging_mode": schema.StringAttribute{
 								Computed:    true,
@@ -13930,19 +12764,19 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 											Computed:    true,
 											Optional:    true,
 											Default:     stringdefault.StaticString(``),
-											Description: `Name of the label. Default: ""`,
+											Description: `Default: ""`,
 										},
 										"value": schema.StringAttribute{
 											Computed:    true,
 											Optional:    true,
-											Description: `Value of the label. Not Null`,
+											Description: `Not Null`,
 											Validators: []validator.String{
 												speakeasy_stringvalidators.NotNull(),
 											},
 										},
 									},
 								},
-								Description: `List of labels to send with logs. Labels define Loki streams, so use static labels to avoid proliferating label value combinations and streams. Can be merged and/or overridden by the event's __labels field (e.g.: '__labels: {host: "cribl.io", level: "error"}').`,
+								Description: `List of labels to send with logs. Labels define Loki streams, so use static labels to avoid proliferating label value combinations and streams. Can be merged and/or overridden by the event's __labels field. Example: '__labels: {host: "cribl.io", level: "error"}'`,
 							},
 							"loki_auth": schema.SingleNestedAttribute{
 								Computed: true,
@@ -13952,7 +12786,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     stringdefault.StaticString(`basic`),
-										Description: `The authentication method to use for the HTTP requests. Default: "basic"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
+										Description: `Default: "basic"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"none",
@@ -13971,7 +12805,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"password": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Password (a.k.a API key in Grafana Cloud domain) for authentication`,
+										Description: `Password (API key in Grafana Cloud domain) for authentication`,
 									},
 									"text_secret": schema.StringAttribute{
 										Computed:    true,
@@ -13981,7 +12815,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"token": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. E.g.: <your-username>:<your-api-key>.`,
+										Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. Example: <your-username>:<your-api-key>`,
 									},
 									"username": schema.StringAttribute{
 										Computed:    true,
@@ -13993,7 +12827,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"loki_url": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The endpoint to send logs to, e.g.: https://logs-prod-us-central1.grafana.net`,
+								Description: `The endpoint to send logs to, such as https://logs-prod-us-central1.grafana.net`,
 								Validators: []validator.String{
 									stringvalidator.RegexMatches(regexp.MustCompile(`^https?://`), "must match pattern "+regexp.MustCompile(`^https?://`).String()),
 								},
@@ -14022,7 +12856,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`protobuf`),
-								Description: `Which format to use when sending logs to Loki (Protobuf or JSON).  Defaults to Protobuf. Default: "protobuf"; must be one of ["protobuf", "json"]`,
+								Description: `Format to use when sending logs to Loki (Protobuf or JSON). Default: "protobuf"; must be one of ["protobuf", "json"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"protobuf",
@@ -14034,13 +12868,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`name.replace(/[^a-zA-Z0-9_]/g, '_')`),
-								Description: `A JS expression that can be used to rename metrics. E.g.: name.replace(/\./g, '_') will replace all '.' characters in a metric's name with the supported '_' character. Use the 'name' global variable to access the metric's name.  You can access event fields' values via __e.<fieldName>. Default: "name.replace(/[^a-zA-Z0-9_]/g, '_')"`,
+								Description: `JavaScript expression that can be used to rename metrics. For example, name.replace(/\./g, '_') will replace all '.' characters in a metric's name with the supported '_' character. Use the 'name' global variable to access the metric's name. You can access event fields' values via __e.<fieldName>. Default: "name.replace(/[^a-zA-Z0-9_]/g, '_')"`,
 							},
 							"on_backpressure": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`block`),
-								Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+								Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"block",
@@ -14092,7 +12926,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`error`),
-								Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+								Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"error",
@@ -14105,7 +12939,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`block`),
-								Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+								Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"block",
@@ -14127,7 +12961,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     stringdefault.StaticString(`basic`),
-										Description: `The authentication method to use for the HTTP requests. Default: "basic"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
+										Description: `Default: "basic"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"none",
@@ -14146,7 +12980,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"password": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Password (a.k.a API key in Grafana Cloud domain) for authentication`,
+										Description: `Password (API key in Grafana Cloud domain) for authentication`,
 									},
 									"text_secret": schema.StringAttribute{
 										Computed:    true,
@@ -14156,7 +12990,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"token": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. E.g.: <your-username>:<your-api-key>.`,
+										Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. Example: <your-username>:<your-api-key>`,
 									},
 									"username": schema.StringAttribute{
 										Computed:    true,
@@ -14168,7 +13002,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"prometheus_url": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The remote_write endpoint to send Prometheus metrics to, e.g.: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push. Not Null`,
+								Description: `The remote_write endpoint to send Prometheus metrics to, such as https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push. Not Null`,
 								Validators: []validator.String{
 									speakeasy_stringvalidators.NotNull(),
 									stringvalidator.RegexMatches(regexp.MustCompile(`^https?://`), "must match pattern "+regexp.MustCompile(`^https?://`).String()),
@@ -14179,7 +13013,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
 								MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-									`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+									`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 									`        that value will take precedence.` + "\n" +
 									`Default: true`,
 							},
@@ -14235,7 +13069,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										},
 									},
 								},
-								Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+								Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 							},
 							"safe_headers": schema.ListAttribute{
 								Computed:    true,
@@ -14243,47 +13077,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 								ElementType: types.StringType,
 								Description: `List of headers that are safe to log in plain text`,
-							},
-							"status": schema.SingleNestedAttribute{
-								Computed: true,
-								Optional: true,
-								Attributes: map[string]schema.Attribute{
-									"health": schema.StringAttribute{
-										Computed:    true,
-										Optional:    true,
-										Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-										Validators: []validator.String{
-											speakeasy_stringvalidators.NotNull(),
-											stringvalidator.OneOf(
-												"Green",
-												"Yellow",
-												"Red",
-											),
-										},
-									},
-									"metrics": schema.MapAttribute{
-										Computed:    true,
-										Optional:    true,
-										ElementType: types.StringType,
-										Description: `Not Null`,
-										Validators: []validator.Map{
-											speakeasy_mapvalidators.NotNull(),
-											mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-										},
-									},
-									"timestamp": schema.Float64Attribute{
-										Computed:    true,
-										Optional:    true,
-										Description: `Not Null`,
-										Validators: []validator.Float64{
-											speakeasy_float64validators.NotNull(),
-										},
-									},
-									"use_status_from_lb": schema.BoolAttribute{
-										Computed: true,
-										Optional: true,
-									},
-								},
 							},
 							"streamtags": schema.ListAttribute{
 								Computed:    true,
@@ -14333,7 +13126,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     booldefault.StaticBool(false),
-										Description: `Enable to retry on request timeout. Default: false`,
+										Description: `Default: false`,
 									},
 								},
 							},
@@ -14361,7 +13154,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+								Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 							},
 						},
 						Validators: []validator.Object{
@@ -14498,7 +13291,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -14559,7 +13352,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -14572,7 +13365,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -14596,47 +13389,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"udp",
 								"tcp",
 							),
-						},
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
 						},
 					},
 					"streamtags": schema.ListAttribute{
@@ -14800,21 +13552,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -14833,7 +13584,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -14859,7 +13610,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -14911,7 +13662,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -14924,7 +13675,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -14943,7 +13694,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -14999,7 +13750,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -15007,47 +13758,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -15107,7 +13817,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -15135,7 +13845,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -15254,21 +13964,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -15287,7 +13996,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"format": schema.StringAttribute{
 						Computed:    true,
@@ -15325,7 +14034,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -15377,7 +14086,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -15390,7 +14099,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -15409,7 +14118,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -15465,7 +14174,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -15473,47 +14182,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -15568,7 +14236,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -15600,7 +14268,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`https://cloud.us.humio.com/api/v1/ingest/hec`),
-						Description: `URL to a CrowdStrike Falcon LogScale endpoint to send events to, e.g., https://cloud.us.humio.com/api/v1/ingest/hec for JSON and https://cloud.us.humio.com/api/v1/ingest/hec/raw for raw. Default: "https://cloud.us.humio.com/api/v1/ingest/hec"`,
+						Description: `URL to a CrowdStrike Falcon LogScale endpoint to send events to. Examples: https://cloud.us.humio.com/api/v1/ingest/hec for JSON and https://cloud.us.humio.com/api/v1/ingest/hec/raw for raw. Default: "https://cloud.us.humio.com/api/v1/ingest/hec"`,
 						Validators: []validator.String{
 							stringvalidator.RegexMatches(regexp.MustCompile(`^https?://.*`), "must match pattern "+regexp.MustCompile(`^https?://.*`).String()),
 						},
@@ -15609,7 +14277,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: true`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: true`,
 					},
 				},
 				Validators: []validator.Object{
@@ -15759,21 +14427,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -15792,7 +14459,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -15882,7 +14549,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -15943,7 +14610,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -15956,7 +14623,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -15975,7 +14642,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -16031,7 +14698,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -16049,47 +14716,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Secret parameter name to pass in request body`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -16144,7 +14770,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -16214,7 +14840,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"use_v2_api": schema.BoolAttribute{
 						Computed:    true,
@@ -16432,7 +15058,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     booldefault.StaticBool(true),
-										Description: `Enable authentication. Default: true`,
+										Description: `Default: true`,
 									},
 								},
 								Description: `Credentials to use when authenticating with the schema registry using basic HTTP authentication`,
@@ -16460,7 +15086,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(true),
-								Description: `Enable Schema Registry. Default: true`,
+								Description: `Default: true`,
 							},
 							"max_retries": schema.Float64Attribute{
 								Computed:    true,
@@ -16503,7 +15129,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"certificate_name": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `The name of the predefined certificate.`,
+										Description: `The name of the predefined certificate`,
 									},
 									"disabled": schema.BoolAttribute{
 										Computed:    true,
@@ -16514,7 +15140,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"max_version": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+										Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"TLSv1",
@@ -16527,7 +15153,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"min_version": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+										Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"TLSv1",
@@ -16540,7 +15166,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Passphrase to use to decrypt private key.`,
+										Description: `Passphrase to use to decrypt private key`,
 									},
 									"priv_key_path": schema.StringAttribute{
 										Computed:    true,
@@ -16551,8 +15177,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed: true,
 										Optional: true,
 										Default:  booldefault.StaticBool(true),
-										MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-											`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+										MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+											`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 											`Default: true`,
 									},
 									"servername": schema.StringAttribute{
@@ -16595,7 +15221,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -16647,7 +15273,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -16660,7 +15286,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -16683,7 +15309,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(10000),
-						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backwards from the moment when credentials are set to expire. Default: 10000`,
+						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backward from the moment when credentials are set to expire. Default: 10000`,
 						Validators: []validator.Float64{
 							float64validator.Between(1000, 1800000),
 						},
@@ -16705,13 +15331,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(true),
-								Description: `Enable Authentication. Default: true`,
+								Description: `Default: true`,
 							},
 							"mechanism": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
 								Default:     stringdefault.StaticString(`plain`),
-								Description: `SASL authentication mechanism to use. Default: "plain"; must be one of ["plain", "scram-sha-256", "scram-sha-512", "kerberos"]`,
+								Description: `Default: "plain"; must be one of ["plain", "scram-sha-256", "scram-sha-512", "kerberos"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"plain",
@@ -16723,47 +15349,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 						},
 						Description: `Authentication parameters to use when connecting to brokers. Using TLS is highly recommended.`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -16795,7 +15380,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -16806,7 +15391,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -16819,7 +15404,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -16832,7 +15417,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -16843,8 +15428,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -17062,7 +15647,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -17114,7 +15699,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -17127,7 +15712,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -17168,47 +15753,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Description: `Signature version to use for signing Kinesis stream requests. Default: "v4"; must be one of ["v2", "v4"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf("v2", "v4"),
-						},
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
 						},
 					},
 					"stream_name": schema.StringAttribute{
@@ -17322,7 +15866,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`none`),
-						Description: `The authentication method to use for the HTTP requests. Default: "none"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
+						Description: `Default: "none"; must be one of ["none", "token", "textSecret", "basic", "credentialsSecret"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -17337,7 +15881,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Whether to compress the payload body before sending. Default: true`,
+						Description: `Compress the payload body before sending. Default: true`,
 					},
 					"concurrency": schema.Float64Attribute{
 						Computed:    true,
@@ -17371,21 +15915,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -17423,19 +15966,19 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									Computed:    true,
 									Optional:    true,
 									Default:     stringdefault.StaticString(``),
-									Description: `Name of the label. Default: ""`,
+									Description: `Default: ""`,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Value of the label. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `List of labels to send with logs. Labels define Loki streams, so use static labels to avoid proliferating label value combinations and streams. Can be merged and/or overridden by the event's __labels field (e.g.: '__labels: {host: "cribl.io", level: "error"}').`,
+						Description: `List of labels to send with logs. Labels define Loki streams, so use static labels to avoid proliferating label value combinations and streams. Can be merged and/or overridden by the event's __labels field. Example: '__labels: {host: "cribl.io", level: "error"}'`,
 					},
 					"max_payload_events": schema.Float64Attribute{
 						Computed:    true,
@@ -17461,7 +16004,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`protobuf`),
-						Description: `Which format to use when sending logs to Loki (Protobuf or JSON).  Defaults to Protobuf. Default: "protobuf"; must be one of ["protobuf", "json"]`,
+						Description: `Format to use when sending logs to Loki (Protobuf or JSON). Default: "protobuf"; must be one of ["protobuf", "json"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"protobuf",
@@ -17473,7 +16016,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -17485,7 +16028,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"password": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Password (a.k.a API key in Grafana Cloud domain) for authentication`,
+						Description: `Password (API key in Grafana Cloud domain) for authentication`,
 					},
 					"pipeline": schema.StringAttribute{
 						Computed:    true,
@@ -17530,7 +16073,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -17543,7 +16086,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -17562,7 +16105,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -17618,7 +16161,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -17626,47 +16169,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -17721,7 +16223,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -17737,7 +16239,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"token": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. E.g.: <your-username>:<your-api-key>.`,
+						Description: `Bearer token to include in the authorization header. In Grafana Cloud, this is generally built by concatenating the username and the API key, separated by a colon. Example: <your-username>:<your-api-key>`,
 					},
 					"total_memory_limit_kb": schema.Float64Attribute{
 						Computed:    true,
@@ -17766,7 +16268,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"username": schema.StringAttribute{
 						Computed:    true,
@@ -17849,7 +16351,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"automatic_schema": schema.BoolAttribute{
 						Computed:    true,
@@ -17883,7 +16385,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"aws_secret_key": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Secret key. This value can be a constant or a JavaScript expression(e.g., ` + "`" + `${C.env.SOME_SECRET}` + "`" + `).`,
+						Description: `Secret key. This value can be a constant or a JavaScript expression, such as ` + "`" + `${C.env.SOME_SECRET}` + "`" + `).`,
 					},
 					"base_file_name": schema.StringAttribute{
 						Computed:    true,
@@ -17894,7 +16396,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"bucket": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Name of the destination MinIO bucket. This value can be a constant or a JavaScript expression that can only be evaluated at init time. E.g. referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `. Not Null`,
+						Description: `Name of the destination MinIO bucket. This value can be a constant or a JavaScript expression that can only be evaluated at init time. Example referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `. Not Null`,
 						Validators: []validator.String{
 							speakeasy_stringvalidators.NotNull(),
 						},
@@ -17903,7 +16405,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`gzip`),
-						Description: `Choose data compression format to apply before moving files to final destination. Default: "gzip"; must be one of ["none", "gzip"]`,
+						Description: `Data compression format to apply to HTTP content before it is delivered. Default: "gzip"; must be one of ["none", "gzip"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -17928,7 +16430,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -17943,13 +16445,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"dest_path": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Root directory to prepend to path before uploading. Enter a constant, or a JS expression enclosed in quotes or backticks.`,
+						Description: `Root directory to prepend to path before uploading. Enter a constant, or a JavaScript expression enclosed in quotes or backticks.`,
 					},
 					"empty_dir_cleanup_sec": schema.Float64Attribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -18040,7 +16542,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging, e.g., "key":"OCSF Event Class", "value":"9001".`,
+						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging. Examples: "key":"OCSF Event Class", "value":"9001"`,
 					},
 					"max_concurrent_file_parts": schema.Float64Attribute{
 						Computed:    true,
@@ -18117,7 +16619,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -18129,7 +16631,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -18200,7 +16702,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Whether to reject certificates that cannot be verified against a valid CA (e.g., self-signed certificates). Default: true`,
+						Description: `Reject certificates that cannot be verified against a valid CA, such as self-signed certificates). Default: true`,
 					},
 					"remove_empty_dirs": schema.BoolAttribute{
 						Computed:    true,
@@ -18212,7 +16714,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Whether to reuse connections between requests, which can improve performance. Default: true`,
+						Description: `Reuse connections between requests, which can improve performance. Default: true`,
 					},
 					"server_side_encryption": schema.StringAttribute{
 						Computed:    true,
@@ -18241,47 +16743,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
 						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"storage_class": schema.StringAttribute{
 						Computed:    true,
@@ -18590,7 +17051,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed:    true,
 										Optional:    true,
 										Default:     booldefault.StaticBool(true),
-										Description: `Enable authentication. Default: true`,
+										Description: `Default: true`,
 									},
 								},
 								Description: `Credentials to use when authenticating with the schema registry using basic HTTP authentication`,
@@ -18618,7 +17079,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(true),
-								Description: `Enable Schema Registry. Default: true`,
+								Description: `Default: true`,
 							},
 							"max_retries": schema.Float64Attribute{
 								Computed:    true,
@@ -18661,7 +17122,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"certificate_name": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `The name of the predefined certificate.`,
+										Description: `The name of the predefined certificate`,
 									},
 									"disabled": schema.BoolAttribute{
 										Computed:    true,
@@ -18672,7 +17133,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"max_version": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+										Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"TLSv1",
@@ -18685,7 +17146,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"min_version": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+										Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												"TLSv1",
@@ -18698,7 +17159,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 									"passphrase": schema.StringAttribute{
 										Computed:    true,
 										Optional:    true,
-										Description: `Passphrase to use to decrypt private key.`,
+										Description: `Passphrase to use to decrypt private key`,
 									},
 									"priv_key_path": schema.StringAttribute{
 										Computed:    true,
@@ -18709,8 +17170,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 										Computed: true,
 										Optional: true,
 										Default:  booldefault.StaticBool(true),
-										MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-											`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+										MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+											`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 											`Default: true`,
 									},
 									"servername": schema.StringAttribute{
@@ -18753,7 +17214,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -18805,7 +17266,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -18818,7 +17279,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -18841,7 +17302,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(10000),
-						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backwards from the moment when credentials are set to expire. Default: 10000`,
+						Description: `Specifies a time window during which @{product} can reauthenticate if needed. Creates the window measuring backward from the moment when credentials are set to expire. Default: 10000`,
 						Validators: []validator.Float64{
 							float64validator.Between(1000, 1800000),
 						},
@@ -18884,47 +17345,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							stringvalidator.OneOf("v2", "v4"),
 						},
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						Optional:    true,
@@ -18955,7 +17375,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -18966,7 +17386,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -18979,7 +17399,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -18992,7 +17412,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -19003,8 +17423,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -19163,47 +17583,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Description: `Pipeline to process data before sending out to this output`,
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						Optional:    true,
@@ -19355,21 +17734,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -19388,7 +17766,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -19466,7 +17844,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -19518,7 +17896,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -19531,7 +17909,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -19563,7 +17941,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -19619,7 +17997,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -19627,47 +18005,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -19722,7 +18059,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -19753,7 +18090,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -19900,21 +18237,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -19933,7 +18269,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -19959,7 +18295,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -20011,7 +18347,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -20024,7 +18360,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -20056,7 +18392,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -20112,7 +18448,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -20120,47 +18456,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -20215,7 +18510,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -20242,7 +18537,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -20397,21 +18692,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -20430,7 +18724,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"http_compress": schema.StringAttribute{
 						Computed:    true,
@@ -20582,7 +18876,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -20650,7 +18944,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -20663,7 +18957,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -20694,7 +18988,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -20750,7 +19044,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -20768,47 +19062,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Secret parameter name to pass in request body`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -20863,7 +19116,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -20893,7 +19146,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -20904,7 +19157,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -20917,7 +19170,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -20930,7 +19183,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -20941,8 +19194,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 						},
@@ -20981,7 +19234,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"username": schema.StringAttribute{
 						Computed: true,
@@ -21113,21 +19366,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -21146,7 +19398,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -21180,13 +19432,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`name.replace(/[^a-zA-Z0-9_]/g, '_')`),
-						Description: `A JS expression that can be used to rename metrics. E.g.: name.replace(/\./g, '_') will replace all '.' characters in a metric's name with the supported '_' character. Use the 'name' global variable to access the metric's name.  You can access event fields' values via __e.<fieldName>. Default: "name.replace(/[^a-zA-Z0-9_]/g, '_')"`,
+						Description: `JavaScript expression that can be used to rename metrics. For example, name.replace(/\./g, '_') will replace all '.' characters in a metric's name with the supported '_' character. Use the 'name' global variable to access the metric's name. You can access event fields' values via __e.<fieldName>. Default: "name.replace(/[^a-zA-Z0-9_]/g, '_')"`,
 					},
 					"metrics_flush_period_sec": schema.Float64Attribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(60),
-						Description: `How frequently metrics metadata is sent out. Value cannot be smaller than the base Flush period (sec) set above. Default: 60`,
+						Description: `How frequently metrics metadata is sent out. Value cannot be smaller than the base Flush period set above. Default: 60`,
 					},
 					"oauth_headers": schema.ListNestedAttribute{
 						Computed: true,
@@ -21248,7 +19500,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -21304,7 +19556,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -21317,7 +19569,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -21336,7 +19588,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -21392,7 +19644,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -21415,48 +19667,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Whether to generate and send metadata (` + "`" + `type` + "`" + ` and ` + "`" + `metricFamilyName` + "`" + `) requests. Default: true`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Generate and send metadata (` + "`" + `type` + "`" + ` and ` + "`" + `metricFamilyName` + "`" + `) requests. Default: true`,
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -21511,7 +19722,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -21567,7 +19778,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"username": schema.StringAttribute{
 						Computed: true,
@@ -21713,7 +19924,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -21730,47 +19941,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Pipeline to process data before sending out to this output`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -21928,47 +20098,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							listvalidator.SizeAtLeast(1),
 						},
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						Optional:    true,
@@ -22067,7 +20196,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"assume_role_arn": schema.StringAttribute{
 						Computed:    true,
@@ -22115,7 +20244,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"aws_secret_key": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Secret key. This value can be a constant or a JavaScript expression(e.g., ` + "`" + `${C.env.SOME_SECRET}` + "`" + `).`,
+						Description: `Secret key. This value can be a constant or a JavaScript expression. Example: ` + "`" + `${C.env.SOME_SECRET}` + "`" + `)`,
 					},
 					"base_file_name": schema.StringAttribute{
 						Computed:    true,
@@ -22126,7 +20255,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"bucket": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Name of the destination S3 bucket. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `. Not Null`,
+						Description: `Name of the destination S3 bucket. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at initialization time. Example referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `. Not Null`,
 						Validators: []validator.String{
 							speakeasy_stringvalidators.NotNull(),
 						},
@@ -22135,7 +20264,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`gzip`),
-						Description: `Choose data compression format to apply before moving files to final destination. Default: "gzip"; must be one of ["none", "gzip"]`,
+						Description: `Data compression format to apply to HTTP content before it is delivered. Default: "gzip"; must be one of ["none", "gzip"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -22160,7 +20289,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -22176,7 +20305,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(``),
-						Description: `Prefix to append to files before uploading. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `myKeyPrefix-${C.vars.myVar}` + "`" + `. Default: ""`,
+						Description: `Prefix to append to files before uploading. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. Example referencing a Global Variable: ` + "`" + `myKeyPrefix-${C.vars.myVar}` + "`" + `. Default: ""`,
 					},
 					"duration_seconds": schema.Float64Attribute{
 						Computed:    true,
@@ -22191,7 +20320,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -22284,7 +20413,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging, e.g., "key":"OCSF Event Class", "value":"9001".`,
+						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging. Examples: "key":"OCSF Event Class", "value":"9001"`,
 					},
 					"kms_key_id": schema.StringAttribute{
 						Computed:    true,
@@ -22375,7 +20504,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -22387,7 +20516,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -22452,7 +20581,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"region": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Region where the S3 bucket is located.`,
+						Description: `Region where the S3 bucket is located`,
 					},
 					"reject_unauthorized": schema.BoolAttribute{
 						Computed:    true,
@@ -22475,7 +20604,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"server_side_encryption": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Server-side encryption for uploaded objects. must be one of ["AES256", "aws:kms"]`,
+						Description: `must be one of ["AES256", "aws:kms"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"AES256",
@@ -22501,48 +20630,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
-						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant and stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
 					},
 					"storage_class": schema.StringAttribute{
 						Computed:    true,
@@ -22681,7 +20769,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
-						Description: `Append output's ID to staging location. Default: true`,
+						Description: `Add the Output ID value to staging location. Default: true`,
 					},
 					"assume_role_arn": schema.StringAttribute{
 						Computed:    true,
@@ -22740,7 +20828,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"bucket": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Name of the destination S3 bucket. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `. Not Null`,
+						Description: `Name of the destination S3 bucket. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at initialization time. Example referencing a Global Variable: ` + "`" + `myBucket-${C.vars.myVar}` + "`" + `. Not Null`,
 						Validators: []validator.String{
 							speakeasy_stringvalidators.NotNull(),
 						},
@@ -22757,7 +20845,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `If a file fails to move to its final destination after the maximum number of retries, dead-letter it to prevent further errors. Default: false`,
+						Description: `If a file fails to move to its final destination after the maximum number of retries, move it to a designated directory to prevent further errors. Default: false`,
 					},
 					"deadletter_path": schema.StringAttribute{
 						Computed:    true,
@@ -22782,7 +20870,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(300),
-						Description: `How frequently, in seconds, to clean up empty directories when 'Remove empty staging dirs' is enabled. Default: 300`,
+						Description: `How frequently, in seconds, to clean up empty directories. Default: 300`,
 						Validators: []validator.Float64{
 							float64validator.Between(10, 86400),
 						},
@@ -22856,7 +20944,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging, e.g., "key":"OCSF Event Class", "value":"9001".`,
+						Description: `The metadata of files the Destination writes will include the properties you add here as key-value pairs. Useful for tagging. Examples: "key":"OCSF Event Class", "value":"9001"`,
 					},
 					"kms_key_id": schema.StringAttribute{
 						Computed:    true,
@@ -22947,7 +21035,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -22959,7 +21047,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when disk space is below the global 'Min free disk space' limit. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -23052,7 +21140,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"server_side_encryption": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Server-side encryption for uploaded objects. must be one of ["AES256", "aws:kms"]`,
+						Description: `must be one of ["AES256", "aws:kms"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"AES256",
@@ -23078,48 +21166,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/outputs/staging`),
-						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
+						Description: `Filesystem location in which to buffer files, before compressing and moving to final destination. Use performant and stable storage. Default: "$CRIBL_HOME/state/outputs/staging"`,
 					},
 					"storage_class": schema.StringAttribute{
 						Computed:    true,
@@ -23318,7 +21365,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"dce_endpoint": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Data collection endpoint (DCE) URL. In the format: ` + "`" + `https://<Endpoint-Name>-<Identifier>.<Region>.ingest.monitor.azure.com` + "`" + `.`,
+						Description: `Data collection endpoint (DCE) URL. In the format: ` + "`" + `https://<Endpoint-Name>-<Identifier>.<Region>.ingest.monitor.azure.com` + "`" + ``,
 						Validators: []validator.String{
 							stringvalidator.RegexMatches(regexp.MustCompile(`^https:\/\/\w+(-\w+)*-\w+\.\w+(-\w)?\.ingest\.monitor\.azure\.com(\/?)$`), "must match pattern "+regexp.MustCompile(`^https:\/\/\w+(-\w+)*-\w+\.\w+(-\w)?\.ingest\.monitor\.azure\.com(\/?)$`).String()),
 						},
@@ -23326,7 +21373,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"dcr_id": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Immutable ID for the Data collection rule (DCR).`,
+						Description: `Immutable ID for the Data Collection Rule (DCR)`,
 					},
 					"description": schema.StringAttribute{
 						Computed: true,
@@ -23336,7 +21383,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`url`),
-						Description: `Default: "url"; must be one of ["url", "ID"]`,
+						Description: `Enter the data collection endpoint URL or the individual ID. Default: "url"; must be one of ["url", "ID"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"url",
@@ -23358,21 +21405,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events. You can also add headers dynamically on a per-event basis in the __headers field, as explained [here](https://docs.cribl.io/stream/destinations-webhook/#internal-fields).`,
+						Description: `Headers to add to all events. You can also add headers dynamically on a per-event basis in the __headers field, as explained in [Cribl Docs](https://docs.cribl.io/stream/destinations-webhook/#internal-fields).`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -23391,7 +21437,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"format": schema.StringAttribute{
 						Computed:    true,
@@ -23455,7 +21501,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -23507,7 +21553,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -23520,7 +21566,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -23539,7 +21585,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -23595,7 +21641,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -23618,51 +21664,10 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							speakeasy_stringvalidators.NotNull(),
 						},
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
-					},
 					"stream_name": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `The name of the stream (Sentinel table) in which to store the events.`,
+						Description: `The name of the stream (Sentinel table) in which to store the events`,
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -23712,7 +21717,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -23750,7 +21755,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -23882,21 +21887,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -23915,7 +21919,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"http_compress": schema.StringAttribute{
 						Computed:    true,
@@ -24003,7 +22007,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -24064,7 +22068,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -24077,7 +22081,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -24108,7 +22112,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -24164,7 +22168,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -24172,47 +22176,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -24262,7 +22225,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -24292,7 +22255,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -24303,7 +22266,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -24316,7 +22279,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -24329,7 +22292,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -24340,8 +22303,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 						},
@@ -24368,7 +22331,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -24487,21 +22450,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -24520,7 +22482,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -24546,7 +22508,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -24598,7 +22560,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -24611,7 +22573,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -24636,7 +22598,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -24692,7 +22654,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -24700,47 +22662,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -24795,7 +22716,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -24826,7 +22747,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -24960,47 +22881,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Pipeline to process data before sending out to this output`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -25187,7 +23067,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -25239,7 +23119,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -25252,7 +23132,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -25292,47 +23172,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							stringvalidator.OneOf("v2", "v4"),
 						},
 					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
-					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
 						Optional:    true,
@@ -25349,7 +23188,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"topic_arn": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `The ARN of the SNS topic to send events to. When a non-AWS URL is specified, format must be: '{url}/myQueueName'. E.g., 'https://host:port/myQueueName'. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at init time. E.g., referencing a Global Variable: ` + "`" + `https://host:port/myQueue-${C.vars.myVar}` + "`" + `. Not Null`,
+						Description: `The ARN of the SNS topic to send events to. When a non-AWS URL is specified, format must be: '{url}/myQueueName'. E.g., 'https://host:port/myQueueName'. Must be a JavaScript expression (which can evaluate to a constant value), enclosed in quotes or backticks. Can be evaluated only at initialization time. Example referencing a Global Variable: ` + "`" + `https://host:port/myQueue-${C.vars.myVar}` + "`" + `. Not Null`,
 						Validators: []validator.String{
 							speakeasy_stringvalidators.NotNull(),
 						},
@@ -25542,7 +23381,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -25603,7 +23442,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -25616,7 +23455,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -25629,47 +23468,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Default:     stringdefault.StaticString(`$CRIBL_HOME/state/queues`),
 						Description: `The location for the persistent queue files. To this field's value, the system will append: /<worker-id>/<output-id>. Default: "$CRIBL_HOME/state/queues"`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -25715,7 +23513,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -25726,7 +23524,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -25739,7 +23537,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -25752,7 +23550,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -25763,8 +23561,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -25895,7 +23693,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(600),
-						Description: `Re-resolve any hostnames every this many seconds and pick up destinations from A records. Default: 600`,
+						Description: `The interval in which to re-resolve any hostnames and pick up destinations from A records. Default: 600`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(86400),
 						},
@@ -25926,21 +23724,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -25959,7 +23756,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -26009,7 +23806,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -26061,7 +23858,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -26074,7 +23871,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -26093,7 +23890,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -26149,7 +23946,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -26157,47 +23954,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -26258,7 +24014,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -26329,7 +24085,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -26448,7 +24204,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(600),
-						Description: `Re-resolve any hostnames every this many seconds and pick up destinations from A records. Default: 600`,
+						Description: `The interval in which to re-resolve any hostnames and pick up destinations from A records. Default: 600`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(86400),
 						},
@@ -26504,17 +24260,17 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"servername": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Servername to use if establishing a TLS connection. If not specified, defaults to connection host (iff not an IP); otherwise, to the global TLS settings.`,
+									Description: `Servername to use if establishing a TLS connection. If not specified, defaults to connection host (if not an IP); otherwise, uses the global TLS settings.`,
 								},
 								"tls": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
 									Default:     stringdefault.StaticString(`inherit`),
-									Description: `Whether to inherit TLS configs from group setting or disable TLS. Default: "inherit"; must be one of ["inherit", "false"]`,
+									Description: `Whether to inherit TLS configs from group setting or disable TLS. Default: "inherit"; must be one of ["inherit", "off"]`,
 									Validators: []validator.String{
 										stringvalidator.OneOf(
 											"inherit",
-											"false",
+											"off",
 										),
 									},
 								},
@@ -26649,7 +24405,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(0),
-						Description: `Maximum number of concurrent connections (per worker process). A random set of IPs will be picked on every DNS resolution period. Use 0 for unlimited. Default: 0`,
+						Description: `Maximum number of concurrent connections (per Worker Process). A random set of IPs will be picked on every DNS resolution period. Use 0 for unlimited. Default: 0`,
 					},
 					"max_failed_health_checks": schema.Float64Attribute{
 						Computed:    true,
@@ -26682,7 +24438,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -26734,7 +24490,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -26747,7 +24503,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -26768,47 +24524,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Description: `How long (in milliseconds) each LB endpoint can report blocked before the Destination reports unhealthy, blocking the sender. (Grace period for fluctuations.) Use 0 to disable; max 1 minute. Default: 100`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(60000),
-						},
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
 						},
 					},
 					"streamtags": schema.ListAttribute{
@@ -26855,7 +24570,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -26866,7 +24581,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -26879,7 +24594,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -26892,7 +24607,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -26903,8 +24618,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -27131,7 +24846,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -27183,7 +24898,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -27196,7 +24911,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -27254,47 +24969,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Description: `Signature version to use for signing SQS requests. Default: "v4"; must be one of ["v2", "v4"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf("v2", "v4"),
-						},
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
 						},
 					},
 					"streamtags": schema.ListAttribute{
@@ -27446,7 +25120,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -27507,7 +25181,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -27520,7 +25194,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -27544,47 +25218,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"udp",
 								"tcp",
 							),
-						},
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
 						},
 					},
 					"streamtags": schema.ListAttribute{
@@ -27751,7 +25384,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -27812,7 +25445,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -27825,7 +25458,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -27849,47 +25482,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"udp",
 								"tcp",
 							),
-						},
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
 						},
 					},
 					"streamtags": schema.ListAttribute{
@@ -28020,12 +25612,12 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"custom_category": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Optionally, override the source category configured on the Sumo Logic HTTP collector. This can also be overridden at the event level with the __sourceCategory field.`,
+						Description: `Override the source category configured on the Sumo Logic HTTP collector. This can also be overridden at the event level with the __sourceCategory field.`,
 					},
 					"custom_source": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `Optionally, override the source name configured on the Sumo Logic HTTP collector. This can also be overridden at the event level with the __sourceName field.`,
+						Description: `Override the source name configured on the Sumo Logic HTTP collector. This can also be overridden at the event level with the __sourceName field.`,
 					},
 					"description": schema.StringAttribute{
 						Computed: true,
@@ -28045,21 +25637,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -28078,13 +25669,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"format": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`json`),
-						Description: `Optionally, preserve the raw event format instead of json-ifying it. Default: "json"; must be one of ["json", "raw"]`,
+						Description: `Preserve the raw event format instead of JSONifying it. Default: "json"; must be one of ["json", "raw"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"json",
@@ -28116,7 +25707,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -28168,7 +25759,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -28181,7 +25772,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -28200,7 +25791,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -28256,7 +25847,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -28264,47 +25855,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -28354,7 +25904,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -28396,7 +25946,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -28572,13 +26122,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"octet_count_framing": schema.BoolAttribute{
 						Computed:    true,
 						Optional:    true,
-						Description: `When enabled, messages will be prefixed with the byte count of the message. Otherwise, no prefix will be set, and the message will be appended with a \n.`,
+						Description: `Prefix messages with the byte count of the message. If disabled, no prefix will be set, and the message will be appended with a \n.`,
 					},
 					"on_backpressure": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -28638,7 +26188,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -28651,7 +26201,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -28693,47 +26243,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								6,
 								7,
 							),
-						},
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
 						},
 					},
 					"streamtags": schema.ListAttribute{
@@ -28787,7 +26296,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -28798,7 +26307,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -28811,7 +26320,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -28824,7 +26333,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -28835,8 +26344,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -28986,7 +26495,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(600),
-						Description: `Re-resolve any hostnames every this many seconds and pick up destinations from A records. Default: 600`,
+						Description: `The interval in which to re-resolve any hostnames and pick up destinations from A records. Default: 600`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(86400),
 						},
@@ -29035,17 +26544,17 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								"servername": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Servername to use if establishing a TLS connection. If not specified, defaults to connection host (iff not an IP); otherwise, to the global TLS settings.`,
+									Description: `Servername to use if establishing a TLS connection. If not specified, defaults to connection host (if not an IP); otherwise, uses the global TLS settings.`,
 								},
 								"tls": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
 									Default:     stringdefault.StaticString(`inherit`),
-									Description: `Whether to inherit TLS configs from group setting or disable TLS. Default: "inherit"; must be one of ["inherit", "false"]`,
+									Description: `Whether to inherit TLS configs from group setting or disable TLS. Default: "inherit"; must be one of ["inherit", "off"]`,
 									Validators: []validator.String{
 										stringvalidator.OneOf(
 											"inherit",
-											"false",
+											"off",
 										),
 									},
 								},
@@ -29057,7 +26566,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Set of hosts to load-balance data to.`,
+						Description: `Set of hosts to load-balance data to`,
 						Validators: []validator.List{
 							listvalidator.SizeAtLeast(1),
 						},
@@ -29095,13 +26604,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(0),
-						Description: `Maximum number of concurrent connections (per worker process). A random set of IPs will be picked on every DNS resolution period. Use 0 for unlimited. Default: 0`,
+						Description: `Maximum number of concurrent connections (per Worker Process). A random set of IPs will be picked on every DNS resolution period. Use 0 for unlimited. Default: 0`,
 					},
 					"on_backpressure": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -29161,7 +26670,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -29174,7 +26683,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -29193,47 +26702,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
 						Description: `Upon connection, send a header-like record containing the auth token and other metadata.This record will not contain an actual event – only subsequent records will. Default: true`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -29279,7 +26747,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -29290,7 +26758,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -29303,7 +26771,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -29316,7 +26784,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -29327,8 +26795,8 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed: true,
 								Optional: true,
 								Default:  booldefault.StaticBool(true),
-								MarkdownDescription: `Reject certs that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
-									`                    trusted CA (e.g., the system's CA). Defaults to Yes. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
+								MarkdownDescription: `Reject certificates that are not authorized by a CA in the CA certificate path, or by another ` + "\n" +
+									`                    trusted CA (such as the system's). Defaults to Enabled. Overrides the toggle from Advanced Settings, when also present.` + "\n" +
 									`Default: true`,
 							},
 							"servername": schema.StringAttribute{
@@ -29485,21 +26953,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -29518,7 +26985,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -29544,7 +27011,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -29596,7 +27063,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -29609,7 +27076,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -29628,7 +27095,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -29684,7 +27151,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -29692,47 +27159,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -29787,7 +27213,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -29820,7 +27246,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{
@@ -29910,7 +27336,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`none`),
-						Description: `The authentication method to use for the HTTP request. Defaults to None. Default: "none"; must be one of ["none", "basic", "credentialsSecret", "token", "textSecret", "oauth"]`,
+						Description: `Authentication method to use for the HTTP request. Default: "none"; must be one of ["none", "basic", "credentialsSecret", "token", "textSecret", "oauth"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"none",
@@ -29980,7 +27406,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(600),
-						Description: `Re-resolve any hostnames every this many seconds and pick up destinations from A records. Default: 600`,
+						Description: `The interval in which to re-resolve any hostnames and pick up destinations from A records. Default: 600`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(86400),
 						},
@@ -30005,21 +27431,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events. You can also add headers dynamically on a per-event basis in the __headers field, as explained [here](https://docs.cribl.io/stream/destinations-webhook/#internal-fields).`,
+						Description: `Headers to add to all events. You can also add headers dynamically on a per-event basis in the __headers field, as explained in [Cribl Docs](https://docs.cribl.io/stream/destinations-webhook/#internal-fields).`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -30038,13 +27463,13 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"format": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`ndjson`),
-						Description: `Specifies how to format events before sending out. Defaults to NDJSON. Default: "ndjson"; must be one of ["ndjson", "json_array", "custom", "advanced"]`,
+						Description: `How to format events before sending out. Default: "ndjson"; must be one of ["ndjson", "json_array", "custom", "advanced"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"ndjson",
@@ -30120,7 +27545,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`POST`),
-						Description: `The method to use when sending events. Defaults to POST. Default: "POST"; must be one of ["POST", "PUT", "PATCH"]`,
+						Description: `The method to use when sending events. Default: "POST"; must be one of ["POST", "PUT", "PATCH"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"POST",
@@ -30189,7 +27614,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -30245,7 +27670,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -30258,7 +27683,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -30277,7 +27702,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -30333,7 +27758,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -30351,47 +27776,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `Secret parameter name to pass in request body`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -30446,7 +27830,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -30476,7 +27860,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"certificate_name": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `The name of the predefined certificate.`,
+								Description: `The name of the predefined certificate`,
 							},
 							"disabled": schema.BoolAttribute{
 								Computed:    true,
@@ -30487,7 +27871,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"max_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Maximum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -30500,7 +27884,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"min_version": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Minimum TLS version to use when connecting. must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
+								Description: `must be one of ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]`,
 								Validators: []validator.String{
 									stringvalidator.OneOf(
 										"TLSv1",
@@ -30513,7 +27897,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							"passphrase": schema.StringAttribute{
 								Computed:    true,
 								Optional:    true,
-								Description: `Passphrase to use to decrypt private key.`,
+								Description: `Passphrase to use to decrypt private key`,
 							},
 							"priv_key_path": schema.StringAttribute{
 								Computed:    true,
@@ -30601,7 +27985,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 					"username": schema.StringAttribute{
 						Computed: true,
@@ -30691,12 +28075,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							),
 						},
 					},
-					"compress": schema.BoolAttribute{
-						Computed:    true,
-						Optional:    true,
-						Default:     booldefault.StaticBool(true),
-						Description: `Compress the payload body before sending. Default: true`,
-					},
 					"concurrency": schema.Float64Attribute{
 						Computed:    true,
 						Optional:    true,
@@ -30714,7 +28092,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(600),
-						Description: `Re-resolve any hostnames every this many seconds and pick up destinations from A records. Default: 600`,
+						Description: `The interval in which to re-resolve any hostnames and pick up destinations from A records. Default: 600`,
 						Validators: []validator.Float64{
 							float64validator.AtMost(86400),
 						},
@@ -30739,21 +28117,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 							},
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Computed:    true,
-									Optional:    true,
-									Description: `Field name`,
+									Computed: true,
+									Optional: true,
 								},
 								"value": schema.StringAttribute{
 									Computed:    true,
 									Optional:    true,
-									Description: `Field value. Not Null`,
+									Description: `Not Null`,
 									Validators: []validator.String{
 										speakeasy_stringvalidators.NotNull(),
 									},
 								},
 							},
 						},
-						Description: `Headers to add to all events.`,
+						Description: `Headers to add to all events`,
 					},
 					"failed_request_logging_mode": schema.StringAttribute{
 						Computed:    true,
@@ -30772,7 +28149,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     float64default.StaticFloat64(1),
-						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Max body size. Default: 1`,
+						Description: `Maximum time between requests. Small values could cause the payload size to be smaller than the configured Body size limit. Default: 1`,
 					},
 					"id": schema.StringAttribute{
 						Computed:    true,
@@ -30803,11 +28180,20 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     float64default.StaticFloat64(0),
 						Description: `Maximum number of events to include in the request body. Default is 0 (unlimited). Default: 0`,
 					},
+					"max_payload_size_kb": schema.Float64Attribute{
+						Computed:    true,
+						Optional:    true,
+						Default:     float64default.StaticFloat64(10000),
+						Description: `Maximum size, in KB, of the request body. Default: 10000`,
+						Validators: []validator.Float64{
+							float64validator.Between(100, 10000),
+						},
+					},
 					"on_backpressure": schema.StringAttribute{
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block, drop, or queue events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
+						Description: `How to handle events when all receivers are exerting backpressure. Default: "block"; must be one of ["block", "drop", "queue"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -30859,7 +28245,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`error`),
-						Description: `In Error mode, PQ writes events to the filesystem only when it detects a non-retryable Destination error. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination or when there are non-retryable Destination errors. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
+						Description: `In Error mode, PQ writes events to the filesystem if the Destination is unavailable. In Backpressure mode, PQ writes events to the filesystem when it detects backpressure from the Destination. In Always On mode, PQ always writes events to the filesystem. Default: "error"; must be one of ["error", "backpressure", "always"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"error",
@@ -30872,7 +28258,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     stringdefault.StaticString(`block`),
-						Description: `Whether to block or drop events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
+						Description: `How to handle events when the queue is exerting backpressure (full capacity or low disk). 'Block' is the same behavior as non-PQ blocking. 'Drop new data' throws away incoming data, while leaving the contents of the PQ unchanged. Default: "block"; must be one of ["block", "drop"]`,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"block",
@@ -30891,7 +28277,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Optional: true,
 						Default:  booldefault.StaticBool(true),
 						MarkdownDescription: `Reject certificates not authorized by a CA in the CA certificate path or by another trusted CA (such as the system's). ` + "\n" +
-							`        Defaults to Yes. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
+							`        Enabled by default. When this setting is also present in TLS Settings (Client Side), ` + "\n" +
 							`        that value will take precedence.` + "\n" +
 							`Default: true`,
 					},
@@ -30947,7 +28333,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								},
 							},
 						},
-						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable).`,
+						Description: `Automatically retry after unsuccessful response status codes, such as 429 (Too Many Requests) or 503 (Service Unavailable)`,
 					},
 					"safe_headers": schema.ListAttribute{
 						Computed:    true,
@@ -30955,47 +28341,6 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
 						Description: `List of headers that are safe to log in plain text`,
-					},
-					"status": schema.SingleNestedAttribute{
-						Computed: true,
-						Optional: true,
-						Attributes: map[string]schema.Attribute{
-							"health": schema.StringAttribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null; must be one of ["Green", "Yellow", "Red"]`,
-								Validators: []validator.String{
-									speakeasy_stringvalidators.NotNull(),
-									stringvalidator.OneOf(
-										"Green",
-										"Yellow",
-										"Red",
-									),
-								},
-							},
-							"metrics": schema.MapAttribute{
-								Computed:    true,
-								Optional:    true,
-								ElementType: types.StringType,
-								Description: `Not Null`,
-								Validators: []validator.Map{
-									speakeasy_mapvalidators.NotNull(),
-									mapvalidator.ValueStringsAre(validators.IsValidJSON()),
-								},
-							},
-							"timestamp": schema.Float64Attribute{
-								Computed:    true,
-								Optional:    true,
-								Description: `Not Null`,
-								Validators: []validator.Float64{
-									speakeasy_float64validators.NotNull(),
-								},
-							},
-							"use_status_from_lb": schema.BoolAttribute{
-								Computed: true,
-								Optional: true,
-							},
-						},
 					},
 					"streamtags": schema.ListAttribute{
 						Computed:    true,
@@ -31059,7 +28404,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 								Computed:    true,
 								Optional:    true,
 								Default:     booldefault.StaticBool(false),
-								Description: `Enable to retry on request timeout. Default: false`,
+								Description: `Default: false`,
 							},
 						},
 					},
@@ -31076,6 +28421,11 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Description: `XSIAM authentication token`,
+					},
+					"total_memory_limit_kb": schema.Float64Attribute{
+						Computed:    true,
+						Optional:    true,
+						Description: `Maximum total size of the batches waiting to be sent. If left blank, defaults to 5 times the max body size (if set). If 0, no limit is enforced.`,
 					},
 					"type": schema.StringAttribute{
 						Computed:    true,
@@ -31128,7 +28478,7 @@ func (r *DestinationResource) Schema(ctx context.Context, req resource.SchemaReq
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
-						Description: `Enables round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
+						Description: `Enable round-robin DNS lookup. When a DNS server returns multiple addresses, @{product} will cycle through them in the order returned. For optimal performance, consider enabling this setting for non-load balanced destinations. Default: false`,
 					},
 				},
 				Validators: []validator.Object{

@@ -45,7 +45,8 @@ func (r *LookupFileDataSource) Schema(ctx context.Context, req datasource.Schema
 
 		Attributes: map[string]schema.Attribute{
 			"group_id": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"items": schema.ListNestedAttribute{
 				Computed: true,
@@ -69,8 +70,7 @@ func (r *LookupFileDataSource) Schema(ctx context.Context, req datasource.Schema
 									Computed: true,
 								},
 								"mode": schema.StringAttribute{
-									Computed:    true,
-									Description: `Operation mode for CSV-based lookups`,
+									Computed: true,
 								},
 								"pending_task": schema.SingleNestedAttribute{
 									Computed: true,
@@ -117,8 +117,7 @@ func (r *LookupFileDataSource) Schema(ctx context.Context, req datasource.Schema
 									Computed: true,
 								},
 								"mode": schema.StringAttribute{
-									Computed:    true,
-									Description: `Operation mode for CSV-based lookups`,
+									Computed: true,
 								},
 								"pending_task": schema.SingleNestedAttribute{
 									Computed: true,
