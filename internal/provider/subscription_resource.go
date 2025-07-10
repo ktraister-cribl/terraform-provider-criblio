@@ -8,6 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	tfTypes "github.com/speakeasy/terraform-provider-criblio/internal/provider/types"
@@ -30,9 +33,13 @@ type SubscriptionResource struct {
 
 // SubscriptionResourceModel describes the resource data model.
 type SubscriptionResourceModel struct {
-	GroupID types.String           `tfsdk:"group_id"`
-	ID      types.String           `tfsdk:"id"`
-	Items   []tfTypes.Subscription `tfsdk:"items"`
+	Description types.String           `queryParam:"style=form,explode=true,name=description" tfsdk:"description"`
+	Disabled    types.Bool             `queryParam:"style=form,explode=true,name=disabled" tfsdk:"disabled"`
+	Filter      types.String           `queryParam:"style=form,explode=true,name=filter" tfsdk:"filter"`
+	GroupID     types.String           `tfsdk:"group_id"`
+	ID          types.String           `tfsdk:"id"`
+	Items       []tfTypes.Subscription `tfsdk:"items"`
+	Pipeline    types.String           `queryParam:"style=form,explode=true,name=pipeline" tfsdk:"pipeline"`
 }
 
 func (r *SubscriptionResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -43,6 +50,27 @@ func (r *SubscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Subscription Resource",
 		Attributes: map[string]schema.Attribute{
+			"description": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Project description. Requires replacement if changed.`,
+			},
+			"disabled": schema.BoolAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Project Id. Requires replacement if changed.`,
+			},
+			"filter": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `filter. Requires replacement if changed.`,
+			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
 				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
@@ -96,6 +124,13 @@ func (r *SubscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 				},
+			},
+			"pipeline": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `pipeline to be used. Requires replacement if changed.`,
 			},
 		},
 	}

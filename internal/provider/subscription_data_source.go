@@ -29,8 +29,12 @@ type SubscriptionDataSource struct {
 
 // SubscriptionDataSourceModel describes the data model.
 type SubscriptionDataSourceModel struct {
-	GroupID types.String           `tfsdk:"group_id"`
-	Items   []tfTypes.Subscription `tfsdk:"items"`
+	Description types.String           `queryParam:"style=form,explode=true,name=description" tfsdk:"description"`
+	Disabled    types.Bool             `queryParam:"style=form,explode=true,name=disabled" tfsdk:"disabled"`
+	Filter      types.String           `queryParam:"style=form,explode=true,name=filter" tfsdk:"filter"`
+	GroupID     types.String           `tfsdk:"group_id"`
+	Items       []tfTypes.Subscription `tfsdk:"items"`
+	Pipeline    types.String           `queryParam:"style=form,explode=true,name=pipeline" tfsdk:"pipeline"`
 }
 
 // Metadata returns the data source type name.
@@ -44,6 +48,18 @@ func (r *SubscriptionDataSource) Schema(ctx context.Context, req datasource.Sche
 		MarkdownDescription: "Subscription DataSource",
 
 		Attributes: map[string]schema.Attribute{
+			"description": schema.StringAttribute{
+				Optional:    true,
+				Description: `Project description`,
+			},
+			"disabled": schema.BoolAttribute{
+				Optional:    true,
+				Description: `Project Id`,
+			},
+			"filter": schema.StringAttribute{
+				Optional:    true,
+				Description: `filter`,
+			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
 				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
@@ -93,6 +109,10 @@ func (r *SubscriptionDataSource) Schema(ctx context.Context, req datasource.Sche
 						},
 					},
 				},
+			},
+			"pipeline": schema.StringAttribute{
+				Optional:    true,
+				Description: `pipeline to be used`,
 			},
 		},
 	}
