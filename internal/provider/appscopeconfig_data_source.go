@@ -227,8 +227,9 @@ func (r *AppscopeConfigDataSource) Schema(ctx context.Context, req datasource.Sc
 															"field": schema.StringAttribute{
 																Computed: true,
 															},
-															"headers": schema.StringAttribute{
-																Computed: true,
+															"headers": schema.ListAttribute{
+																Computed:    true,
+																ElementType: types.StringType,
 															},
 															"name": schema.StringAttribute{
 																Computed: true,
@@ -357,9 +358,11 @@ func (r *AppscopeConfigDataSource) Schema(ctx context.Context, req datasource.Sc
 														},
 													},
 												},
-												"watch": schema.ListAttribute{
-													Computed:    true,
-													ElementType: types.StringType,
+												"watch": schema.ListNestedAttribute{
+													Computed: true,
+													NestedObject: schema.NestedAttributeObject{
+														Attributes: map[string]schema.Attribute{},
+													},
 												},
 											},
 										},
@@ -496,8 +499,9 @@ func (r *AppscopeConfigDataSource) Schema(ctx context.Context, req datasource.Sc
 										"field": schema.StringAttribute{
 											Computed: true,
 										},
-										"headers": schema.StringAttribute{
-											Computed: true,
+										"headers": schema.ListAttribute{
+											Computed:    true,
+											ElementType: types.StringType,
 										},
 										"name": schema.StringAttribute{
 											Computed: true,
@@ -626,9 +630,11 @@ func (r *AppscopeConfigDataSource) Schema(ctx context.Context, req datasource.Sc
 									},
 								},
 							},
-							"watch": schema.ListAttribute{
-								Computed:    true,
-								ElementType: types.StringType,
+							"watch": schema.ListNestedAttribute{
+								Computed: true,
+								NestedObject: schema.NestedAttributeObject{
+									Attributes: map[string]schema.Attribute{},
+								},
 							},
 						},
 					},
