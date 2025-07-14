@@ -28,11 +28,10 @@ type SchemaDataSource struct {
 
 // SchemaDataSourceModel describes the data model.
 type SchemaDataSourceModel struct {
-	AdditionalProperties types.String `tfsdk:"additional_properties"`
-	Description          types.String `tfsdk:"description"`
-	GroupID              types.String `tfsdk:"group_id"`
-	ID                   types.String `tfsdk:"id"`
-	Schema               types.String `tfsdk:"schema"`
+	Description types.String `tfsdk:"description"`
+	GroupID     types.String `tfsdk:"group_id"`
+	ID          types.String `tfsdk:"id"`
+	Schema      types.String `tfsdk:"schema"`
 }
 
 // Metadata returns the data source type name.
@@ -46,10 +45,6 @@ func (r *SchemaDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 		MarkdownDescription: "Schema DataSource",
 
 		Attributes: map[string]schema.Attribute{
-			"additional_properties": schema.StringAttribute{
-				Computed:    true,
-				Description: `Parsed as JSON.`,
-			},
 			"description": schema.StringAttribute{
 				Computed: true,
 			},
