@@ -47,11 +47,13 @@ Read-Only:
 - `inherits` (String)
 - `is_fleet` (Boolean)
 - `is_search` (Boolean)
+- `lookup_deployments` (Attributes List) (see [below for nested schema](#nestedatt--items--lookup_deployments))
 - `name` (String)
 - `on_prem` (Boolean)
 - `provisioned` (Boolean)
 - `streamtags` (List of String)
 - `tags` (String)
+- `type` (String) must be "lake_access"
 - `upgrade_version` (String)
 - `worker_count` (Number)
 - `worker_remote_access` (Boolean)
@@ -85,3 +87,22 @@ Read-Only:
 - `hash` (String)
 - `message` (String)
 - `short` (String)
+
+
+
+<a id="nestedatt--items--lookup_deployments"></a>
+### Nested Schema for `items.lookup_deployments`
+
+Read-Only:
+
+- `context` (String)
+- `lookups` (Attributes List) (see [below for nested schema](#nestedatt--items--lookup_deployments--lookups))
+
+<a id="nestedatt--items--lookup_deployments--lookups"></a>
+### Nested Schema for `items.lookup_deployments.lookups`
+
+Read-Only:
+
+- `deployed_version` (String)
+- `file` (String)
+- `version` (String)

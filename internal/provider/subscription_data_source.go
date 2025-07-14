@@ -28,12 +28,12 @@ type SubscriptionDataSource struct {
 
 // SubscriptionDataSourceModel describes the data model.
 type SubscriptionDataSourceModel struct {
-	Description types.String `tfsdk:"description"`
-	Disabled    types.Bool   `tfsdk:"disabled"`
-	Filter      types.String `tfsdk:"filter"`
+	Description types.String `queryParam:"style=form,explode=true,name=description" tfsdk:"description"`
+	Disabled    types.Bool   `queryParam:"style=form,explode=true,name=disabled" tfsdk:"disabled"`
+	Filter      types.String `queryParam:"style=form,explode=true,name=filter" tfsdk:"filter"`
 	GroupID     types.String `tfsdk:"group_id"`
 	ID          types.String `tfsdk:"id"`
-	Pipeline    types.String `tfsdk:"pipeline"`
+	Pipeline    types.String `queryParam:"style=form,explode=true,name=pipeline" tfsdk:"pipeline"`
 }
 
 // Metadata returns the data source type name.
@@ -48,23 +48,31 @@ func (r *SubscriptionDataSource) Schema(ctx context.Context, req datasource.Sche
 
 		Attributes: map[string]schema.Attribute{
 			"description": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Optional:    true,
+				Description: `Project description`,
 			},
 			"disabled": schema.BoolAttribute{
-				Computed: true,
+				Computed:    true,
+				Optional:    true,
+				Description: `Project enabled`,
 			},
 			"filter": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Optional:    true,
+				Description: `filter`,
 			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group ID to GET`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
 			"pipeline": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Optional:    true,
+				Description: `pipeline to be used`,
 			},
 		},
 	}

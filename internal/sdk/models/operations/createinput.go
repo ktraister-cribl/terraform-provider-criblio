@@ -8,7 +8,7 @@ import (
 )
 
 type CreateInputRequest struct {
-	// Group Id
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
 	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// New Input object
 	Input shared.Input `request:"mediaType=application/json"`
@@ -30,14 +30,6 @@ func (o *CreateInputRequest) GetInput() shared.Input {
 
 // CreateInputResponseBody - a list of Input objects
 type CreateInputResponseBody struct {
-	Items []shared.Input `json:"items,omitempty"`
-}
-
-func (o *CreateInputResponseBody) GetItems() []shared.Input {
-	if o == nil {
-		return nil
-	}
-	return o.Items
 }
 
 type CreateInputResponse struct {

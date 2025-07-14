@@ -7,65 +7,14 @@ import (
 	"net/http"
 )
 
-// CreatePacksRequestBody - CrudEntityBase object
-type CreatePacksRequestBody struct {
-	DisplayName *string `json:"displayName,omitempty"`
-	ID          string  `json:"id"`
-	Description *string `json:"description,omitempty"`
-	Version     *string `json:"version,omitempty"`
-	Source      *string `json:"source,omitempty"`
-	Disabled    *bool   `json:"disabled,omitempty"`
-}
-
-func (o *CreatePacksRequestBody) GetDisplayName() *string {
-	if o == nil {
-		return nil
-	}
-	return o.DisplayName
-}
-
-func (o *CreatePacksRequestBody) GetID() string {
-	if o == nil {
-		return ""
-	}
-	return o.ID
-}
-
-func (o *CreatePacksRequestBody) GetDescription() *string {
-	if o == nil {
-		return nil
-	}
-	return o.Description
-}
-
-func (o *CreatePacksRequestBody) GetVersion() *string {
-	if o == nil {
-		return nil
-	}
-	return o.Version
-}
-
-func (o *CreatePacksRequestBody) GetSource() *string {
-	if o == nil {
-		return nil
-	}
-	return o.Source
-}
-
-func (o *CreatePacksRequestBody) GetDisabled() *bool {
-	if o == nil {
-		return nil
-	}
-	return o.Disabled
-}
-
 type CreatePacksRequest struct {
-	// Group Id
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
 	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// the file to upload
 	Filename *string `queryParam:"style=form,explode=true,name=filename"`
-	// CrudEntityBase object
-	RequestBody CreatePacksRequestBody `request:"mediaType=application/json"`
+	Disabled *bool   `queryParam:"style=form,explode=true,name=disabled"`
+	// PackRequestBody object
+	PackRequestBody shared.PackRequestBody `request:"mediaType=application/json"`
 }
 
 func (o *CreatePacksRequest) GetGroupID() string {
@@ -82,11 +31,18 @@ func (o *CreatePacksRequest) GetFilename() *string {
 	return o.Filename
 }
 
-func (o *CreatePacksRequest) GetRequestBody() CreatePacksRequestBody {
+func (o *CreatePacksRequest) GetDisabled() *bool {
 	if o == nil {
-		return CreatePacksRequestBody{}
+		return nil
 	}
-	return o.RequestBody
+	return o.Disabled
+}
+
+func (o *CreatePacksRequest) GetPackRequestBody() shared.PackRequestBody {
+	if o == nil {
+		return shared.PackRequestBody{}
+	}
+	return o.PackRequestBody
 }
 
 // CreatePacksResponseBody - a list of PackInstallInfo objects

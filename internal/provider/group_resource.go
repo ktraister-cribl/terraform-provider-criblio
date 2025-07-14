@@ -18,14 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	speakeasy_boolplanmodifier "github.com/speakeasy/terraform-provider-criblio/internal/planmodifiers/boolplanmodifier"
-	speakeasy_float64planmodifier "github.com/speakeasy/terraform-provider-criblio/internal/planmodifiers/float64planmodifier"
-	speakeasy_listplanmodifier "github.com/speakeasy/terraform-provider-criblio/internal/planmodifiers/listplanmodifier"
-	speakeasy_objectplanmodifier "github.com/speakeasy/terraform-provider-criblio/internal/planmodifiers/objectplanmodifier"
-	speakeasy_stringplanmodifier "github.com/speakeasy/terraform-provider-criblio/internal/planmodifiers/stringplanmodifier"
 	tfTypes "github.com/speakeasy/terraform-provider-criblio/internal/provider/types"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk"
-	speakeasy_stringvalidators "github.com/speakeasy/terraform-provider-criblio/internal/validators/stringvalidators"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -44,16 +38,29 @@ type GroupResource struct {
 
 // GroupResourceModel describes the resource data model.
 type GroupResourceModel struct {
-	Cloud               *tfTypes.Cloud `tfsdk:"cloud"`
-	EstimatedIngestRate types.Float64  `tfsdk:"estimated_ingest_rate"`
-	ID                  types.String   `tfsdk:"id"`
-	IsFleet             types.Bool     `tfsdk:"is_fleet"`
-	Name                types.String   `tfsdk:"name"`
-	OnPrem              types.Bool     `tfsdk:"on_prem"`
-	Product             types.String   `tfsdk:"product"`
-	Provisioned         types.Bool     `tfsdk:"provisioned"`
-	Streamtags          []types.String `tfsdk:"streamtags"`
-	WorkerRemoteAccess  types.Bool     `tfsdk:"worker_remote_access"`
+	Cloud                   *tfTypes.ConfigGroupCloud    `tfsdk:"cloud"`
+	ConfigVersion           types.String                 `tfsdk:"config_version"`
+	DeployingWorkerCount    types.Float64                `tfsdk:"deploying_worker_count"`
+	Description             types.String                 `tfsdk:"description"`
+	EstimatedIngestRate     types.Float64                `tfsdk:"estimated_ingest_rate"`
+	Git                     *tfTypes.ConfigGroupGit      `tfsdk:"git"`
+	ID                      types.String                 `tfsdk:"id"`
+	IncompatibleWorkerCount types.Float64                `tfsdk:"incompatible_worker_count"`
+	Inherits                types.String                 `tfsdk:"inherits"`
+	IsFleet                 types.Bool                   `tfsdk:"is_fleet"`
+	IsSearch                types.Bool                   `tfsdk:"is_search"`
+	Items                   []tfTypes.Group              `tfsdk:"items"`
+	LookupDeployments       []tfTypes.ConfigGroupLookups `tfsdk:"lookup_deployments"`
+	Name                    types.String                 `tfsdk:"name"`
+	OnPrem                  types.Bool                   `tfsdk:"on_prem"`
+	Product                 types.String                 `tfsdk:"product"`
+	Provisioned             types.Bool                   `tfsdk:"provisioned"`
+	Streamtags              []types.String               `tfsdk:"streamtags"`
+	Tags                    types.String                 `tfsdk:"tags"`
+	Type                    types.String                 `tfsdk:"type"`
+	UpgradeVersion          types.String                 `tfsdk:"upgrade_version"`
+	WorkerCount             types.Float64                `tfsdk:"worker_count"`
+	WorkerRemoteAccess      types.Bool                   `tfsdk:"worker_remote_access"`
 }
 
 func (r *GroupResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -65,23 +72,18 @@ func (r *GroupResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 		MarkdownDescription: "Group Resource",
 		Attributes: map[string]schema.Attribute{
 			"cloud": schema.SingleNestedAttribute{
-				Computed: true,
 				Optional: true,
 				PlanModifiers: []planmodifier.Object{
 					objectplanmodifier.RequiresReplaceIfConfigured(),
-					speakeasy_objectplanmodifier.SuppressDiff(speakeasy_objectplanmodifier.ExplicitSuppress),
 				},
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
-						Computed: true,
 						Optional: true,
 						PlanModifiers: []planmodifier.String{
 							stringplanmodifier.RequiresReplaceIfConfigured(),
-							speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
 						},
-						Description: `Not Null; must be one of ["aws", "azure"]; Requires replacement if changed.`,
+						Description: `must be one of ["aws", "azure"]; Requires replacement if changed.`,
 						Validators: []validator.String{
-							speakeasy_stringvalidators.NotNull(),
 							stringvalidator.OneOf(
 								"aws",
 								"azure",
@@ -89,26 +91,119 @@ func (r *GroupResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 						},
 					},
 					"region": schema.StringAttribute{
-						Computed: true,
-						Optional: true,
+						Required: true,
 						PlanModifiers: []planmodifier.String{
 							stringplanmodifier.RequiresReplaceIfConfigured(),
-							speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
 						},
-						Description: `Not Null; Requires replacement if changed.`,
-						Validators: []validator.String{
-							speakeasy_stringvalidators.NotNull(),
-						},
+						Description: `Requires replacement if changed.`,
 					},
 				},
 				Description: `Requires replacement if changed.`,
 			},
-			"estimated_ingest_rate": schema.Float64Attribute{
-				Computed: true,
+			"config_version": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"deploying_worker_count": schema.Float64Attribute{
 				Optional: true,
 				PlanModifiers: []planmodifier.Float64{
 					float64planmodifier.RequiresReplaceIfConfigured(),
-					speakeasy_float64planmodifier.SuppressDiff(speakeasy_float64planmodifier.ExplicitSuppress),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"description": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"estimated_ingest_rate": schema.Float64Attribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.Float64{
+					float64planmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"git": schema.SingleNestedAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Attributes: map[string]schema.Attribute{
+					"commit": schema.StringAttribute{
+						Optional: true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						},
+						Description: `Requires replacement if changed.`,
+					},
+					"local_changes": schema.Float64Attribute{
+						Optional: true,
+						PlanModifiers: []planmodifier.Float64{
+							float64planmodifier.RequiresReplaceIfConfigured(),
+						},
+						Description: `Requires replacement if changed.`,
+					},
+					"log": schema.ListNestedAttribute{
+						Optional: true,
+						PlanModifiers: []planmodifier.List{
+							listplanmodifier.RequiresReplaceIfConfigured(),
+						},
+						NestedObject: schema.NestedAttributeObject{
+							PlanModifiers: []planmodifier.Object{
+								objectplanmodifier.RequiresReplaceIfConfigured(),
+							},
+							Attributes: map[string]schema.Attribute{
+								"author_email": schema.StringAttribute{
+									Optional: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplaceIfConfigured(),
+									},
+									Description: `Requires replacement if changed.`,
+								},
+								"author_name": schema.StringAttribute{
+									Optional: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplaceIfConfigured(),
+									},
+									Description: `Requires replacement if changed.`,
+								},
+								"date": schema.StringAttribute{
+									Required: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplaceIfConfigured(),
+									},
+									Description: `Requires replacement if changed.`,
+								},
+								"hash": schema.StringAttribute{
+									Required: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplaceIfConfigured(),
+									},
+									Description: `Requires replacement if changed.`,
+								},
+								"message": schema.StringAttribute{
+									Required: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplaceIfConfigured(),
+									},
+									Description: `Requires replacement if changed.`,
+								},
+								"short": schema.StringAttribute{
+									Required: true,
+									PlanModifiers: []planmodifier.String{
+										stringplanmodifier.RequiresReplaceIfConfigured(),
+									},
+									Description: `Requires replacement if changed.`,
+								},
+							},
+						},
+						Description: `Requires replacement if changed.`,
+					},
 				},
 				Description: `Requires replacement if changed.`,
 			},
@@ -116,30 +211,152 @@ func (r *GroupResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Required:    true,
 				Description: `Group id`,
 			},
-			"is_fleet": schema.BoolAttribute{
-				Computed: true,
+			"incompatible_worker_count": schema.Float64Attribute{
 				Optional: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplaceIfConfigured(),
-					speakeasy_boolplanmodifier.SuppressDiff(speakeasy_boolplanmodifier.ExplicitSuppress),
+				PlanModifiers: []planmodifier.Float64{
+					float64planmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: `Must be true if product is 'edge'. Requires replacement if changed.`,
+				Description: `Requires replacement if changed.`,
 			},
-			"name": schema.StringAttribute{
-				Computed: true,
+			"inherits": schema.StringAttribute{
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
-					speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"is_fleet": schema.BoolAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"is_search": schema.BoolAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"items": schema.ListNestedAttribute{
+				Computed: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"cloud": schema.SingleNestedAttribute{
+							Computed: true,
+							Attributes: map[string]schema.Attribute{
+								"provider": schema.StringAttribute{
+									Computed:    true,
+									Description: `must be one of ["aws", "azure"]`,
+									Validators: []validator.String{
+										stringvalidator.OneOf(
+											"aws",
+											"azure",
+										),
+									},
+								},
+								"region": schema.StringAttribute{
+									Computed: true,
+								},
+							},
+						},
+						"estimated_ingest_rate": schema.Float64Attribute{
+							Computed: true,
+						},
+						"id": schema.StringAttribute{
+							Computed: true,
+						},
+						"is_fleet": schema.BoolAttribute{
+							Computed:    true,
+							Description: `Must be true if product is 'edge'`,
+						},
+						"name": schema.StringAttribute{
+							Computed: true,
+						},
+						"on_prem": schema.BoolAttribute{
+							Computed: true,
+						},
+						"provisioned": schema.BoolAttribute{
+							Computed: true,
+						},
+						"streamtags": schema.ListAttribute{
+							Computed:    true,
+							ElementType: types.StringType,
+						},
+						"worker_remote_access": schema.BoolAttribute{
+							Computed: true,
+						},
+					},
+				},
+			},
+			"lookup_deployments": schema.ListNestedAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				NestedObject: schema.NestedAttributeObject{
+					PlanModifiers: []planmodifier.Object{
+						objectplanmodifier.RequiresReplaceIfConfigured(),
+					},
+					Attributes: map[string]schema.Attribute{
+						"context": schema.StringAttribute{
+							Required: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplaceIfConfigured(),
+							},
+							Description: `Requires replacement if changed.`,
+						},
+						"lookups": schema.ListNestedAttribute{
+							Required: true,
+							PlanModifiers: []planmodifier.List{
+								listplanmodifier.RequiresReplaceIfConfigured(),
+							},
+							NestedObject: schema.NestedAttributeObject{
+								PlanModifiers: []planmodifier.Object{
+									objectplanmodifier.RequiresReplaceIfConfigured(),
+								},
+								Attributes: map[string]schema.Attribute{
+									"deployed_version": schema.StringAttribute{
+										Optional: true,
+										PlanModifiers: []planmodifier.String{
+											stringplanmodifier.RequiresReplaceIfConfigured(),
+										},
+										Description: `Requires replacement if changed.`,
+									},
+									"file": schema.StringAttribute{
+										Required: true,
+										PlanModifiers: []planmodifier.String{
+											stringplanmodifier.RequiresReplaceIfConfigured(),
+										},
+										Description: `Requires replacement if changed.`,
+									},
+									"version": schema.StringAttribute{
+										Optional: true,
+										PlanModifiers: []planmodifier.String{
+											stringplanmodifier.RequiresReplaceIfConfigured(),
+										},
+										Description: `Requires replacement if changed.`,
+									},
+								},
+							},
+							Description: `Requires replacement if changed.`,
+						},
+					},
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"name": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 				Description: `Requires replacement if changed.`,
 			},
 			"on_prem": schema.BoolAttribute{
-				Computed: true,
 				Optional: true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplaceIfConfigured(),
-					speakeasy_boolplanmodifier.SuppressDiff(speakeasy_boolplanmodifier.ExplicitSuppress),
 				},
 				Description: `Requires replacement if changed.`,
 			},
@@ -157,29 +374,57 @@ func (r *GroupResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"provisioned": schema.BoolAttribute{
-				Required: true,
+				Optional: true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplaceIfConfigured(),
-					speakeasy_boolplanmodifier.SuppressDiff(speakeasy_boolplanmodifier.ExplicitSuppress),
 				},
 				Description: `Requires replacement if changed.`,
 			},
 			"streamtags": schema.ListAttribute{
-				Computed: true,
 				Optional: true,
 				PlanModifiers: []planmodifier.List{
 					listplanmodifier.RequiresReplaceIfConfigured(),
-					speakeasy_listplanmodifier.SuppressDiff(speakeasy_listplanmodifier.ExplicitSuppress),
 				},
 				ElementType: types.StringType,
 				Description: `Requires replacement if changed.`,
 			},
+			"tags": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"type": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `must be "lake_access"; Requires replacement if changed.`,
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						"lake_access",
+					),
+				},
+			},
+			"upgrade_version": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
+			"worker_count": schema.Float64Attribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.Float64{
+					float64planmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Requires replacement if changed.`,
+			},
 			"worker_remote_access": schema.BoolAttribute{
-				Computed: true,
 				Optional: true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplaceIfConfigured(),
-					speakeasy_boolplanmodifier.SuppressDiff(speakeasy_boolplanmodifier.ExplicitSuppress),
 				},
 				Description: `Requires replacement if changed.`,
 			},
@@ -247,11 +492,11 @@ func (r *GroupResource) Create(ctx context.Context, req resource.CreateRequest, 
 		resp.Diagnostics.AddError(fmt.Sprintf("unexpected response from API. Got an unexpected response code %v", res.StatusCode), debugResponse(res.RawResponse))
 		return
 	}
-	if !(res.Object != nil && res.Object.Items != nil && len(res.Object.Items) > 0) {
+	if !(res.Object != nil) {
 		resp.Diagnostics.AddError("unexpected response from API. Got an unexpected response body", debugResponse(res.RawResponse))
 		return
 	}
-	resp.Diagnostics.Append(data.RefreshFromSharedGroup(ctx, &res.Object.Items[0])...)
+	resp.Diagnostics.Append(data.RefreshFromOperationsCreateProductsGroupsByProductResponseBody(ctx, res.Object)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -284,11 +529,11 @@ func (r *GroupResource) Create(ctx context.Context, req resource.CreateRequest, 
 		resp.Diagnostics.AddError(fmt.Sprintf("unexpected response from API. Got an unexpected response code %v", res1.StatusCode), debugResponse(res1.RawResponse))
 		return
 	}
-	if !(res1.Object != nil && res1.Object.Items != nil && len(res1.Object.Items) > 0) {
+	if !(res1.Object != nil) {
 		resp.Diagnostics.AddError("unexpected response from API. Got an unexpected response body", debugResponse(res1.RawResponse))
 		return
 	}
-	resp.Diagnostics.Append(data.RefreshFromSharedGroup(ctx, &res1.Object.Items[0])...)
+	resp.Diagnostics.Append(data.RefreshFromOperationsGetGroupsByIDResponseBody(ctx, res1.Object)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -348,11 +593,11 @@ func (r *GroupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		resp.Diagnostics.AddError(fmt.Sprintf("unexpected response from API. Got an unexpected response code %v", res.StatusCode), debugResponse(res.RawResponse))
 		return
 	}
-	if !(res.Object != nil && res.Object.Items != nil && len(res.Object.Items) > 0) {
+	if !(res.Object != nil) {
 		resp.Diagnostics.AddError("unexpected response from API. Got an unexpected response body", debugResponse(res.RawResponse))
 		return
 	}
-	resp.Diagnostics.Append(data.RefreshFromSharedGroup(ctx, &res.Object.Items[0])...)
+	resp.Diagnostics.Append(data.RefreshFromOperationsGetGroupsByIDResponseBody(ctx, res.Object)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -398,11 +643,11 @@ func (r *GroupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		resp.Diagnostics.AddError(fmt.Sprintf("unexpected response from API. Got an unexpected response code %v", res.StatusCode), debugResponse(res.RawResponse))
 		return
 	}
-	if !(res.Object != nil && res.Object.Items != nil && len(res.Object.Items) > 0) {
+	if !(res.Object != nil) {
 		resp.Diagnostics.AddError("unexpected response from API. Got an unexpected response body", debugResponse(res.RawResponse))
 		return
 	}
-	resp.Diagnostics.Append(data.RefreshFromSharedGroup(ctx, &res.Object.Items[0])...)
+	resp.Diagnostics.Append(data.RefreshFromOperationsUpdateGroupsByIDResponseBody(ctx, res.Object)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -436,29 +681,7 @@ func (r *GroupResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	request, requestDiags := data.ToOperationsDeleteGroupsByIDRequest(ctx)
-	resp.Diagnostics.Append(requestDiags...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	res, err := r.client.Groups.DeleteGroupsByID(ctx, *request)
-	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
-		if res != nil && res.RawResponse != nil {
-			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
-		}
-		return
-	}
-	if res == nil {
-		resp.Diagnostics.AddError("unexpected response from API", fmt.Sprintf("%v", res))
-		return
-	}
-	if res.StatusCode != 200 {
-		resp.Diagnostics.AddError(fmt.Sprintf("unexpected response from API. Got an unexpected response code %v", res.StatusCode), debugResponse(res.RawResponse))
-		return
-	}
-
+	// Not Implemented; entity does not have a configured DELETE operation
 }
 
 func (r *GroupResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

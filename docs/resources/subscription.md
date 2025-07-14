@@ -28,15 +28,15 @@ resource "criblio_subscription" "my_subscription" {
 
 ### Required
 
-- `group_id` (String) Group ID to PATCH
-- `id` (String) Subscription ID
-- `pipeline` (String) Requires replacement if changed.
+- `group_id` (String) The consumer group to which this instance belongs. Defaults to 'Cribl'.
+- `id` (String) pipeline to be used
+- `pipeline` (String) pipeline to be used. Requires replacement if changed.
 
 ### Optional
 
-- `description` (String) Requires replacement if changed.
-- `disabled` (Boolean) Requires replacement if changed.
-- `filter` (String) Requires replacement if changed.
+- `description` (String) Project description. Requires replacement if changed.
+- `disabled` (Boolean) Project Id. Requires replacement if changed.
+- `filter` (String) filter. Requires replacement if changed.
 
 ## Import
 

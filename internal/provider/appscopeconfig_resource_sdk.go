@@ -1129,11 +1129,11 @@ func (r *AppscopeConfigResourceModel) ToOperationsCreateAppscopeLibEntryRequest(
 func (r *AppscopeConfigResourceModel) ToOperationsUpdateAppscopeLibEntryByIDRequest(ctx context.Context) (*operations.UpdateAppscopeLibEntryByIDRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var groupID string
-	groupID = r.GroupID.ValueString()
-
 	var id string
 	id = r.ID.ValueString()
+
+	var groupID string
+	groupID = r.GroupID.ValueString()
 
 	appscopeLibEntry, appscopeLibEntryDiags := r.ToSharedAppscopeLibEntry(ctx)
 	diags.Append(appscopeLibEntryDiags...)
@@ -1143,8 +1143,8 @@ func (r *AppscopeConfigResourceModel) ToOperationsUpdateAppscopeLibEntryByIDRequ
 	}
 
 	out := operations.UpdateAppscopeLibEntryByIDRequest{
-		GroupID:          groupID,
 		ID:               id,
+		GroupID:          groupID,
 		AppscopeLibEntry: *appscopeLibEntry,
 	}
 
@@ -1167,15 +1167,15 @@ func (r *AppscopeConfigResourceModel) ToOperationsListAppscopeLibEntryRequest(ct
 func (r *AppscopeConfigResourceModel) ToOperationsDeleteAppscopeLibEntryByIDRequest(ctx context.Context) (*operations.DeleteAppscopeLibEntryByIDRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var groupID string
-	groupID = r.GroupID.ValueString()
-
 	var id string
 	id = r.ID.ValueString()
 
+	var groupID string
+	groupID = r.GroupID.ValueString()
+
 	out := operations.DeleteAppscopeLibEntryByIDRequest{
-		GroupID: groupID,
 		ID:      id,
+		GroupID: groupID,
 	}
 
 	return &out, diags

@@ -14,7 +14,9 @@ Pack DataSource
 
 ```terraform
 data "criblio_pack" "my_pack" {
+  disabled = true
   group_id = "...my_group_id..."
+  with     = "...my_with..."
 }
 ```
 
@@ -23,7 +25,12 @@ data "criblio_pack" "my_pack" {
 
 ### Required
 
-- `group_id` (String) Group Id
+- `group_id` (String) The consumer group to which this instance belongs. Defaults to 'Cribl'.
+
+### Optional
+
+- `disabled` (Boolean)
+- `with` (String) Comma separated list of entities, "outputs", "inputs"
 
 ### Read-Only
 
@@ -39,8 +46,10 @@ Read-Only:
 - `display_name` (String)
 - `exports` (List of String)
 - `id` (String)
+- `inputs` (Number)
 - `is_disabled` (Boolean)
 - `min_log_stream_version` (String)
+- `outputs` (Number)
 - `settings` (Map of String)
 - `source` (String)
 - `spec` (String)

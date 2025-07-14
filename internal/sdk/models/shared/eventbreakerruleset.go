@@ -168,7 +168,7 @@ func (o *Field) GetValue() string {
 
 type EventBreakerRulesetRule struct {
 	Name string `json:"name"`
-	// The JavaScript filter expression used to match the data to apply the rule to
+	// JavaScript expression applied to the beginning of a file or object, to determine whether the rule applies to all contained events.
 	Condition *string           `default:"true" json:"condition"`
 	Type      *EventBreakerType `default:"regex" json:"type"`
 	// The regex to match before attempting timestamp extraction. Use $ (end-of-string anchor) to prevent extraction.

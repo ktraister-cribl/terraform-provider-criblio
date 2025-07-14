@@ -44,7 +44,7 @@ func (r *EventBreakerRulesetDataSource) Schema(ctx context.Context, req datasour
 		Attributes: map[string]schema.Attribute{
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group ID to GET`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 		},
 	}

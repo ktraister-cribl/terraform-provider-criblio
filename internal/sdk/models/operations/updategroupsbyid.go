@@ -10,8 +10,6 @@ import (
 type UpdateGroupsByIDRequest struct {
 	// Group id
 	ID string `pathParam:"style=simple,explode=false,name=id"`
-	// fields to add to results: git.commit, git.localChanges, git.log
-	Fields *string `queryParam:"style=form,explode=true,name=fields"`
 }
 
 func (o *UpdateGroupsByIDRequest) GetID() string {
@@ -19,13 +17,6 @@ func (o *UpdateGroupsByIDRequest) GetID() string {
 		return ""
 	}
 	return o.ID
-}
-
-func (o *UpdateGroupsByIDRequest) GetFields() *string {
-	if o == nil {
-		return nil
-	}
-	return o.Fields
 }
 
 // UpdateGroupsByIDResponseBody - a list of ConfigGroup objects
@@ -49,8 +40,6 @@ type UpdateGroupsByIDResponse struct {
 	RawResponse *http.Response
 	// a list of ConfigGroup objects
 	Object *UpdateGroupsByIDResponseBody
-	// Unexpected error
-	Error *shared.Error
 }
 
 func (o *UpdateGroupsByIDResponse) GetContentType() string {
@@ -79,11 +68,4 @@ func (o *UpdateGroupsByIDResponse) GetObject() *UpdateGroupsByIDResponseBody {
 		return nil
 	}
 	return o.Object
-}
-
-func (o *UpdateGroupsByIDResponse) GetError() *shared.Error {
-	if o == nil {
-		return nil
-	}
-	return o.Error
 }

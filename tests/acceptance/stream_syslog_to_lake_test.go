@@ -13,8 +13,7 @@ func TestStreamSyslogToLake(t *testing.T) {
 			PreventPostDestroyRefresh: true,
 			Steps: []resource.TestStep{
 				{
-					Config:             s3Config,
-					ExpectNonEmptyPlan: true,
+					Config: s3Config,
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("criblio_group.syslog_worker_group", "id", "syslog-workers"),
 						resource.TestCheckResourceAttr("criblio_group.syslog_worker_group", "name", "syslog-workers"),
@@ -31,6 +30,13 @@ func TestStreamSyslogToLake(t *testing.T) {
 }
 
 var s3Config = `
+
+provider "criblio" {
+  server_url = "https://app.cribl-playground.cloud"
+  organization_id = "beautiful-nguyen-y8y4azd"
+  workspace_id = "tfprovider"
+  version = "999.99.9"
+}
 
 # Worker Group Configuration
 resource "criblio_group" "syslog_worker_group" {
@@ -206,12 +212,5 @@ output "pack_details" {
   value = {
     id = criblio_pack.syslog_pack.id
   }
-}
-
-provider "criblio" {
-  server_url = "https://app.cribl-playground.cloud"
-  organization_id = "beautiful-nguyen-y8y4azd"
-  workspace_id = "tfprovider"
-  version = "999.99.9"
 }
 `

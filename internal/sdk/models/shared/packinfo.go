@@ -43,10 +43,12 @@ type PackInfo struct {
 	DisplayName         *string        `json:"displayName,omitempty"`
 	Exports             []string       `json:"exports,omitempty"`
 	ID                  string         `json:"id"`
+	Inputs              *float64       `json:"inputs,omitempty"`
 	IsDisabled          *bool          `json:"isDisabled,omitempty"`
 	MinLogStreamVersion *string        `json:"minLogStreamVersion,omitempty"`
+	Outputs             *float64       `json:"outputs,omitempty"`
 	Settings            map[string]any `json:"settings,omitempty"`
-	Source              string         `json:"source"`
+	Source              *string        `json:"source,omitempty"`
 	Spec                *string        `json:"spec,omitempty"`
 	Tags                *PackInfoTags  `json:"tags,omitempty"`
 	Version             *string        `json:"version,omitempty"`
@@ -87,6 +89,13 @@ func (o *PackInfo) GetID() string {
 	return o.ID
 }
 
+func (o *PackInfo) GetInputs() *float64 {
+	if o == nil {
+		return nil
+	}
+	return o.Inputs
+}
+
 func (o *PackInfo) GetIsDisabled() *bool {
 	if o == nil {
 		return nil
@@ -101,6 +110,13 @@ func (o *PackInfo) GetMinLogStreamVersion() *string {
 	return o.MinLogStreamVersion
 }
 
+func (o *PackInfo) GetOutputs() *float64 {
+	if o == nil {
+		return nil
+	}
+	return o.Outputs
+}
+
 func (o *PackInfo) GetSettings() map[string]any {
 	if o == nil {
 		return nil
@@ -108,9 +124,9 @@ func (o *PackInfo) GetSettings() map[string]any {
 	return o.Settings
 }
 
-func (o *PackInfo) GetSource() string {
+func (o *PackInfo) GetSource() *string {
 	if o == nil {
-		return ""
+		return nil
 	}
 	return o.Source
 }

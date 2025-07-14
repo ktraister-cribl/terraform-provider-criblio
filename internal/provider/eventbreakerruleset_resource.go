@@ -18,8 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	tfTypes "github.com/speakeasy/terraform-provider-criblio/internal/provider/types"
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk"
-	speakeasy_objectvalidators "github.com/speakeasy/terraform-provider-criblio/internal/validators/objectvalidators"
-	speakeasy_stringvalidators "github.com/speakeasy/terraform-provider-criblio/internal/validators/stringvalidators"
 	"regexp"
 )
 
@@ -57,12 +55,11 @@ func (r *EventBreakerRulesetResource) Schema(ctx context.Context, req resource.S
 		MarkdownDescription: "EventBreakerRuleset Resource",
 		Attributes: map[string]schema.Attribute{
 			"description": schema.StringAttribute{
-				Computed: true,
 				Optional: true,
 			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group ID to CREATE`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
 				Required:    true,
@@ -93,18 +90,14 @@ func (r *EventBreakerRulesetResource) Schema(ctx context.Context, req resource.S
 				},
 			},
 			"rules": schema.ListNestedAttribute{
-				Computed: true,
 				Optional: true,
 				NestedObject: schema.NestedAttributeObject{
-					Validators: []validator.Object{
-						speakeasy_objectvalidators.NotNull(),
-					},
 					Attributes: map[string]schema.Attribute{
 						"condition": schema.StringAttribute{
 							Computed:    true,
 							Optional:    true,
 							Default:     stringdefault.StaticString(`true`),
-							Description: `The JavaScript filter expression used to match the data to apply the rule to. Default: "true"`,
+							Description: `JavaScript expression applied to the beginning of a file or object, to determine whether the rule applies to all contained events. Default: "true"`,
 						},
 						"disabled": schema.BoolAttribute{
 							Computed:    true,
@@ -119,24 +112,15 @@ func (r *EventBreakerRulesetResource) Schema(ctx context.Context, req resource.S
 							Description: `The regex to match before attempting event breaker extraction. Use $ (end-of-string anchor) to prevent extraction. Default: "/[\\\\n\\\\r]+(?!\\\\s)/"`,
 						},
 						"fields": schema.ListNestedAttribute{
-							Computed: true,
 							Optional: true,
 							NestedObject: schema.NestedAttributeObject{
-								Validators: []validator.Object{
-									speakeasy_objectvalidators.NotNull(),
-								},
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Computed: true,
 										Optional: true,
 									},
 									"value": schema.StringAttribute{
-										Computed:    true,
-										Optional:    true,
-										Description: `The JavaScript expression used to compute the field's value (can be constant). Not Null`,
-										Validators: []validator.String{
-											speakeasy_stringvalidators.NotNull(),
-										},
+										Required:    true,
+										Description: `The JavaScript expression used to compute the field's value (can be constant)`,
 									},
 								},
 							},
@@ -152,12 +136,7 @@ func (r *EventBreakerRulesetResource) Schema(ctx context.Context, req resource.S
 							},
 						},
 						"name": schema.StringAttribute{
-							Computed:    true,
-							Optional:    true,
-							Description: `Not Null`,
-							Validators: []validator.String{
-								speakeasy_stringvalidators.NotNull(),
-							},
+							Required: true,
 						},
 						"parser_enabled": schema.BoolAttribute{
 							Computed:    true,
@@ -172,11 +151,9 @@ func (r *EventBreakerRulesetResource) Schema(ctx context.Context, req resource.S
 							Description: `Enable to set an internal field on events indicating that the field in the data called _raw should be used. This can be useful for post processors that want to use that field for event._raw, instead of replacing it with the actual raw event. Default: false`,
 						},
 						"timestamp": schema.SingleNestedAttribute{
-							Computed: true,
-							Optional: true,
+							Required: true,
 							Attributes: map[string]schema.Attribute{
 								"format": schema.StringAttribute{
-									Computed: true,
 									Optional: true,
 								},
 								"length": schema.Float64Attribute{
@@ -202,10 +179,7 @@ func (r *EventBreakerRulesetResource) Schema(ctx context.Context, req resource.S
 									},
 								},
 							},
-							Description: `Auto, manual format (strptime), or current time. Not Null`,
-							Validators: []validator.Object{
-								speakeasy_objectvalidators.NotNull(),
-							},
+							Description: `Auto, manual format (strptime), or current time`,
 						},
 						"timestamp_anchor_regex": schema.StringAttribute{
 							Computed:    true,
@@ -254,7 +228,6 @@ func (r *EventBreakerRulesetResource) Schema(ctx context.Context, req resource.S
 				Description: `A list of rules that will be applied, in order, to the input data stream`,
 			},
 			"tags": schema.StringAttribute{
-				Computed: true,
 				Optional: true,
 			},
 		},
@@ -321,11 +294,11 @@ func (r *EventBreakerRulesetResource) Create(ctx context.Context, req resource.C
 		resp.Diagnostics.AddError(fmt.Sprintf("unexpected response from API. Got an unexpected response code %v", res.StatusCode), debugResponse(res.RawResponse))
 		return
 	}
-	if !(res.Object != nil && res.Object.Items != nil && len(res.Object.Items) > 0) {
+	if !(res.Object != nil) {
 		resp.Diagnostics.AddError("unexpected response from API. Got an unexpected response body", debugResponse(res.RawResponse))
 		return
 	}
-	resp.Diagnostics.Append(data.RefreshFromSharedEventBreakerRuleset(ctx, &res.Object.Items[0])...)
+	resp.Diagnostics.Append(data.RefreshFromOperationsCreateEventBreakerRulesetResponseBody(ctx, res.Object)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -472,11 +445,11 @@ func (r *EventBreakerRulesetResource) Update(ctx context.Context, req resource.U
 		resp.Diagnostics.AddError(fmt.Sprintf("unexpected response from API. Got an unexpected response code %v", res.StatusCode), debugResponse(res.RawResponse))
 		return
 	}
-	if !(res.Object != nil && res.Object.Items != nil && len(res.Object.Items) > 0) {
+	if !(res.Object != nil) {
 		resp.Diagnostics.AddError("unexpected response from API. Got an unexpected response body", debugResponse(res.RawResponse))
 		return
 	}
-	resp.Diagnostics.Append(data.RefreshFromSharedEventBreakerRuleset(ctx, &res.Object.Items[0])...)
+	resp.Diagnostics.Append(data.RefreshFromOperationsUpdateEventBreakerRulesetByIDResponseBody(ctx, res.Object)...)
 
 	if resp.Diagnostics.HasError() {
 		return

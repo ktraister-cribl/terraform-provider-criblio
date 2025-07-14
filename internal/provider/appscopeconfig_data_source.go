@@ -693,7 +693,8 @@ func (r *AppscopeConfigDataSource) Schema(ctx context.Context, req datasource.Sc
 				Computed: true,
 			},
 			"group_id": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
 				Computed: true,

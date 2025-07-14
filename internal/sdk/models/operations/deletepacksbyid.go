@@ -10,8 +10,9 @@ import (
 type DeletePacksByIDRequest struct {
 	// Pack name
 	ID string `pathParam:"style=simple,explode=false,name=id"`
-	// Group Id
-	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
+	GroupID  string `pathParam:"style=simple,explode=false,name=groupId"`
+	Disabled *bool  `queryParam:"style=form,explode=true,name=disabled"`
 }
 
 func (o *DeletePacksByIDRequest) GetID() string {
@@ -28,18 +29,16 @@ func (o *DeletePacksByIDRequest) GetGroupID() string {
 	return o.GroupID
 }
 
-// DeletePacksByIDResponseBody - a list of PackInstallInfo objects
-type DeletePacksByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                   `json:"count,omitempty"`
-	Items []shared.PackInstallInfo `json:"items,omitempty"`
-}
-
-func (o *DeletePacksByIDResponseBody) GetCount() *int64 {
+func (o *DeletePacksByIDRequest) GetDisabled() *bool {
 	if o == nil {
 		return nil
 	}
-	return o.Count
+	return o.Disabled
+}
+
+// DeletePacksByIDResponseBody - a list of PackInstallInfo objects
+type DeletePacksByIDResponseBody struct {
+	Items []shared.PackInstallInfo `json:"items,omitempty"`
 }
 
 func (o *DeletePacksByIDResponseBody) GetItems() []shared.PackInstallInfo {

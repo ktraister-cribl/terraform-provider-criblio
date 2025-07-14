@@ -54,6 +54,30 @@ func (r *SubscriptionResourceModel) ToOperationsCreateSubscriptionRequest(ctx co
 	var groupID string
 	groupID = r.GroupID.ValueString()
 
+	disabled := new(bool)
+	if !r.Disabled.IsUnknown() && !r.Disabled.IsNull() {
+		*disabled = r.Disabled.ValueBool()
+	} else {
+		disabled = nil
+	}
+	description := new(string)
+	if !r.Description.IsUnknown() && !r.Description.IsNull() {
+		*description = r.Description.ValueString()
+	} else {
+		description = nil
+	}
+	filter := new(string)
+	if !r.Filter.IsUnknown() && !r.Filter.IsNull() {
+		*filter = r.Filter.ValueString()
+	} else {
+		filter = nil
+	}
+	var pipeline string
+	pipeline = r.Pipeline.ValueString()
+
+	var id string
+	id = r.ID.ValueString()
+
 	subscription, subscriptionDiags := r.ToSharedSubscription(ctx)
 	diags.Append(subscriptionDiags...)
 
@@ -63,7 +87,12 @@ func (r *SubscriptionResourceModel) ToOperationsCreateSubscriptionRequest(ctx co
 
 	out := operations.CreateSubscriptionRequest{
 		GroupID:      groupID,
-		Subscription: subscription,
+		Disabled:     disabled,
+		Description:  description,
+		Filter:       filter,
+		Pipeline:     pipeline,
+		ID:           id,
+		Subscription: *subscription,
 	}
 
 	return &out, diags
@@ -75,8 +104,36 @@ func (r *SubscriptionResourceModel) ToOperationsListSubscriptionRequest(ctx cont
 	var groupID string
 	groupID = r.GroupID.ValueString()
 
+	disabled := new(bool)
+	if !r.Disabled.IsUnknown() && !r.Disabled.IsNull() {
+		*disabled = r.Disabled.ValueBool()
+	} else {
+		disabled = nil
+	}
+	description := new(string)
+	if !r.Description.IsUnknown() && !r.Description.IsNull() {
+		*description = r.Description.ValueString()
+	} else {
+		description = nil
+	}
+	filter := new(string)
+	if !r.Filter.IsUnknown() && !r.Filter.IsNull() {
+		*filter = r.Filter.ValueString()
+	} else {
+		filter = nil
+	}
+	pipeline := new(string)
+	if !r.Pipeline.IsUnknown() && !r.Pipeline.IsNull() {
+		*pipeline = r.Pipeline.ValueString()
+	} else {
+		pipeline = nil
+	}
 	out := operations.ListSubscriptionRequest{
-		GroupID: groupID,
+		GroupID:     groupID,
+		Disabled:    disabled,
+		Description: description,
+		Filter:      filter,
+		Pipeline:    pipeline,
 	}
 
 	return &out, diags

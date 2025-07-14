@@ -8,17 +8,10 @@ import (
 )
 
 type DeleteEventBreakerRulesetByIDRequest struct {
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
+	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// Unique ID to DELETE
 	ID string `pathParam:"style=simple,explode=false,name=id"`
-	// Group ID to DELETE
-	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
-}
-
-func (o *DeleteEventBreakerRulesetByIDRequest) GetID() string {
-	if o == nil {
-		return ""
-	}
-	return o.ID
 }
 
 func (o *DeleteEventBreakerRulesetByIDRequest) GetGroupID() string {
@@ -28,16 +21,15 @@ func (o *DeleteEventBreakerRulesetByIDRequest) GetGroupID() string {
 	return o.GroupID
 }
 
-// DeleteEventBreakerRulesetByIDResponseBody - a list of Event Breaker Ruleset objects
-type DeleteEventBreakerRulesetByIDResponseBody struct {
-	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
+func (o *DeleteEventBreakerRulesetByIDRequest) GetID() string {
+	if o == nil {
+		return ""
+	}
+	return o.ID
 }
 
-func (o *DeleteEventBreakerRulesetByIDResponseBody) GetItems() []shared.EventBreakerRuleset {
-	if o == nil {
-		return nil
-	}
-	return o.Items
+// DeleteEventBreakerRulesetByIDResponseBody - a list of Event Breaker Ruleset objects
+type DeleteEventBreakerRulesetByIDResponseBody struct {
 }
 
 type DeleteEventBreakerRulesetByIDResponse struct {

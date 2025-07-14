@@ -18,16 +18,52 @@ resource "criblio_group" "my_group" {
     provider = "azure"
     region   = "...my_region..."
   }
-  estimated_ingest_rate = 4.46
-  id                    = "...my_id..."
-  is_fleet              = false
-  name                  = "...my_name..."
-  on_prem               = false
-  product               = "stream"
-  provisioned           = true
+  config_version         = "...my_config_version..."
+  deploying_worker_count = 4.87
+  description            = "...my_description..."
+  estimated_ingest_rate  = 4.46
+  git = {
+    commit        = "...my_commit..."
+    local_changes = 8.64
+    log = [
+      {
+        author_email = "...my_author_email..."
+        author_name  = "...my_author_name..."
+        date         = "...my_date..."
+        hash         = "...my_hash..."
+        message      = "...my_message..."
+        short        = "...my_short..."
+      }
+    ]
+  }
+  id                        = "...my_id..."
+  incompatible_worker_count = 0.87
+  inherits                  = "...my_inherits..."
+  is_fleet                  = false
+  is_search                 = true
+  lookup_deployments = [
+    {
+      context = "...my_context..."
+      lookups = [
+        {
+          deployed_version = "...my_deployed_version..."
+          file             = "...my_file..."
+          version          = "...my_version..."
+        }
+      ]
+    }
+  ]
+  name        = "...my_name..."
+  on_prem     = false
+  product     = "stream"
+  provisioned = true
   streamtags = [
     "..."
   ]
+  tags                 = "...my_tags..."
+  type                 = "lake_access"
+  upgrade_version      = "...my_upgrade_version..."
+  worker_count         = 7.37
   worker_remote_access = false
 }
 ```
@@ -39,25 +75,116 @@ resource "criblio_group" "my_group" {
 
 - `id` (String) Group id
 - `product` (String) Cribl Product. must be one of ["stream", "edge"]; Requires replacement if changed.
-- `provisioned` (Boolean) Requires replacement if changed.
 
 ### Optional
 
 - `cloud` (Attributes) Requires replacement if changed. (see [below for nested schema](#nestedatt--cloud))
+- `config_version` (String) Requires replacement if changed.
+- `deploying_worker_count` (Number) Requires replacement if changed.
+- `description` (String) Requires replacement if changed.
 - `estimated_ingest_rate` (Number) Requires replacement if changed.
-- `is_fleet` (Boolean) Must be true if product is 'edge'. Requires replacement if changed.
+- `git` (Attributes) Requires replacement if changed. (see [below for nested schema](#nestedatt--git))
+- `incompatible_worker_count` (Number) Requires replacement if changed.
+- `inherits` (String) Requires replacement if changed.
+- `is_fleet` (Boolean) Requires replacement if changed.
+- `is_search` (Boolean) Requires replacement if changed.
+- `lookup_deployments` (Attributes List) Requires replacement if changed. (see [below for nested schema](#nestedatt--lookup_deployments))
 - `name` (String) Requires replacement if changed.
 - `on_prem` (Boolean) Requires replacement if changed.
+- `provisioned` (Boolean) Requires replacement if changed.
 - `streamtags` (List of String) Requires replacement if changed.
+- `tags` (String) Requires replacement if changed.
+- `type` (String) must be "lake_access"; Requires replacement if changed.
+- `upgrade_version` (String) Requires replacement if changed.
+- `worker_count` (Number) Requires replacement if changed.
 - `worker_remote_access` (Boolean) Requires replacement if changed.
+
+### Read-Only
+
+- `items` (Attributes List) (see [below for nested schema](#nestedatt--items))
 
 <a id="nestedatt--cloud"></a>
 ### Nested Schema for `cloud`
 
+Required:
+
+- `region` (String) Requires replacement if changed.
+
 Optional:
 
-- `provider` (String) Not Null; must be one of ["aws", "azure"]; Requires replacement if changed.
-- `region` (String) Not Null; Requires replacement if changed.
+- `provider` (String) must be one of ["aws", "azure"]; Requires replacement if changed.
+
+
+<a id="nestedatt--git"></a>
+### Nested Schema for `git`
+
+Optional:
+
+- `commit` (String) Requires replacement if changed.
+- `local_changes` (Number) Requires replacement if changed.
+- `log` (Attributes List) Requires replacement if changed. (see [below for nested schema](#nestedatt--git--log))
+
+<a id="nestedatt--git--log"></a>
+### Nested Schema for `git.log`
+
+Required:
+
+- `date` (String) Requires replacement if changed.
+- `hash` (String) Requires replacement if changed.
+- `message` (String) Requires replacement if changed.
+- `short` (String) Requires replacement if changed.
+
+Optional:
+
+- `author_email` (String) Requires replacement if changed.
+- `author_name` (String) Requires replacement if changed.
+
+
+
+<a id="nestedatt--lookup_deployments"></a>
+### Nested Schema for `lookup_deployments`
+
+Required:
+
+- `context` (String) Requires replacement if changed.
+- `lookups` (Attributes List) Requires replacement if changed. (see [below for nested schema](#nestedatt--lookup_deployments--lookups))
+
+<a id="nestedatt--lookup_deployments--lookups"></a>
+### Nested Schema for `lookup_deployments.lookups`
+
+Required:
+
+- `file` (String) Requires replacement if changed.
+
+Optional:
+
+- `deployed_version` (String) Requires replacement if changed.
+- `version` (String) Requires replacement if changed.
+
+
+
+<a id="nestedatt--items"></a>
+### Nested Schema for `items`
+
+Read-Only:
+
+- `cloud` (Attributes) (see [below for nested schema](#nestedatt--items--cloud))
+- `estimated_ingest_rate` (Number)
+- `id` (String)
+- `is_fleet` (Boolean) Must be true if product is 'edge'
+- `name` (String)
+- `on_prem` (Boolean)
+- `provisioned` (Boolean)
+- `streamtags` (List of String)
+- `worker_remote_access` (Boolean)
+
+<a id="nestedatt--items--cloud"></a>
+### Nested Schema for `items.cloud`
+
+Read-Only:
+
+- `provider` (String) must be one of ["aws", "azure"]
+- `region` (String)
 
 ## Import
 

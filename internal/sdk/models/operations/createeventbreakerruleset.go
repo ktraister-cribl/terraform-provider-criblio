@@ -8,7 +8,7 @@ import (
 )
 
 type CreateEventBreakerRulesetRequest struct {
-	// Group ID to CREATE
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
 	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// New Event Breaker Ruleset object
 	EventBreakerRuleset shared.EventBreakerRuleset `request:"mediaType=application/json"`
@@ -30,14 +30,6 @@ func (o *CreateEventBreakerRulesetRequest) GetEventBreakerRuleset() shared.Event
 
 // CreateEventBreakerRulesetResponseBody - a list of Event Breaker Ruleset objects
 type CreateEventBreakerRulesetResponseBody struct {
-	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
-}
-
-func (o *CreateEventBreakerRulesetResponseBody) GetItems() []shared.EventBreakerRuleset {
-	if o == nil {
-		return nil
-	}
-	return o.Items
 }
 
 type CreateEventBreakerRulesetResponse struct {

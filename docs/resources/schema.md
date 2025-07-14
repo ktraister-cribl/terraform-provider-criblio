@@ -26,16 +26,13 @@ resource "criblio_schema" "my_schema" {
 
 ### Required
 
-- `group_id` (String) Group ID to PATCH
+- `group_id` (String) The consumer group to which this instance belongs. Defaults to 'Cribl'.
+- `id` (String) Unique ID to PATCH
 - `schema` (String) JSON schema matching standards of draft version 2019-09
 
 ### Optional
 
 - `description` (String)
-
-### Read-Only
-
-- `id` (String) The ID of this resource.
 
 ## Import
 

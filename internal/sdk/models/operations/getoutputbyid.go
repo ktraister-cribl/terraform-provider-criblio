@@ -10,7 +10,7 @@ import (
 type GetOutputByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
-	// Group Id
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
 	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
@@ -30,14 +30,6 @@ func (o *GetOutputByIDRequest) GetGroupID() string {
 
 // GetOutputByIDResponseBody - a list of Output objects
 type GetOutputByIDResponseBody struct {
-	Items []shared.Output `json:"items,omitempty"`
-}
-
-func (o *GetOutputByIDResponseBody) GetItems() []shared.Output {
-	if o == nil {
-		return nil
-	}
-	return o.Items
 }
 
 type GetOutputByIDResponse struct {

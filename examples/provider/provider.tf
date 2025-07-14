@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     criblio = {
-      source  = "criblio/criblio"
+      source  = "speakeasy/criblio"
       version = "1.0.45"
     }
   }

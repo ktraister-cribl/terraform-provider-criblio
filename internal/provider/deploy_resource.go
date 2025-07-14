@@ -138,6 +138,32 @@ func (r *DeployResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						"is_search": schema.BoolAttribute{
 							Computed: true,
 						},
+						"lookup_deployments": schema.ListNestedAttribute{
+							Computed: true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"context": schema.StringAttribute{
+										Computed: true,
+									},
+									"lookups": schema.ListNestedAttribute{
+										Computed: true,
+										NestedObject: schema.NestedAttributeObject{
+											Attributes: map[string]schema.Attribute{
+												"deployed_version": schema.StringAttribute{
+													Computed: true,
+												},
+												"file": schema.StringAttribute{
+													Computed: true,
+												},
+												"version": schema.StringAttribute{
+													Computed: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 						"name": schema.StringAttribute{
 							Computed: true,
 						},
@@ -153,6 +179,15 @@ func (r *DeployResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						},
 						"tags": schema.StringAttribute{
 							Computed: true,
+						},
+						"type": schema.StringAttribute{
+							Computed:    true,
+							Description: `must be "lake_access"`,
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									"lake_access",
+								),
+							},
 						},
 						"upgrade_version": schema.StringAttribute{
 							Computed: true,

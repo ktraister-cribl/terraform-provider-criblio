@@ -34,12 +34,12 @@ type SubscriptionResource struct {
 
 // SubscriptionResourceModel describes the resource data model.
 type SubscriptionResourceModel struct {
-	Description types.String `tfsdk:"description"`
-	Disabled    types.Bool   `tfsdk:"disabled"`
-	Filter      types.String `tfsdk:"filter"`
+	Description types.String `queryParam:"style=form,explode=true,name=description" tfsdk:"description"`
+	Disabled    types.Bool   `queryParam:"style=form,explode=true,name=disabled" tfsdk:"disabled"`
+	Filter      types.String `queryParam:"style=form,explode=true,name=filter" tfsdk:"filter"`
 	GroupID     types.String `tfsdk:"group_id"`
-	ID          types.String `tfsdk:"id"`
-	Pipeline    types.String `tfsdk:"pipeline"`
+	ID          types.String `queryParam:"style=form,explode=true,name=id" tfsdk:"id"`
+	Pipeline    types.String `queryParam:"style=form,explode=true,name=pipeline" tfsdk:"pipeline"`
 }
 
 func (r *SubscriptionResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -57,7 +57,7 @@ func (r *SubscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
 				},
-				Description: `Requires replacement if changed.`,
+				Description: `Project description. Requires replacement if changed.`,
 			},
 			"disabled": schema.BoolAttribute{
 				Computed: true,
@@ -66,7 +66,7 @@ func (r *SubscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 					boolplanmodifier.RequiresReplaceIfConfigured(),
 					speakeasy_boolplanmodifier.SuppressDiff(speakeasy_boolplanmodifier.ExplicitSuppress),
 				},
-				Description: `Requires replacement if changed.`,
+				Description: `Project Id. Requires replacement if changed.`,
 			},
 			"filter": schema.StringAttribute{
 				Computed: true,
@@ -75,15 +75,15 @@ func (r *SubscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
 				},
-				Description: `Requires replacement if changed.`,
+				Description: `filter. Requires replacement if changed.`,
 			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group ID to PATCH`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
 				Required:    true,
-				Description: `Subscription ID`,
+				Description: `pipeline to be used`,
 			},
 			"pipeline": schema.StringAttribute{
 				Required: true,
@@ -91,7 +91,7 @@ func (r *SubscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
 				},
-				Description: `Requires replacement if changed.`,
+				Description: `pipeline to be used. Requires replacement if changed.`,
 			},
 		},
 	}

@@ -49,10 +49,11 @@ func (r *SchemaResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group ID to PATCH`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: `Unique ID to PATCH`,
 			},
 			"schema": schema.StringAttribute{
 				Required:    true,

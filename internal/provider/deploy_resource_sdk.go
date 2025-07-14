@@ -66,14 +66,14 @@ func (r *DeployResourceModel) RefreshFromOperationsUpdateGroupsDeployByIDRespons
 				}
 				items.Cloud.Region = types.StringValue(itemsItem.Cloud.Region)
 			}
-			items.ConfigVersion = types.StringValue(itemsItem.ConfigVersion)
+			items.ConfigVersion = types.StringPointerValue(itemsItem.ConfigVersion)
 			items.DeployingWorkerCount = types.Float64PointerValue(itemsItem.DeployingWorkerCount)
 			items.Description = types.StringPointerValue(itemsItem.Description)
 			items.EstimatedIngestRate = types.Float64PointerValue(itemsItem.EstimatedIngestRate)
 			if itemsItem.Git == nil {
 				items.Git = nil
 			} else {
-				items.Git = &tfTypes.Git{}
+				items.Git = &tfTypes.ConfigGroupGit{}
 				items.Git.Commit = types.StringPointerValue(itemsItem.Git.Commit)
 				items.Git.LocalChanges = types.Float64PointerValue(itemsItem.Git.LocalChanges)
 				items.Git.Log = []tfTypes.Commit{}
@@ -102,6 +102,31 @@ func (r *DeployResourceModel) RefreshFromOperationsUpdateGroupsDeployByIDRespons
 			items.Inherits = types.StringPointerValue(itemsItem.Inherits)
 			items.IsFleet = types.BoolPointerValue(itemsItem.IsFleet)
 			items.IsSearch = types.BoolPointerValue(itemsItem.IsSearch)
+			items.LookupDeployments = []tfTypes.ConfigGroupLookups{}
+			for lookupDeploymentsCount, lookupDeploymentsItem := range itemsItem.LookupDeployments {
+				var lookupDeployments tfTypes.ConfigGroupLookups
+				lookupDeployments.Context = types.StringValue(lookupDeploymentsItem.Context)
+				lookupDeployments.Lookups = []tfTypes.Lookup{}
+				for lookupsCount, lookupsItem := range lookupDeploymentsItem.Lookups {
+					var lookups tfTypes.Lookup
+					lookups.DeployedVersion = types.StringPointerValue(lookupsItem.DeployedVersion)
+					lookups.File = types.StringValue(lookupsItem.File)
+					lookups.Version = types.StringPointerValue(lookupsItem.Version)
+					if lookupsCount+1 > len(lookupDeployments.Lookups) {
+						lookupDeployments.Lookups = append(lookupDeployments.Lookups, lookups)
+					} else {
+						lookupDeployments.Lookups[lookupsCount].DeployedVersion = lookups.DeployedVersion
+						lookupDeployments.Lookups[lookupsCount].File = lookups.File
+						lookupDeployments.Lookups[lookupsCount].Version = lookups.Version
+					}
+				}
+				if lookupDeploymentsCount+1 > len(items.LookupDeployments) {
+					items.LookupDeployments = append(items.LookupDeployments, lookupDeployments)
+				} else {
+					items.LookupDeployments[lookupDeploymentsCount].Context = lookupDeployments.Context
+					items.LookupDeployments[lookupDeploymentsCount].Lookups = lookupDeployments.Lookups
+				}
+			}
 			items.Name = types.StringPointerValue(itemsItem.Name)
 			items.OnPrem = types.BoolPointerValue(itemsItem.OnPrem)
 			items.Provisioned = types.BoolPointerValue(itemsItem.Provisioned)
@@ -110,6 +135,11 @@ func (r *DeployResourceModel) RefreshFromOperationsUpdateGroupsDeployByIDRespons
 				items.Streamtags = append(items.Streamtags, types.StringValue(v))
 			}
 			items.Tags = types.StringPointerValue(itemsItem.Tags)
+			if itemsItem.Type != nil {
+				items.Type = types.StringValue(string(*itemsItem.Type))
+			} else {
+				items.Type = types.StringNull()
+			}
 			items.UpgradeVersion = types.StringPointerValue(itemsItem.UpgradeVersion)
 			items.WorkerCount = types.Float64PointerValue(itemsItem.WorkerCount)
 			items.WorkerRemoteAccess = types.BoolPointerValue(itemsItem.WorkerRemoteAccess)
@@ -127,11 +157,13 @@ func (r *DeployResourceModel) RefreshFromOperationsUpdateGroupsDeployByIDRespons
 				r.Items[itemsCount].Inherits = items.Inherits
 				r.Items[itemsCount].IsFleet = items.IsFleet
 				r.Items[itemsCount].IsSearch = items.IsSearch
+				r.Items[itemsCount].LookupDeployments = items.LookupDeployments
 				r.Items[itemsCount].Name = items.Name
 				r.Items[itemsCount].OnPrem = items.OnPrem
 				r.Items[itemsCount].Provisioned = items.Provisioned
 				r.Items[itemsCount].Streamtags = items.Streamtags
 				r.Items[itemsCount].Tags = items.Tags
+				r.Items[itemsCount].Type = items.Type
 				r.Items[itemsCount].UpgradeVersion = items.UpgradeVersion
 				r.Items[itemsCount].WorkerCount = items.WorkerCount
 				r.Items[itemsCount].WorkerRemoteAccess = items.WorkerRemoteAccess

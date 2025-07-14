@@ -1162,7 +1162,7 @@ func (r *AppscopeConfigResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group ID to PATCH`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
 				Required:    true,

@@ -60,9 +60,8 @@ func (r *PackPipelineDataSource) Schema(ctx context.Context, req datasource.Sche
 						Computed: true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"conf": schema.MapAttribute{
-									Computed:    true,
-									ElementType: types.StringType,
+								"conf": schema.SingleNestedAttribute{
+									Computed: true,
 								},
 								"description": schema.StringAttribute{
 									Computed:    true,
@@ -123,11 +122,10 @@ func (r *PackPipelineDataSource) Schema(ctx context.Context, req datasource.Sche
 			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group Id`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
-				Required:    true,
-				Description: `Unique ID to GET for pack`,
+				Computed: true,
 			},
 			"pack": schema.StringAttribute{
 				Required:    true,
@@ -175,13 +173,13 @@ func (r *PackPipelineDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	request, requestDiags := data.ToOperationsGetPipelineByPackAndIDRequest(ctx)
+	request, requestDiags := data.ToOperationsGetPipelineByPackRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := r.client.Pipelines.GetPipelineByPackAndID(ctx, *request)
+	res, err := r.client.Pipelines.GetPipelineByPack(ctx, *request)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", err.Error())
 		if res != nil && res.RawResponse != nil {

@@ -275,7 +275,7 @@ resource "criblio_appscope_config" "my_appscopeconfig" {
 
 - `config` (Attributes) (see [below for nested schema](#nestedatt--config))
 - `description` (String)
-- `group_id` (String) Group ID to PATCH
+- `group_id` (String) The consumer group to which this instance belongs. Defaults to 'Cribl'.
 - `id` (String) Unique ID to PATCH
 - `lib` (String) must be one of ["cribl", "cribl-custom", "custom"]
 

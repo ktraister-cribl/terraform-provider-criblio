@@ -11,44 +11,42 @@ import (
 	"github.com/speakeasy/terraform-provider-criblio/internal/sdk/models/shared"
 )
 
-func (r *GroupResourceModel) ToSharedGroup(ctx context.Context) (*shared.Group, diag.Diagnostics) {
+func (r *GroupResourceModel) ToSharedConfigGroup(ctx context.Context) (*shared.ConfigGroup, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	onPrem := new(bool)
-	if !r.OnPrem.IsUnknown() && !r.OnPrem.IsNull() {
-		*onPrem = r.OnPrem.ValueBool()
-	} else {
-		onPrem = nil
-	}
-	workerRemoteAccess := new(bool)
-	if !r.WorkerRemoteAccess.IsUnknown() && !r.WorkerRemoteAccess.IsNull() {
-		*workerRemoteAccess = r.WorkerRemoteAccess.ValueBool()
-	} else {
-		workerRemoteAccess = nil
-	}
-	streamtags := make([]string, 0, len(r.Streamtags))
-	for _, streamtagsItem := range r.Streamtags {
-		streamtags = append(streamtags, streamtagsItem.ValueString())
-	}
-	var cloud *shared.Cloud
+	var cloud *shared.ConfigGroupCloud
 	if r.Cloud != nil {
-		provider := shared.Provider(r.Cloud.Provider.ValueString())
+		provider := new(shared.CloudProvider)
+		if !r.Cloud.Provider.IsUnknown() && !r.Cloud.Provider.IsNull() {
+			*provider = shared.CloudProvider(r.Cloud.Provider.ValueString())
+		} else {
+			provider = nil
+		}
 		var region string
 		region = r.Cloud.Region.ValueString()
 
-		cloud = &shared.Cloud{
+		cloud = &shared.ConfigGroupCloud{
 			Provider: provider,
 			Region:   region,
 		}
 	}
-	var provisioned bool
-	provisioned = r.Provisioned.ValueBool()
-
-	isFleet := new(bool)
-	if !r.IsFleet.IsUnknown() && !r.IsFleet.IsNull() {
-		*isFleet = r.IsFleet.ValueBool()
+	configVersion := new(string)
+	if !r.ConfigVersion.IsUnknown() && !r.ConfigVersion.IsNull() {
+		*configVersion = r.ConfigVersion.ValueString()
 	} else {
-		isFleet = nil
+		configVersion = nil
+	}
+	deployingWorkerCount := new(float64)
+	if !r.DeployingWorkerCount.IsUnknown() && !r.DeployingWorkerCount.IsNull() {
+		*deployingWorkerCount = r.DeployingWorkerCount.ValueFloat64()
+	} else {
+		deployingWorkerCount = nil
+	}
+	description := new(string)
+	if !r.Description.IsUnknown() && !r.Description.IsNull() {
+		*description = r.Description.ValueString()
+	} else {
+		description = nil
 	}
 	estimatedIngestRate := new(float64)
 	if !r.EstimatedIngestRate.IsUnknown() && !r.EstimatedIngestRate.IsNull() {
@@ -56,25 +54,195 @@ func (r *GroupResourceModel) ToSharedGroup(ctx context.Context) (*shared.Group, 
 	} else {
 		estimatedIngestRate = nil
 	}
+	var git *shared.ConfigGroupGit
+	if r.Git != nil {
+		commit := new(string)
+		if !r.Git.Commit.IsUnknown() && !r.Git.Commit.IsNull() {
+			*commit = r.Git.Commit.ValueString()
+		} else {
+			commit = nil
+		}
+		localChanges := new(float64)
+		if !r.Git.LocalChanges.IsUnknown() && !r.Git.LocalChanges.IsNull() {
+			*localChanges = r.Git.LocalChanges.ValueFloat64()
+		} else {
+			localChanges = nil
+		}
+		log := make([]shared.Commit, 0, len(r.Git.Log))
+		for _, logItem := range r.Git.Log {
+			authorEmail := new(string)
+			if !logItem.AuthorEmail.IsUnknown() && !logItem.AuthorEmail.IsNull() {
+				*authorEmail = logItem.AuthorEmail.ValueString()
+			} else {
+				authorEmail = nil
+			}
+			authorName := new(string)
+			if !logItem.AuthorName.IsUnknown() && !logItem.AuthorName.IsNull() {
+				*authorName = logItem.AuthorName.ValueString()
+			} else {
+				authorName = nil
+			}
+			var date string
+			date = logItem.Date.ValueString()
+
+			var hash string
+			hash = logItem.Hash.ValueString()
+
+			var message string
+			message = logItem.Message.ValueString()
+
+			var short string
+			short = logItem.Short.ValueString()
+
+			log = append(log, shared.Commit{
+				AuthorEmail: authorEmail,
+				AuthorName:  authorName,
+				Date:        date,
+				Hash:        hash,
+				Message:     message,
+				Short:       short,
+			})
+		}
+		git = &shared.ConfigGroupGit{
+			Commit:       commit,
+			LocalChanges: localChanges,
+			Log:          log,
+		}
+	}
+	var id string
+	id = r.ID.ValueString()
+
+	incompatibleWorkerCount := new(float64)
+	if !r.IncompatibleWorkerCount.IsUnknown() && !r.IncompatibleWorkerCount.IsNull() {
+		*incompatibleWorkerCount = r.IncompatibleWorkerCount.ValueFloat64()
+	} else {
+		incompatibleWorkerCount = nil
+	}
+	inherits := new(string)
+	if !r.Inherits.IsUnknown() && !r.Inherits.IsNull() {
+		*inherits = r.Inherits.ValueString()
+	} else {
+		inherits = nil
+	}
+	isFleet := new(bool)
+	if !r.IsFleet.IsUnknown() && !r.IsFleet.IsNull() {
+		*isFleet = r.IsFleet.ValueBool()
+	} else {
+		isFleet = nil
+	}
+	isSearch := new(bool)
+	if !r.IsSearch.IsUnknown() && !r.IsSearch.IsNull() {
+		*isSearch = r.IsSearch.ValueBool()
+	} else {
+		isSearch = nil
+	}
+	lookupDeployments := make([]shared.ConfigGroupLookups, 0, len(r.LookupDeployments))
+	for _, lookupDeploymentsItem := range r.LookupDeployments {
+		var contextVar string
+		contextVar = lookupDeploymentsItem.Context.ValueString()
+
+		lookups := make([]shared.Lookup, 0, len(lookupDeploymentsItem.Lookups))
+		for _, lookupsItem := range lookupDeploymentsItem.Lookups {
+			deployedVersion := new(string)
+			if !lookupsItem.DeployedVersion.IsUnknown() && !lookupsItem.DeployedVersion.IsNull() {
+				*deployedVersion = lookupsItem.DeployedVersion.ValueString()
+			} else {
+				deployedVersion = nil
+			}
+			var file string
+			file = lookupsItem.File.ValueString()
+
+			version := new(string)
+			if !lookupsItem.Version.IsUnknown() && !lookupsItem.Version.IsNull() {
+				*version = lookupsItem.Version.ValueString()
+			} else {
+				version = nil
+			}
+			lookups = append(lookups, shared.Lookup{
+				DeployedVersion: deployedVersion,
+				File:            file,
+				Version:         version,
+			})
+		}
+		lookupDeployments = append(lookupDeployments, shared.ConfigGroupLookups{
+			Context: contextVar,
+			Lookups: lookups,
+		})
+	}
 	name := new(string)
 	if !r.Name.IsUnknown() && !r.Name.IsNull() {
 		*name = r.Name.ValueString()
 	} else {
 		name = nil
 	}
-	var id string
-	id = r.ID.ValueString()
-
-	out := shared.Group{
-		OnPrem:              onPrem,
-		WorkerRemoteAccess:  workerRemoteAccess,
-		Streamtags:          streamtags,
-		Cloud:               cloud,
-		Provisioned:         provisioned,
-		IsFleet:             isFleet,
-		EstimatedIngestRate: estimatedIngestRate,
-		Name:                name,
-		ID:                  id,
+	onPrem := new(bool)
+	if !r.OnPrem.IsUnknown() && !r.OnPrem.IsNull() {
+		*onPrem = r.OnPrem.ValueBool()
+	} else {
+		onPrem = nil
+	}
+	provisioned := new(bool)
+	if !r.Provisioned.IsUnknown() && !r.Provisioned.IsNull() {
+		*provisioned = r.Provisioned.ValueBool()
+	} else {
+		provisioned = nil
+	}
+	streamtags := make([]string, 0, len(r.Streamtags))
+	for _, streamtagsItem := range r.Streamtags {
+		streamtags = append(streamtags, streamtagsItem.ValueString())
+	}
+	tags := new(string)
+	if !r.Tags.IsUnknown() && !r.Tags.IsNull() {
+		*tags = r.Tags.ValueString()
+	} else {
+		tags = nil
+	}
+	typeVar := new(shared.ConfigGroupType)
+	if !r.Type.IsUnknown() && !r.Type.IsNull() {
+		*typeVar = shared.ConfigGroupType(r.Type.ValueString())
+	} else {
+		typeVar = nil
+	}
+	upgradeVersion := new(string)
+	if !r.UpgradeVersion.IsUnknown() && !r.UpgradeVersion.IsNull() {
+		*upgradeVersion = r.UpgradeVersion.ValueString()
+	} else {
+		upgradeVersion = nil
+	}
+	workerCount := new(float64)
+	if !r.WorkerCount.IsUnknown() && !r.WorkerCount.IsNull() {
+		*workerCount = r.WorkerCount.ValueFloat64()
+	} else {
+		workerCount = nil
+	}
+	workerRemoteAccess := new(bool)
+	if !r.WorkerRemoteAccess.IsUnknown() && !r.WorkerRemoteAccess.IsNull() {
+		*workerRemoteAccess = r.WorkerRemoteAccess.ValueBool()
+	} else {
+		workerRemoteAccess = nil
+	}
+	out := shared.ConfigGroup{
+		Cloud:                   cloud,
+		ConfigVersion:           configVersion,
+		DeployingWorkerCount:    deployingWorkerCount,
+		Description:             description,
+		EstimatedIngestRate:     estimatedIngestRate,
+		Git:                     git,
+		ID:                      id,
+		IncompatibleWorkerCount: incompatibleWorkerCount,
+		Inherits:                inherits,
+		IsFleet:                 isFleet,
+		IsSearch:                isSearch,
+		LookupDeployments:       lookupDeployments,
+		Name:                    name,
+		OnPrem:                  onPrem,
+		Provisioned:             provisioned,
+		Streamtags:              streamtags,
+		Tags:                    tags,
+		Type:                    typeVar,
+		UpgradeVersion:          upgradeVersion,
+		WorkerCount:             workerCount,
+		WorkerRemoteAccess:      workerRemoteAccess,
 	}
 
 	return &out, diags
@@ -84,16 +252,16 @@ func (r *GroupResourceModel) ToOperationsCreateProductsGroupsByProductRequest(ct
 	var diags diag.Diagnostics
 
 	product := operations.CreateProductsGroupsByProductProduct(r.Product.ValueString())
-	group, groupDiags := r.ToSharedGroup(ctx)
-	diags.Append(groupDiags...)
+	configGroup, configGroupDiags := r.ToSharedConfigGroup(ctx)
+	diags.Append(configGroupDiags...)
 
 	if diags.HasError() {
 		return nil, diags
 	}
 
 	out := operations.CreateProductsGroupsByProductRequest{
-		Product: product,
-		Group:   *group,
+		Product:     product,
+		ConfigGroup: *configGroup,
 	}
 
 	return &out, diags
@@ -125,40 +293,143 @@ func (r *GroupResourceModel) ToOperationsUpdateGroupsByIDRequest(ctx context.Con
 	return &out, diags
 }
 
-func (r *GroupResourceModel) ToOperationsDeleteGroupsByIDRequest(ctx context.Context) (*operations.DeleteGroupsByIDRequest, diag.Diagnostics) {
+func (r *GroupResourceModel) RefreshFromOperationsCreateProductsGroupsByProductResponseBody(ctx context.Context, resp *operations.CreateProductsGroupsByProductResponseBody) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	var id string
-	id = r.ID.ValueString()
-
-	out := operations.DeleteGroupsByIDRequest{
-		ID: id,
+	if resp != nil {
+		r.Items = []tfTypes.Group{}
+		if len(r.Items) > len(resp.Items) {
+			r.Items = r.Items[:len(resp.Items)]
+		}
+		for itemsCount, itemsItem := range resp.Items {
+			var items tfTypes.Group
+			if itemsItem.Cloud == nil {
+				items.Cloud = nil
+			} else {
+				items.Cloud = &tfTypes.Cloud{}
+				items.Cloud.Provider = types.StringValue(string(itemsItem.Cloud.Provider))
+				items.Cloud.Region = types.StringValue(itemsItem.Cloud.Region)
+			}
+			items.EstimatedIngestRate = types.Float64PointerValue(itemsItem.EstimatedIngestRate)
+			items.ID = types.StringValue(itemsItem.ID)
+			items.IsFleet = types.BoolPointerValue(itemsItem.IsFleet)
+			items.Name = types.StringPointerValue(itemsItem.Name)
+			items.OnPrem = types.BoolPointerValue(itemsItem.OnPrem)
+			items.Provisioned = types.BoolValue(itemsItem.Provisioned)
+			items.Streamtags = make([]types.String, 0, len(itemsItem.Streamtags))
+			for _, v := range itemsItem.Streamtags {
+				items.Streamtags = append(items.Streamtags, types.StringValue(v))
+			}
+			items.WorkerRemoteAccess = types.BoolPointerValue(itemsItem.WorkerRemoteAccess)
+			if itemsCount+1 > len(r.Items) {
+				r.Items = append(r.Items, items)
+			} else {
+				r.Items[itemsCount].Cloud = items.Cloud
+				r.Items[itemsCount].EstimatedIngestRate = items.EstimatedIngestRate
+				r.Items[itemsCount].ID = items.ID
+				r.Items[itemsCount].IsFleet = items.IsFleet
+				r.Items[itemsCount].Name = items.Name
+				r.Items[itemsCount].OnPrem = items.OnPrem
+				r.Items[itemsCount].Provisioned = items.Provisioned
+				r.Items[itemsCount].Streamtags = items.Streamtags
+				r.Items[itemsCount].WorkerRemoteAccess = items.WorkerRemoteAccess
+			}
+		}
 	}
 
-	return &out, diags
+	return diags
 }
 
-func (r *GroupResourceModel) RefreshFromSharedGroup(ctx context.Context, resp *shared.Group) diag.Diagnostics {
+func (r *GroupResourceModel) RefreshFromOperationsGetGroupsByIDResponseBody(ctx context.Context, resp *operations.GetGroupsByIDResponseBody) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if resp.Cloud == nil {
-		r.Cloud = nil
-	} else {
-		r.Cloud = &tfTypes.Cloud{}
-		r.Cloud.Provider = types.StringValue(string(resp.Cloud.Provider))
-		r.Cloud.Region = types.StringValue(resp.Cloud.Region)
+	if resp != nil {
+		r.Items = []tfTypes.Group{}
+		if len(r.Items) > len(resp.Items) {
+			r.Items = r.Items[:len(resp.Items)]
+		}
+		for itemsCount, itemsItem := range resp.Items {
+			var items tfTypes.Group
+			if itemsItem.Cloud == nil {
+				items.Cloud = nil
+			} else {
+				items.Cloud = &tfTypes.Cloud{}
+				items.Cloud.Provider = types.StringValue(string(itemsItem.Cloud.Provider))
+				items.Cloud.Region = types.StringValue(itemsItem.Cloud.Region)
+			}
+			items.EstimatedIngestRate = types.Float64PointerValue(itemsItem.EstimatedIngestRate)
+			items.ID = types.StringValue(itemsItem.ID)
+			items.IsFleet = types.BoolPointerValue(itemsItem.IsFleet)
+			items.Name = types.StringPointerValue(itemsItem.Name)
+			items.OnPrem = types.BoolPointerValue(itemsItem.OnPrem)
+			items.Provisioned = types.BoolValue(itemsItem.Provisioned)
+			items.Streamtags = make([]types.String, 0, len(itemsItem.Streamtags))
+			for _, v := range itemsItem.Streamtags {
+				items.Streamtags = append(items.Streamtags, types.StringValue(v))
+			}
+			items.WorkerRemoteAccess = types.BoolPointerValue(itemsItem.WorkerRemoteAccess)
+			if itemsCount+1 > len(r.Items) {
+				r.Items = append(r.Items, items)
+			} else {
+				r.Items[itemsCount].Cloud = items.Cloud
+				r.Items[itemsCount].EstimatedIngestRate = items.EstimatedIngestRate
+				r.Items[itemsCount].ID = items.ID
+				r.Items[itemsCount].IsFleet = items.IsFleet
+				r.Items[itemsCount].Name = items.Name
+				r.Items[itemsCount].OnPrem = items.OnPrem
+				r.Items[itemsCount].Provisioned = items.Provisioned
+				r.Items[itemsCount].Streamtags = items.Streamtags
+				r.Items[itemsCount].WorkerRemoteAccess = items.WorkerRemoteAccess
+			}
+		}
 	}
-	r.EstimatedIngestRate = types.Float64PointerValue(resp.EstimatedIngestRate)
-	r.ID = types.StringValue(resp.ID)
-	r.IsFleet = types.BoolPointerValue(resp.IsFleet)
-	r.Name = types.StringPointerValue(resp.Name)
-	r.OnPrem = types.BoolPointerValue(resp.OnPrem)
-	r.Provisioned = types.BoolValue(resp.Provisioned)
-	r.Streamtags = make([]types.String, 0, len(resp.Streamtags))
-	for _, v := range resp.Streamtags {
-		r.Streamtags = append(r.Streamtags, types.StringValue(v))
+
+	return diags
+}
+
+func (r *GroupResourceModel) RefreshFromOperationsUpdateGroupsByIDResponseBody(ctx context.Context, resp *operations.UpdateGroupsByIDResponseBody) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if resp != nil {
+		r.Items = []tfTypes.Group{}
+		if len(r.Items) > len(resp.Items) {
+			r.Items = r.Items[:len(resp.Items)]
+		}
+		for itemsCount, itemsItem := range resp.Items {
+			var items tfTypes.Group
+			if itemsItem.Cloud == nil {
+				items.Cloud = nil
+			} else {
+				items.Cloud = &tfTypes.Cloud{}
+				items.Cloud.Provider = types.StringValue(string(itemsItem.Cloud.Provider))
+				items.Cloud.Region = types.StringValue(itemsItem.Cloud.Region)
+			}
+			items.EstimatedIngestRate = types.Float64PointerValue(itemsItem.EstimatedIngestRate)
+			items.ID = types.StringValue(itemsItem.ID)
+			items.IsFleet = types.BoolPointerValue(itemsItem.IsFleet)
+			items.Name = types.StringPointerValue(itemsItem.Name)
+			items.OnPrem = types.BoolPointerValue(itemsItem.OnPrem)
+			items.Provisioned = types.BoolValue(itemsItem.Provisioned)
+			items.Streamtags = make([]types.String, 0, len(itemsItem.Streamtags))
+			for _, v := range itemsItem.Streamtags {
+				items.Streamtags = append(items.Streamtags, types.StringValue(v))
+			}
+			items.WorkerRemoteAccess = types.BoolPointerValue(itemsItem.WorkerRemoteAccess)
+			if itemsCount+1 > len(r.Items) {
+				r.Items = append(r.Items, items)
+			} else {
+				r.Items[itemsCount].Cloud = items.Cloud
+				r.Items[itemsCount].EstimatedIngestRate = items.EstimatedIngestRate
+				r.Items[itemsCount].ID = items.ID
+				r.Items[itemsCount].IsFleet = items.IsFleet
+				r.Items[itemsCount].Name = items.Name
+				r.Items[itemsCount].OnPrem = items.OnPrem
+				r.Items[itemsCount].Provisioned = items.Provisioned
+				r.Items[itemsCount].Streamtags = items.Streamtags
+				r.Items[itemsCount].WorkerRemoteAccess = items.WorkerRemoteAccess
+			}
+		}
 	}
-	r.WorkerRemoteAccess = types.BoolPointerValue(resp.WorkerRemoteAccess)
 
 	return diags
 }

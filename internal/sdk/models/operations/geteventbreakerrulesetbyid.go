@@ -10,7 +10,7 @@ import (
 type GetEventBreakerRulesetByIDRequest struct {
 	// Unique ID to GET
 	ID string `pathParam:"style=simple,explode=false,name=id"`
-	// Group ID to GET
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
 	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
@@ -30,23 +30,6 @@ func (o *GetEventBreakerRulesetByIDRequest) GetGroupID() string {
 
 // GetEventBreakerRulesetByIDResponseBody - a list of Event Breaker Ruleset objects
 type GetEventBreakerRulesetByIDResponseBody struct {
-	// number of items present in the items array
-	Count *int64                       `json:"count,omitempty"`
-	Items []shared.EventBreakerRuleset `json:"items,omitempty"`
-}
-
-func (o *GetEventBreakerRulesetByIDResponseBody) GetCount() *int64 {
-	if o == nil {
-		return nil
-	}
-	return o.Count
-}
-
-func (o *GetEventBreakerRulesetByIDResponseBody) GetItems() []shared.EventBreakerRuleset {
-	if o == nil {
-		return nil
-	}
-	return o.Items
 }
 
 type GetEventBreakerRulesetByIDResponse struct {

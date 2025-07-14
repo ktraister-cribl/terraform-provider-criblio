@@ -8,9 +8,20 @@ import (
 )
 
 type CreateSubscriptionRequest struct {
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
 	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
+	// Project Id
+	Disabled *bool `queryParam:"style=form,explode=true,name=disabled"`
+	// Project description
+	Description *string `queryParam:"style=form,explode=true,name=description"`
+	// filter
+	Filter *string `queryParam:"style=form,explode=true,name=filter"`
+	// pipeline to be used
+	Pipeline string `queryParam:"style=form,explode=true,name=pipeline"`
+	// pipeline to be used
+	ID string `queryParam:"style=form,explode=true,name=id"`
 	// Subscription object
-	Subscription *shared.Subscription `request:"mediaType=application/json"`
+	Subscription shared.Subscription `request:"mediaType=application/json"`
 }
 
 func (o *CreateSubscriptionRequest) GetGroupID() string {
@@ -20,9 +31,44 @@ func (o *CreateSubscriptionRequest) GetGroupID() string {
 	return o.GroupID
 }
 
-func (o *CreateSubscriptionRequest) GetSubscription() *shared.Subscription {
+func (o *CreateSubscriptionRequest) GetDisabled() *bool {
 	if o == nil {
 		return nil
+	}
+	return o.Disabled
+}
+
+func (o *CreateSubscriptionRequest) GetDescription() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Description
+}
+
+func (o *CreateSubscriptionRequest) GetFilter() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Filter
+}
+
+func (o *CreateSubscriptionRequest) GetPipeline() string {
+	if o == nil {
+		return ""
+	}
+	return o.Pipeline
+}
+
+func (o *CreateSubscriptionRequest) GetID() string {
+	if o == nil {
+		return ""
+	}
+	return o.ID
+}
+
+func (o *CreateSubscriptionRequest) GetSubscription() shared.Subscription {
+	if o == nil {
+		return shared.Subscription{}
 	}
 	return o.Subscription
 }

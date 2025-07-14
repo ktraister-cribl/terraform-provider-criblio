@@ -23,4 +23,4 @@ data "criblio_event_breaker_ruleset" "my_eventbreakerruleset" {
 
 ### Required
 
-- `group_id` (String) Group ID to GET
+- `group_id` (String) The consumer group to which this instance belongs. Defaults to 'Cribl'.

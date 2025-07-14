@@ -8,7 +8,7 @@ import (
 )
 
 type CreateOutputRequest struct {
-	// Group Id
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
 	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 	// New Output object
 	Output shared.Output `request:"mediaType=application/json"`
@@ -30,14 +30,6 @@ func (o *CreateOutputRequest) GetOutput() shared.Output {
 
 // CreateOutputResponseBody - a list of Output objects
 type CreateOutputResponseBody struct {
-	Items []shared.Output `json:"items,omitempty"`
-}
-
-func (o *CreateOutputResponseBody) GetItems() []shared.Output {
-	if o == nil {
-		return nil
-	}
-	return o.Items
 }
 
 type CreateOutputResponse struct {

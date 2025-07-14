@@ -32,8 +32,16 @@ data "criblio_group" "my_group" {
 
 ### Read-Only
 
-- `cloud` (Attributes) (see [below for nested schema](#nestedatt--cloud))
+- `items` (Attributes List) (see [below for nested schema](#nestedatt--items))
+
+<a id="nestedatt--items"></a>
+### Nested Schema for `items`
+
+Read-Only:
+
+- `cloud` (Attributes) (see [below for nested schema](#nestedatt--items--cloud))
 - `estimated_ingest_rate` (Number)
+- `id` (String)
 - `is_fleet` (Boolean) Must be true if product is 'edge'
 - `name` (String)
 - `on_prem` (Boolean)
@@ -41,8 +49,8 @@ data "criblio_group" "my_group" {
 - `streamtags` (List of String)
 - `worker_remote_access` (Boolean)
 
-<a id="nestedatt--cloud"></a>
-### Nested Schema for `cloud`
+<a id="nestedatt--items--cloud"></a>
+### Nested Schema for `items.cloud`
 
 Read-Only:
 

@@ -29,8 +29,10 @@ type PackDataSource struct {
 
 // PackDataSourceModel describes the data model.
 type PackDataSourceModel struct {
-	GroupID types.String        `tfsdk:"group_id"`
-	Items   []tfTypes.PackInfo1 `tfsdk:"items"`
+	Disabled types.Bool          `queryParam:"style=form,explode=true,name=disabled" tfsdk:"disabled"`
+	GroupID  types.String        `tfsdk:"group_id"`
+	Items    []tfTypes.PackInfo1 `tfsdk:"items"`
+	With     types.String        `queryParam:"style=form,explode=true,name=with" tfsdk:"with"`
 }
 
 // Metadata returns the data source type name.
@@ -44,9 +46,12 @@ func (r *PackDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 		MarkdownDescription: "Pack DataSource",
 
 		Attributes: map[string]schema.Attribute{
+			"disabled": schema.BoolAttribute{
+				Optional: true,
+			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group Id`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"items": schema.ListNestedAttribute{
 				Computed: true,
@@ -68,10 +73,16 @@ func (r *PackDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 						"id": schema.StringAttribute{
 							Computed: true,
 						},
+						"inputs": schema.Float64Attribute{
+							Computed: true,
+						},
 						"is_disabled": schema.BoolAttribute{
 							Computed: true,
 						},
 						"min_log_stream_version": schema.StringAttribute{
+							Computed: true,
+						},
+						"outputs": schema.Float64Attribute{
 							Computed: true,
 						},
 						"settings": schema.MapAttribute{
@@ -110,6 +121,10 @@ func (r *PackDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 						},
 					},
 				},
+			},
+			"with": schema.StringAttribute{
+				Optional:    true,
+				Description: `Comma separated list of entities, "outputs", "inputs"`,
 			},
 		},
 	}

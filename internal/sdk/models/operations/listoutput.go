@@ -8,7 +8,7 @@ import (
 )
 
 type ListOutputRequest struct {
-	// Group Id
+	// The consumer group to which this instance belongs. Defaults to 'Cribl'.
 	GroupID string `pathParam:"style=simple,explode=false,name=groupId"`
 }
 
@@ -21,14 +21,6 @@ func (o *ListOutputRequest) GetGroupID() string {
 
 // ListOutputResponseBody - a list of Output objects
 type ListOutputResponseBody struct {
-	Items []shared.Output `json:"items,omitempty"`
-}
-
-func (o *ListOutputResponseBody) GetItems() []shared.Output {
-	if o == nil {
-		return nil
-	}
-	return o.Items
 }
 
 type ListOutputResponse struct {

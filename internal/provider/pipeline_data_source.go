@@ -59,9 +59,8 @@ func (r *PipelineDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 						Computed: true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"conf": schema.MapAttribute{
-									Computed:    true,
-									ElementType: types.StringType,
+								"conf": schema.SingleNestedAttribute{
+									Computed: true,
 								},
 								"description": schema.StringAttribute{
 									Computed:    true,
@@ -122,11 +121,10 @@ func (r *PipelineDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 			},
 			"group_id": schema.StringAttribute{
 				Required:    true,
-				Description: `Group Id`,
+				Description: `The consumer group to which this instance belongs. Defaults to 'Cribl'.`,
 			},
 			"id": schema.StringAttribute{
-				Required:    true,
-				Description: `Unique ID to GET`,
+				Computed: true,
 			},
 		},
 	}
@@ -170,13 +168,13 @@ func (r *PipelineDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	request, requestDiags := data.ToOperationsGetPipelineByIDRequest(ctx)
+	request, requestDiags := data.ToOperationsListPipelineRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := r.client.Pipelines.GetPipelineByID(ctx, *request)
+	res, err := r.client.Pipelines.ListPipeline(ctx, *request)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", err.Error())
 		if res != nil && res.RawResponse != nil {
