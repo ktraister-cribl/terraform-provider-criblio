@@ -3,6 +3,7 @@ package tests
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
@@ -14,7 +15,7 @@ func TestPackFromFile(t *testing.T) {
 			PreventPostDestroyRefresh: true,
 			Steps: []resource.TestStep{
 				{
-					Config: pFileConfig,
+					ConfigDirectory: config.TestNameDirectory(),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("criblio_pack.my_pack", "id", "pack-from-file"),
 						resource.TestCheckResourceAttr("criblio_pack.my_pack", "group_id", "default"),
@@ -25,7 +26,7 @@ func TestPackFromFile(t *testing.T) {
 					),
 				},
 				{
-					Config: pFileConfig,
+					ConfigDirectory: config.TestNameDirectory(),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectEmptyPlan(),
@@ -36,31 +37,3 @@ func TestPackFromFile(t *testing.T) {
 		})
 	})
 }
-
-var pFileConfig = `
-
-resource "criblio_pack" "my_pack" {
-  id           = "pack-from-file"
-  group_id     = "default"
-  description  = "Pack from file"
-  display_name = "Pack from file"
-  filename       = "cribl-palo-alto-networks-source-1.0.0.crbl"
-  version      = "1.0.0"
-}
-
-# Output the pack details to see the read-only attributes
-output "pack_details" {
-  value = criblio_pack.my_pack
-}
-
-data "criblio_pack" "my_pack" {
-  group_id = "default"
-}
-
-provider "criblio" {
-  server_url = "https://app.cribl-playground.cloud"
-  organization_id = "beautiful-nguyen-y8y4azd"
-  workspace_id = "tfprovider"
-  version = "999.99.9"
-}
-`

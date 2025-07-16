@@ -1,15 +1,3 @@
-terraform {
-  required_providers {
-    criblio = {
-      source = "criblio/criblio"
-    }
-  }
-}
-
-provider "criblio" {
-  # Configuration options
-}
-
 resource "criblio_group" "my_edge_fleet" {
   estimated_ingest_rate = 1024
   id                    = "my-edge-fleet"

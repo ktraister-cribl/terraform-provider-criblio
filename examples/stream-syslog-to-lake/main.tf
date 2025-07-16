@@ -1,15 +1,3 @@
-terraform {
-  required_providers {
-    criblio = {
-      source = "criblio/criblio"
-    }
-  }
-}
-
-provider "criblio" {
-  
-}
-
 # Worker Group Configuration
 resource "criblio_group" "syslog_worker_group" {
   cloud = {
@@ -179,9 +167,3 @@ output "destination_details" {
     id = criblio_destination.cribl_lake.id
   }
 }
-
-output "pack_details" {
-  value = {
-    id = criblio_pack.syslog_pack.id
-  }
-} 

@@ -3,6 +3,7 @@ package tests
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -13,8 +14,7 @@ func TestProject(t *testing.T) {
 			PreventPostDestroyRefresh: true,
 			Steps: []resource.TestStep{
 				{
-					Config:             projConfig,
-					ExpectNonEmptyPlan: true,
+					ConfigDirectory: config.TestNameDirectory(),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("criblio_project.my_project", "id", "my_project"),
 						resource.TestCheckResourceAttr("criblio_project.my_project", "group_id", "default"),
@@ -25,33 +25,3 @@ func TestProject(t *testing.T) {
 		})
 	})
 }
-
-var projConfig = `
-
-resource "criblio_project" "my_project" {
-  consumers = {
-  }
-  description = "test project"
-  destinations = [
-  ]
-  group_id = "default"
-  id       = "my_project"
-  subscriptions = [
-  ]
-}
-
-output "project" {
-  value = criblio_project.my_project
-}
-
-data "criblio_project" "my_project" {
-  group_id = "default"
-}
-
-provider "criblio" {
-  server_url = "https://app.cribl-playground.cloud"
-  organization_id = "beautiful-nguyen-y8y4azd"
-  workspace_id = "tfprovider"
-  version = "999.99.9"
-}
-`
