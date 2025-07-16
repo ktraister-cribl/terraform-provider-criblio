@@ -1,20 +1,8 @@
-terraform {
-  required_providers {
-    criblio = {
-      source = "criblio/criblio"
-    }
-  }
-}
-
-provider "criblio" {
-  # Configuration options
-}
-
 resource "criblio_parquet_schema" "my_parquet_schema" {
-  description           = "test parquest"
-  group_id              = "default"
-  id                    = "my_parquet_schema"
-  schema                = <<-EOT
+  description = "test parquest"
+  group_id    = "default"
+  id          = "my_parquet_schema"
+  schema      = <<-EOT
 {
   "compressed_GZIP": {
     "type": "STRING",

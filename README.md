@@ -46,6 +46,7 @@ export CRIBL_CLIENT_ID="your-client-id"
 export CRIBL_CLIENT_SECRET="your-client-secret"
 export CRIBL_ORGANIZATION_ID="your-organization-id"
 export CRIBL_WORKSPACE_ID="your-workspace-id"
+
 ```
 
 ### Credentials File
@@ -86,6 +87,7 @@ provider "criblio" {
   client_secret    = "your-client-secret"
   organization_id  = "your-organization-id"
   workspace_id     = "your-workspace-id"
+
 }
 ```
 

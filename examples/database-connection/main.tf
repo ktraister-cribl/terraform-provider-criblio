@@ -1,15 +1,3 @@
-terraform {
-  required_providers {
-    criblio = {
-      source = "criblio/criblio"
-    }
-  }
-}
-
-provider "criblio" {
-  # Configuration options
-}
-
 resource "criblio_database_connection" "my_databaseconnection" {
   # Required fields according to OpenAPI schema
   auth_type     = "connectionString"
@@ -17,7 +5,7 @@ resource "criblio_database_connection" "my_databaseconnection" {
   description   = "MySQL database connection example"
   id            = "my_databaseconnection"
   group_id      = "default"
-  
+
   # Optional fields
   config_obj         = "test"
   connection_string  = "mysql://user:password@localhost:3306/mydb"

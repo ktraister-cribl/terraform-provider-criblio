@@ -1,15 +1,3 @@
-terraform {
-  required_providers {
-    criblio = {
-      source = "criblio/criblio"
-    }
-  }
-}
-
-provider "criblio" {
-  # Configuration options
-}
-
 resource "criblio_pack" "my_pack" {
   id           = "pack-from-source"
   group_id     = "default"
@@ -24,4 +12,4 @@ resource "criblio_pack" "my_pack" {
 # Output the pack details to see the read-only attributes
 output "pack_details" {
   value = criblio_pack.my_pack
-} 
+}
