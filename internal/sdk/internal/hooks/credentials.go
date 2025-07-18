@@ -2,7 +2,9 @@ package hooks
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"gopkg.in/ini.v1"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,52 +22,75 @@ type CriblConfigFile struct {
 	Profiles map[string]CriblConfig `json:"profiles"`
 }
 
-// GetCredentials reads credentials from environment variables or credentials file
-func GetCredentials() (*CriblConfig, error) {
-	// First try environment variables
-	clientID := os.Getenv("CRIBL_CLIENT_ID")
-	clientSecret := os.Getenv("CRIBL_CLIENT_SECRET")
-	organizationID := os.Getenv("CRIBL_ORGANIZATION_ID")
-	workspace := os.Getenv("CRIBL_WORKSPACE_ID")
-
-	log.Printf("[DEBUG] Environment variables - clientID=%s, orgID=%s, workspace=%s",
-		clientID, organizationID, workspace)
-
-	// If we have direct credentials in environment, use them
-	if clientID != "" && clientSecret != "" {
-		log.Printf("[DEBUG] Using credentials from environment variables")
-		return &CriblConfig{
-			ClientID:       clientID,
-			ClientSecret:   clientSecret,
-			OrganizationID: organizationID,
-			Workspace:      workspace,
-		}, nil
-	}
-
+func checkLocalConfigDir() ([]byte, error) {
 	// Then try ~/.cribl/credentials file
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Printf("[ERROR] Failed to get home directory: %v", err)
-		return nil, fmt.Errorf("failed to get home directory: %v", err)
+		return []byte{}, fmt.Errorf("failed to get home directory: %v", err)
 	}
 
 	// Check for credentials in ~/.cribl/credentials
 	configDir := filepath.Join(homeDir, ".cribl")
 	configPath := filepath.Join(configDir, "credentials")
+	var filePath string
 
-	log.Printf("[DEBUG] Reading credentials from: %s", configPath)
-	file, err := os.ReadFile(configPath)
+	_, err = os.Stat(configPath)
 	if err != nil {
-		// Fallback to legacy ~/.cribl file if credentials file doesn't exist
+		log.Printf("[DEBUG] No config file found %s", configPath)
 		legacyPath := filepath.Join(homeDir, ".cribl")
-		log.Printf("[DEBUG] Credentials file not found, trying legacy path: %s", legacyPath)
-		file, err = os.ReadFile(legacyPath)
+		_, err := os.Stat(legacyPath)
 		if err != nil {
-			log.Printf("[ERROR] Failed to read both credentials files: %v", err)
-			return nil, fmt.Errorf("failed to read credentials file: %v", err)
+			if errors.Is(err, os.ErrNotExist) {
+				log.Printf("[DEBUG] No config file found %s", legacyPath)
+				return []byte{}, err
+			} else {
+				return []byte{}, err
+			}
 		}
+		filePath = legacyPath
+	} else {
+		filePath = configPath
 	}
 
+	log.Printf("[DEBUG] Reading credentials from: %s", filePath)
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to read credentials file: %v", err)
+	}
+
+	return file, nil
+}
+
+func checkConfigFileFormat(input []byte) (string, error) {
+	var data interface{}
+	err := json.Unmarshal(input, &data)
+	if err == nil {
+		return "json", nil
+	}
+
+	_, err = ini.Load(input)
+	if err == nil {
+		return "ini", nil
+	}
+
+	return "", errors.New("Config file type not recognized")
+}
+
+func parseJSONConfig(file []byte) (*CriblConfig, error) {
+	log.Printf("[DEBUG] parsing JSON config")
+
+	var legacyConfig CriblConfig
+	err := json.Unmarshal(file, &legacyConfig)
+	if err != nil {
+		log.Printf("[ERROR] Failed to parse config file: %v", err)
+		return nil, fmt.Errorf("failed to parse config file: %v", err)
+	}
+
+	return &legacyConfig, nil
+}
+
+func parseIniConfig(file []byte) (*CriblConfig, error) {
 	// Try to parse as INI format first
 	config := &CriblConfigFile{
 		Profiles: make(map[string]CriblConfig),
@@ -112,17 +137,6 @@ func GetCredentials() (*CriblConfig, error) {
 		config.Profiles[currentProfile] = profile
 	}
 
-	// If no profiles were found, try parsing as JSON
-	if len(config.Profiles) == 0 {
-		log.Printf("[DEBUG] No profiles found in INI format, trying JSON")
-		var legacyConfig CriblConfig
-		if err := json.Unmarshal(file, &legacyConfig); err != nil {
-			log.Printf("[ERROR] Failed to parse config file: %v", err)
-			return nil, fmt.Errorf("failed to parse config file: %v", err)
-		}
-		return &legacyConfig, nil
-	}
-
 	// Get the profile from environment variable or use default
 	profileName := os.Getenv("CRIBL_PROFILE")
 	if profileName == "" {
@@ -150,4 +164,58 @@ func GetCredentials() (*CriblConfig, error) {
 	log.Printf("[DEBUG] Selected profile values - clientID=%s, orgID=%s, workspace=%s",
 		profile.ClientID, profile.OrganizationID, profile.Workspace)
 	return &profile, nil
+
+}
+
+// GetCredentials reads credentials from environment variables or credentials file
+func GetCredentials() (*CriblConfig, error) {
+	// First try environment variables
+	clientID := os.Getenv("CRIBL_CLIENT_ID")
+	clientSecret := os.Getenv("CRIBL_CLIENT_SECRET")
+	organizationID := os.Getenv("CRIBL_ORGANIZATION_ID")
+	workspace := os.Getenv("CRIBL_WORKSPACE_ID")
+
+	log.Printf("[DEBUG] Environment variables - clientID=%s, orgID=%s, workspace=%s",
+		clientID, organizationID, workspace)
+
+	// If we have direct credentials in environment, use them
+	if clientID != "" && clientSecret != "" {
+		log.Printf("[DEBUG] Using credentials from environment variables")
+		return &CriblConfig{
+			ClientID:       clientID,
+			ClientSecret:   clientSecret,
+			OrganizationID: organizationID,
+			Workspace:      workspace,
+		}, nil
+	}
+
+	file, err := checkLocalConfigDir()
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Printf("[DEBUG] No configuration file found, continuing")
+			return &CriblConfig{
+				ClientID:       clientID,
+				ClientSecret:   clientSecret,
+				OrganizationID: organizationID,
+				Workspace:      workspace,
+			}, nil
+		} else {
+			return nil, err
+		}
+	}
+
+	format, err := checkConfigFileFormat(file)
+	if err != nil {
+		log.Printf("[DEBUG] No configuration file found, continuing")
+		return nil, err
+	}
+
+	switch format {
+	case "json":
+		return parseJSONConfig(file)
+	case "ini":
+		return parseIniConfig(file)
+	}
+
+	return nil, nil
 }
