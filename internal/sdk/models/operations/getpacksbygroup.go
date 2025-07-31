@@ -38,10 +38,10 @@ func (o *GetPacksByGroupRequest) GetDisabled() *bool {
 
 // GetPacksByGroupResponseBody - a list of PackInfo objects
 type GetPacksByGroupResponseBody struct {
-	Items []shared.PackInfo `json:"items,omitempty"`
+	Items []shared.PackInstallInfo `json:"items,omitempty"`
 }
 
-func (o *GetPacksByGroupResponseBody) GetItems() []shared.PackInfo {
+func (o *GetPacksByGroupResponseBody) GetItems() []shared.PackInstallInfo {
 	if o == nil {
 		return nil
 	}
