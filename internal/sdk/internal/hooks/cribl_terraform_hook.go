@@ -43,31 +43,178 @@ func NewCriblTerraformHook() *CriblTerraformHook {
 func (o *CriblTerraformHook) SDKInit(baseURL string, client HTTPClient) (string, HTTPClient) {
 	log.Printf("[DEBUG] Initializing SDK with baseURL: %s", baseURL)
 	o.client = client
-	o.baseURL = baseURL
 
 	// Get credentials from config or environment
 	log.Printf("[DEBUG] Attempting to get credentials")
 	config, err := GetCredentials()
 	if err != nil {
 		log.Printf("[ERROR] Failed to get credentials: %v", err)
+		o.baseURL = baseURL
 		return baseURL, client
 	}
 
+	// Set orgID and workspaceID from config
 	if config != nil {
 		log.Printf("[DEBUG] Setting orgID: %s and workspaceID: %s", config.OrganizationID, config.Workspace)
 		o.orgID = config.OrganizationID
 		o.workspaceID = config.Workspace
+
+		// If baseURL is not provided or is a template, construct it from credentials
+		finalBaseURL := o.constructBaseURL(baseURL, config)
+		o.baseURL = finalBaseURL
+		log.Printf("[DEBUG] Final baseURL: %s", finalBaseURL)
+		return finalBaseURL, client
 	} else {
 		log.Printf("[DEBUG] No credentials found")
+		o.baseURL = baseURL
 	}
 
 	log.Printf("[DEBUG] Initialization complete")
 	return baseURL, client
 }
 
+// constructBaseURL builds the workspace URL from credentials when needed
+func (o *CriblTerraformHook) constructBaseURL(baseURL string, config *CriblConfig) string {
+	// Always check if environment variables are set - they take highest priority
+	// If any environment variables are set, reconstruct the URL from components
+	workspaceEnv := os.Getenv("CRIBL_WORKSPACE_ID")
+	orgEnv := os.Getenv("CRIBL_ORGANIZATION_ID")
+	domainEnv := os.Getenv("CRIBL_CLOUD_DOMAIN")
+
+	// Special case: if we have a localhost/test URL, keep it even with environment variables
+	if baseURL != "" && (strings.Contains(baseURL, "127.0.0.1") || strings.Contains(baseURL, "localhost")) {
+		log.Printf("[DEBUG] Localhost URL detected, keeping as-is: %s", baseURL)
+		return baseURL
+	}
+
+	// If no environment variables are set and we have a concrete URL, use it as-is
+	if workspaceEnv == "" && orgEnv == "" && domainEnv == "" &&
+		baseURL != "" && !strings.Contains(baseURL, "{workspaceName}") && !strings.Contains(baseURL, "{organizationId}") {
+		log.Printf("[DEBUG] No environment variables set, using provided concrete URL: %s", baseURL)
+		return baseURL
+	}
+
+	// Get values with proper precedence: Environment > Config > Default
+	workspace := workspaceEnv
+	workspaceSource := "environment"
+	if workspace == "" {
+		workspace = config.Workspace
+		workspaceSource = "config"
+	}
+	if workspace == "" {
+		workspace = "main" // Default workspace name
+		workspaceSource = "default"
+	}
+	log.Printf("[DEBUG] Workspace selection: env='%s', config='%s', final='%s', source='%s'",
+		workspaceEnv, config.Workspace, workspace, workspaceSource)
+
+	organizationID := orgEnv
+	orgSource := "environment"
+	if organizationID == "" {
+		organizationID = config.OrganizationID
+		orgSource = "config"
+	}
+	if organizationID == "" {
+		organizationID = "ian" // Default organization ID
+		orgSource = "default"
+	}
+	log.Printf("[DEBUG] Organization selection: env='%s', config='%s', final='%s', source='%s'",
+		orgEnv, config.OrganizationID, organizationID, orgSource)
+
+	// Get cloud domain with proper precedence: Environment > Config > Default
+	cloudDomain := domainEnv
+	domainSource := "environment"
+	if cloudDomain == "" {
+		cloudDomain = config.CloudDomain
+		domainSource = "config"
+	}
+	if cloudDomain == "" {
+		cloudDomain = "cribl.cloud" // Default domain
+		domainSource = "default"
+	}
+	log.Printf("[DEBUG] Domain selection: env='%s', config='%s', final='%s', source='%s'",
+		domainEnv, config.CloudDomain, cloudDomain, domainSource)
+
+	// Construct the workspace URL: https://{workspace}-{organizationId}.{cloudDomain}
+	constructedURL := fmt.Sprintf("https://%s-%s.%s", workspace, organizationID, cloudDomain)
+	log.Printf("[DEBUG] Constructed URL: %s from workspace=%s, org=%s, domain=%s",
+		constructedURL, workspace, organizationID, cloudDomain)
+
+	return constructedURL
+}
+
+// constructBaseURLWithProviderConfig builds URL with proper precedence: Provider Config > Environment > Credentials File > Default
+func (o *CriblTerraformHook) constructBaseURLWithProviderConfig(providerOrgID, providerWorkspaceID, providerCloudDomain string, config *CriblConfig) string {
+	// Special case: if we have a localhost/test URL, keep it even with provider config
+	if o.baseURL != "" && (strings.Contains(o.baseURL, "127.0.0.1") || strings.Contains(o.baseURL, "localhost")) {
+		log.Printf("[DEBUG] Localhost URL detected, keeping as-is: %s", o.baseURL)
+		return o.baseURL
+	}
+
+	// Get environment variables (second precedence)
+	workspaceEnv := os.Getenv("CRIBL_WORKSPACE_ID")
+	orgEnv := os.Getenv("CRIBL_ORGANIZATION_ID")
+	domainEnv := os.Getenv("CRIBL_CLOUD_DOMAIN")
+
+	// Apply precedence: Provider Config > Environment > Credentials File > Default
+	workspace := providerWorkspaceID
+	workspaceSource := "provider"
+	if workspace == "" {
+		workspace = workspaceEnv
+		workspaceSource = "environment"
+	}
+	if workspace == "" && config != nil {
+		workspace = config.Workspace
+		workspaceSource = "credentials"
+	}
+	if workspace == "" {
+		workspace = "main" // Default workspace name
+		workspaceSource = "default"
+	}
+
+	organizationID := providerOrgID
+	orgSource := "provider"
+	if organizationID == "" {
+		organizationID = orgEnv
+		orgSource = "environment"
+	}
+	if organizationID == "" && config != nil {
+		organizationID = config.OrganizationID
+		orgSource = "credentials"
+	}
+	if organizationID == "" {
+		organizationID = "ian" // Default organization ID
+		orgSource = "default"
+	}
+
+	cloudDomain := providerCloudDomain
+	domainSource := "provider"
+	if cloudDomain == "" {
+		cloudDomain = domainEnv
+		domainSource = "environment"
+	}
+	if cloudDomain == "" && config != nil {
+		cloudDomain = config.CloudDomain
+		domainSource = "credentials"
+	}
+	if cloudDomain == "" {
+		cloudDomain = "cribl.cloud" // Default domain
+		domainSource = "default"
+	}
+
+	log.Printf("[DEBUG] Final precedence - Workspace: '%s' (from %s), Org: '%s' (from %s), Domain: '%s' (from %s)",
+		workspace, workspaceSource, organizationID, orgSource, cloudDomain, domainSource)
+
+	// Construct the workspace URL: https://{workspace}-{organizationId}.{cloudDomain}
+	constructedURL := fmt.Sprintf("https://%s-%s.%s", workspace, organizationID, cloudDomain)
+	log.Printf("[DEBUG] Final constructed URL: %s", constructedURL)
+
+	return constructedURL
+}
+
 func (o *CriblTerraformHook) BeforeRequest(ctx BeforeRequestContext, req *http.Request) (*http.Request, error) {
 	// First try to get credentials from security context
-	var clientID, clientSecret, orgID, workspaceID string
+	var clientID, clientSecret, orgID, workspaceID, cloudDomain string
 
 	if ctx.SecuritySource != nil {
 		if security, err := ctx.SecuritySource(ctx.Context); err == nil {
@@ -78,7 +225,7 @@ func (o *CriblTerraformHook) BeforeRequest(ctx BeforeRequestContext, req *http.R
 					clientSecret = s.ClientOauth.ClientSecret
 				}
 
-				// Get org and workspace IDs
+				// Get org and workspace IDs from provider config (higher precedence than credentials file)
 				if s.OrganizationID != nil {
 					orgID = *s.OrganizationID
 					o.orgID = orgID
@@ -87,30 +234,31 @@ func (o *CriblTerraformHook) BeforeRequest(ctx BeforeRequestContext, req *http.R
 					workspaceID = *s.WorkspaceID
 					o.workspaceID = workspaceID
 				}
+				if s.CloudDomain != nil {
+					cloudDomain = *s.CloudDomain
+				}
 			}
 		} else {
 			log.Printf("[ERROR] Failed to get security info: %v", err)
 		}
 	}
 
-	// If we don't have credentials from security context, try to get them from config file
+	// Get credentials file config for fallback values
+	config, err := GetCredentials()
+	if err != nil {
+		log.Printf("[ERROR] Failed to get credentials from config: %v", err)
+	}
+
+	// If we don't have credentials from security context, use config file
 	if clientID == "" || clientSecret == "" {
-		config, err := GetCredentials()
-		if err != nil {
-			log.Printf("[ERROR] Failed to get credentials from config: %v", err)
-		} else if config != nil {
+		if config != nil {
 			clientID = config.ClientID
 			clientSecret = config.ClientSecret
-			if orgID == "" {
-				orgID = config.OrganizationID
-				o.orgID = orgID
-			}
-			if workspaceID == "" {
-				workspaceID = config.Workspace
-				o.workspaceID = workspaceID
-			}
 		}
 	}
+
+	// Reconstruct baseURL with proper precedence: Provider Config > Environment > Credentials File > Default
+	o.baseURL = o.constructBaseURLWithProviderConfig(orgID, workspaceID, cloudDomain, config)
 
 	// Handle authentication
 	if bearerToken := os.Getenv("CRIBL_BEARER_TOKEN"); bearerToken != "" {
@@ -119,7 +267,28 @@ func (o *CriblTerraformHook) BeforeRequest(ctx BeforeRequestContext, req *http.R
 		// Get audience from base URL
 		audience := ""
 		if o.baseURL != "" {
-			audience = strings.Replace(o.baseURL, "app.", "api.", 1)
+			// Extract domain from workspace URL (e.g., from https://main-org.cribl.cloud)
+			parsedURL, err := url.Parse(o.baseURL)
+			if err != nil {
+				return req, fmt.Errorf("failed to parse base URL for audience: %v", err)
+			}
+
+			host := parsedURL.Host
+
+			// Handle test/localhost URLs differently
+			if strings.Contains(host, "127.0.0.1") || strings.Contains(host, "localhost") {
+				// For test URLs, use the same URL as audience
+				audience = o.baseURL
+			} else {
+				// Extract domain part after the first dash (remove workspace-org prefix)
+				parts := strings.SplitN(host, ".", 2)
+				if len(parts) < 2 {
+					return req, fmt.Errorf("invalid workspace URL format for audience: %s", host)
+				}
+				domain := parts[1] // e.g., "cribl.cloud"
+
+				audience = fmt.Sprintf("https://api.%s", domain)
+			}
 		} else if os.Getenv("CRIBL_AUDIENCE") != "" {
 			audience = os.Getenv("CRIBL_AUDIENCE")
 		} else {
@@ -149,18 +318,13 @@ func (o *CriblTerraformHook) BeforeRequest(ctx BeforeRequestContext, req *http.R
 		req.Header.Set("Authorization", "Bearer "+tokenInfo.Token)
 	}
 
-	// Handle URL routing
-	serverURL := strings.TrimRight(o.baseURL, "/")
+	// Handle URL routing - for new workspace format, requests go directly to workspace URL
+	trimmedBaseURL := strings.TrimRight(o.baseURL, "/")
 	path := strings.TrimLeft(req.URL.Path, "/")
 
-	// If we have org and workspace IDs from security context or config, use them
-	if orgID != "" && workspaceID != "" && !strings.Contains(req.URL.String(), "app/api/v1") {
-		newURL := fmt.Sprintf("%s/organizations/%s/workspaces/%s/app/api/v1/%s",
-			serverURL,
-			orgID,
-			workspaceID,
-			path,
-		)
+	// For new workspace format, construct API URLs directly (e.g., https://main-org.domain/api/v1/...)
+	if !strings.Contains(req.URL.String(), "/api/v1") && !strings.HasPrefix(path, "api/v1") {
+		newURL := fmt.Sprintf("%s/api/v1/%s", trimmedBaseURL, path)
 
 		parsedURL, err := url.Parse(newURL)
 		if err != nil {
@@ -177,30 +341,76 @@ func (o *CriblTerraformHook) getBearerToken(ctx context.Context, clientID, clien
 	// Get auth URL from base URL
 	authURL := ""
 	if o.baseURL != "" {
-		authURL = strings.Replace(o.baseURL, "app.", "login.", 1)
-		authURL = strings.TrimSuffix(authURL, "/")
-		authURL = authURL + "/oauth/token"
+		// Extract domain from workspace URL (e.g., from https://main-org.cribl.cloud)
+		parsedURL, err := url.Parse(o.baseURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse base URL: %v", err)
+		}
+
+		host := parsedURL.Host
+
+		// Handle test/localhost URLs differently
+		if strings.Contains(host, "127.0.0.1") || strings.Contains(host, "localhost") {
+			// For test URLs, use the same host but with /oauth/token path
+			authURL = fmt.Sprintf("%s://%s/oauth/token", parsedURL.Scheme, host)
+		} else {
+			// Extract domain part after the first dash (remove workspace-org prefix)
+			parts := strings.SplitN(host, ".", 2)
+			if len(parts) < 2 {
+				return nil, fmt.Errorf("invalid workspace URL format: %s", host)
+			}
+			domain := parts[1] // e.g., "cribl.cloud"
+
+			authURL = fmt.Sprintf("https://login.%s/oauth/token", domain)
+		}
 	} else {
 		return nil, fmt.Errorf("no base URL provided")
 	}
 
-	// Create form data
-	formData := url.Values{}
-	formData.Set("grant_type", "client_credentials")
-	formData.Set("client_id", clientID)
-	formData.Set("client_secret", clientSecret)
-
 	// Ensure audience is set
 	if audience == "" {
-		audience = strings.Replace(o.baseURL, "app.", "api.", 1)
-	}
-	formData.Set("audience", audience)
+		// Extract domain from workspace URL for audience
+		parsedURL, err := url.Parse(o.baseURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse base URL for fallback audience: %v", err)
+		}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", authURL, strings.NewReader(formData.Encode()))
+		host := parsedURL.Host
+
+		// Handle test/localhost URLs differently
+		if strings.Contains(host, "127.0.0.1") || strings.Contains(host, "localhost") {
+			// For test URLs, use the same URL as audience
+			audience = o.baseURL
+		} else {
+			// Extract domain part after the first dash (remove workspace-org prefix)
+			parts := strings.SplitN(host, ".", 2)
+			if len(parts) < 2 {
+				return nil, fmt.Errorf("invalid workspace URL format for fallback audience: %s", host)
+			}
+			domain := parts[1] // e.g., "cribl.cloud"
+
+			audience = fmt.Sprintf("https://api.%s", domain)
+		}
+	}
+
+	// Create JSON request body (matching bootstrap template format)
+	requestBody := map[string]string{
+		"grant_type":    "client_credentials",
+		"client_id":     clientID,
+		"client_secret": clientSecret,
+		"audience":      audience,
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %v", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", authURL, strings.NewReader(string(jsonData)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := o.client.Do(req)
 	if err != nil {
@@ -247,7 +457,28 @@ func (o *CriblTerraformHook) AfterError(ctx AfterErrorContext, res *http.Respons
 			// Get audience from base URL
 			audience := ""
 			if o.baseURL != "" {
-				audience = strings.Replace(o.baseURL, "app.", "api.", 1)
+				// Extract domain from workspace URL for audience in error handler
+				parsedURL, err := url.Parse(o.baseURL)
+				if err != nil {
+					return res, fmt.Errorf("failed to parse base URL for audience in error handler: %v", err)
+				}
+
+				host := parsedURL.Host
+
+				// Handle test/localhost URLs differently
+				if strings.Contains(host, "127.0.0.1") || strings.Contains(host, "localhost") {
+					// For test URLs, use the same URL as audience
+					audience = o.baseURL
+				} else {
+					// Extract domain part after the first dash (remove workspace-org prefix)
+					parts := strings.SplitN(host, ".", 2)
+					if len(parts) < 2 {
+						return res, fmt.Errorf("invalid workspace URL format for audience in error handler: %s", host)
+					}
+					domain := parts[1] // e.g., "cribl-playground.cloud"
+
+					audience = fmt.Sprintf("https://api.%s", domain)
+				}
 			} else if os.Getenv("CRIBL_AUDIENCE") != "" {
 				audience = os.Getenv("CRIBL_AUDIENCE")
 			} else {
