@@ -46678,33 +46678,47 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/RouteConf"
+      example:
+        - id: route-errors
+          name: Errors
+          pipeline: main
+          final: true
     SecretType:
       type: string
       enum:
         - text
         - keypair
         - credentials
+      example: text
     RestSecret:
       type: object
       properties:
         apiKey:
           type: string
+          example: abcd-1234-efgh-5678
         description:
           type: string
+          example: Service credentials for DataDog
         id:
           type: string
+          example: secret-001
         password:
           type: string
+          example: S3cureP@ss!
         secretKey:
           type: string
+          example: secret-key-123
         secretType:
           $ref: "#/components/schemas/SecretType"
         tags:
           type: string
+          example: env:prod,team:platform
         username:
           type: string
+          example: svc-user
         value:
           type: string
+          example: some-secret-value
       required:
         - id
         - secretType
@@ -46713,6 +46727,7 @@ components:
       properties:
         id:
           type: string
+          example: input:syslog:01
         status:
           type: object
           properties:
@@ -46722,13 +46737,19 @@ components:
                 - Green
                 - Yellow
                 - Red
+              example: Green
             metrics:
               type: object
               additionalProperties: true
+              example:
+                receivedEvents: 120934
+                failedEvents: 3
             timestamp:
               type: number
+              example: 1730481600000
             useStatusFromLB:
               type: boolean
+              example: false
           required:
             - health
             - metrics
@@ -46741,6 +46762,7 @@ components:
       properties:
         id:
           type: string
+          example: output:splunk:hec01
         status:
           type: object
           properties:
@@ -46750,13 +46772,19 @@ components:
                 - Green
                 - Yellow
                 - Red
+              example: Green
             metrics:
               type: object
               additionalProperties: true
+              example:
+                sentEvents: 120000
+                failedBatches: 1
             timestamp:
               type: number
+              example: 1730481600000
             useStatusFromLB:
               type: boolean
+              example: false
           required:
             - health
             - metrics
@@ -46776,6 +46804,7 @@ components:
         - detaching
         - detached
         - detach_failed
+      example: normal
     AppScopeProcessStatus:
       type: string
       nullable: true
@@ -46783,6 +46812,7 @@ components:
         - green
         - yellow
         - red
+      example: green
     AppScopeProcess:
       type: object
       properties:
@@ -46790,8 +46820,10 @@ components:
           $ref: "#/components/schemas/AppscopeConfigWithCustom"
         config_id:
           type: string
+          example: cfg-12345
         id:
           type: string
+          example: proc-abc123
         interfaces:
           type: array
           items:
@@ -46799,35 +46831,62 @@ components:
             properties:
               config:
                 type: string
+                example: http
               connected:
                 type: boolean
+                example: true
               name:
                 type: string
+                example: eth0
         lastError:
           type: string
+          example: ""
         process:
           type: object
           properties:
             hostPid:
               type: number
+              example: 4242
             id:
               type: string
+              example: proc-4242
             machine_id:
               type: string
+              example: a1b2c3d4e5f6
             pid:
               type: number
+              example: 4242
             uuid:
               type: string
+              example: 550e8400-e29b-41d4-a716-446655440000
           required:
             - pid
         processingStatus:
           $ref: "#/components/schemas/AppScopeProcessingStatus"
         source_id:
           type: string
+          example: source-123
         status:
           $ref: "#/components/schemas/AppScopeProcessStatus"
       required:
         - id
+      example:
+        id: proc-abc123
+        config_id: cfg-12345
+        interfaces:
+          - name: eth0
+            connected: true
+            config: http
+        lastError: ""
+        process:
+          pid: 4242
+          hostPid: 4242
+          id: proc-4242
+          machine_id: a1b2c3d4e5f6
+          uuid: 550e8400-e29b-41d4-a716-446655440000
+        processingStatus: normal
+        source_id: source-123
+        status: green
     EdgeFileInspectResponse:
       type: object
     SymLinkInfo:
