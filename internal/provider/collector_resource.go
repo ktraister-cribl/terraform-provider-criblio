@@ -241,6 +241,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
+						Description: `Default: []`,
 					},
 					"resume_on_boot": schema.BoolAttribute{
 						Computed:    true,
@@ -421,7 +422,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `Tags for filtering and grouping`,
+						Description: `Tags for filtering and grouping. Default: []`,
 					},
 					"ttl": schema.StringAttribute{
 						Computed:    true,
@@ -579,6 +580,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
+						Description: `Default: []`,
 					},
 					"resume_on_boot": schema.BoolAttribute{
 						Computed:    true,
@@ -759,7 +761,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `Tags for filtering and grouping`,
+						Description: `Tags for filtering and grouping. Default: []`,
 					},
 					"ttl": schema.StringAttribute{
 						Computed:    true,
@@ -922,6 +924,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
+						Description: `Default: []`,
 					},
 					"resume_on_boot": schema.BoolAttribute{
 						Computed:    true,
@@ -1102,7 +1105,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `Tags for filtering and grouping`,
+						Description: `Tags for filtering and grouping. Default: []`,
 					},
 					"ttl": schema.StringAttribute{
 						Computed:    true,
@@ -1292,6 +1295,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
+						Description: `Default: []`,
 					},
 					"resume_on_boot": schema.BoolAttribute{
 						Computed:    true,
@@ -1472,7 +1476,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `Tags for filtering and grouping`,
+						Description: `Tags for filtering and grouping. Default: []`,
 					},
 					"ttl": schema.StringAttribute{
 						Computed:    true,
@@ -1680,6 +1684,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
+						Description: `Default: []`,
 					},
 					"resume_on_boot": schema.BoolAttribute{
 						Computed:    true,
@@ -1860,7 +1865,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `Tags for filtering and grouping`,
+						Description: `Tags for filtering and grouping. Default: []`,
 					},
 					"ttl": schema.StringAttribute{
 						Computed:    true,
@@ -2232,8 +2237,14 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 										Optional: true,
 										Attributes: map[string]schema.Attribute{
 											"codes": schema.ListAttribute{
-												Optional:    true,
+												Computed: true,
+												Optional: true,
+												Default: listdefault.StaticValue(types.ListValueMust(types.Int64Type, []attr.Value{
+													types.Int64Value(429),
+													types.Int64Value(503),
+												})),
 												ElementType: types.Int64Type,
+												Description: `Default: [429,503]`,
 											},
 											"enable_header": schema.BoolAttribute{
 												Computed:    true,
@@ -2447,6 +2458,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
+						Description: `Default: []`,
 					},
 					"resume_on_boot": schema.BoolAttribute{
 						Computed:    true,
@@ -2627,7 +2639,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `Tags for filtering and grouping`,
+						Description: `Tags for filtering and grouping. Default: []`,
 					},
 					"ttl": schema.StringAttribute{
 						Computed:    true,
@@ -2826,6 +2838,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
+						Description: `Default: []`,
 					},
 					"resume_on_boot": schema.BoolAttribute{
 						Computed:    true,
@@ -3006,7 +3019,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `Tags for filtering and grouping`,
+						Description: `Tags for filtering and grouping. Default: []`,
 					},
 					"ttl": schema.StringAttribute{
 						Computed:    true,
@@ -3241,6 +3254,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
+						Description: `Default: []`,
 					},
 					"resume_on_boot": schema.BoolAttribute{
 						Computed:    true,
@@ -3421,7 +3435,7 @@ func (r *CollectorResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional:    true,
 						Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 						ElementType: types.StringType,
-						Description: `Tags for filtering and grouping`,
+						Description: `Tags for filtering and grouping. Default: []`,
 					},
 					"ttl": schema.StringAttribute{
 						Computed:    true,
@@ -3698,17 +3712,17 @@ func (r *CollectorResource) ImportState(ctx context.Context, req resource.Import
 	}
 
 	if err := dec.Decode(&data); err != nil {
-		resp.Diagnostics.AddError("Invalid ID", `The import ID is not valid. It is expected to be a JSON object string with the format: '{"group_id": "default", "id": "..."}': `+err.Error())
+		resp.Diagnostics.AddError("Invalid ID", `The import ID is not valid. It is expected to be a JSON object string with the format: '{"group_id": "myExistingGroupId", "id": "myExistingJobId"}': `+err.Error())
 		return
 	}
 
 	if len(data.GroupID) == 0 {
-		resp.Diagnostics.AddError("Missing required field", `The field group_id is required but was not found in the json encoded ID. It's expected to be a value alike '"default"`)
+		resp.Diagnostics.AddError("Missing required field", `The field group_id is required but was not found in the json encoded ID. It's expected to be a value alike '"myExistingGroupId"`)
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("group_id"), data.GroupID)...)
 	if len(data.ID) == 0 {
-		resp.Diagnostics.AddError("Missing required field", `The field id is required but was not found in the json encoded ID. It's expected to be a value alike '""`)
+		resp.Diagnostics.AddError("Missing required field", `The field id is required but was not found in the json encoded ID. It's expected to be a value alike '"myExistingJobId"`)
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), data.ID)...)

@@ -15,7 +15,7 @@ GlobalVar DataSource
 ```terraform
 data "criblio_global_var" "my_globalvar" {
   group_id = "default"
-  id       = "test_var"
+  id       = "ENV"
 }
 ```
 

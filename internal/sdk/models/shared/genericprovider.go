@@ -147,11 +147,11 @@ type AzureBlobProvider struct {
 	SasConfigs []SasConfig `json:"sasConfigs,omitempty"`
 	// The name of your Azure storage account
 	StorageAccountName *string `json:"storageAccountName,omitempty"`
-	// The service principal's tenant ID
+	// Azure AD tenant ID
 	TenantID *string `json:"tenantId,omitempty"`
-	// The service principal's client ID
+	// Azure AD application client ID
 	ClientID *string `json:"clientId,omitempty"`
-	// The service principal's client secret
+	// Azure AD application client secret
 	ClientSecret *string `json:"clientSecret,omitempty"`
 }
 
@@ -447,7 +447,7 @@ type S3Provider struct {
 	SignatureVersion S3ProviderSignatureVersion `json:"signatureVersion"`
 	// Whether to reject unauthorized requests
 	RejectUnauthorized *bool `json:"rejectUnauthorized,omitempty"`
-	// Whether to reuse connections
+	// Reuse existing S3 connections
 	ReuseConnections *bool `json:"reuseConnections,omitempty"`
 	// Whether to enable role assumption
 	EnableAssumeRole *bool `json:"enableAssumeRole,omitempty"`

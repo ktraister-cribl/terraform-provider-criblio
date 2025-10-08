@@ -14,11 +14,10 @@ Grok Resource
 
 ```terraform
 resource "criblio_grok" "my_grok" {
-  content  = "...my_content..."
-  group_id = "...my_group_id..."
-  id       = "...my_id..."
-  size     = 6.73
-  tags     = "...my_tags..."
+  content  = "%%{IPV4:client} %%{WORD:method} %%{URIPATHPARAM:request}"
+  group_id = "Cribl"
+  id       = "myGrokFile"
+  tags     = "logs,patterns"
 }
 ```
 
@@ -30,10 +29,22 @@ resource "criblio_grok" "my_grok" {
 - `content` (String)
 - `group_id` (String) The consumer group to which this instance belongs. Defaults to 'Cribl'.
 - `id` (String) Unique ID to PATCH
-- `size` (Number)
 
 ### Optional
 
+- `tags` (String)
+
+### Read-Only
+
+- `items` (Attributes List) (see [below for nested schema](#nestedatt--items))
+
+<a id="nestedatt--items"></a>
+### Nested Schema for `items`
+
+Read-Only:
+
+- `content` (String)
+- `id` (String)
 - `tags` (String)
 
 ## Import
@@ -46,8 +57,8 @@ In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.
 import {
   to = criblio_grok.my_criblio_grok
   id = jsonencode({
-    group_id = "..."
-    id = "..."
+    group_id = "Cribl"
+    id = "grok-common"
   })
 }
 ```
@@ -55,5 +66,5 @@ import {
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import criblio_grok.my_criblio_grok '{"group_id": "...", "id": "..."}'
+terraform import criblio_grok.my_criblio_grok '{"group_id": "Cribl", "id": "grok-common"}'
 ```

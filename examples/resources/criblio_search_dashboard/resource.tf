@@ -1,67 +1,68 @@
 resource "criblio_search_dashboard" "my_searchdashboard" {
-  cache_ttl_seconds   = 6.24
-  category            = "...my_category..."
-  created             = 6.32
-  created_by          = "...my_created_by..."
-  description         = "...my_description..."
-  display_created_by  = "...my_display_created_by..."
-  display_modified_by = "...my_display_modified_by..."
+  cache_ttl_seconds   = 300
+  category            = "observability"
+  created             = 1696166400
+  created_by          = "user123"
+  description         = "Dashboard for monitoring system metrics"
+  display_created_by  = "User 123"
+  display_modified_by = "User 456"
   elements = [
     {
       element = {
-        description      = "...my_description..."
+        description      = "5xx error rate for checkout"
         empty            = false
         hide_panel       = false
-        horizontal_chart = true
-        id               = "...my_id..."
-        index            = 5.35
-        input_id         = "...my_input_id..."
+        horizontal_chart = false
+        id               = "panel-http-5xx"
+        index            = 3
+        input_id         = "service"
         layout = {
-          h = 3.81
-          w = 5.73
-          x = 5.53
-          y = 6.72
+          h = 0
+          w = 9
+          x = 8
+          y = 2
         }
         search = {
           search_query_inline = {
             earliest = {
-              number = 2.23
+              number = 1696166400
             }
             latest = {
-              number = 2.43
+              number = 1696170000
             }
-            parent_search_id = "...my_parent_search_id..."
-            query            = "...my_query..."
-            sample_rate      = 5.02
-            timezone         = "...my_timezone..."
+            parent_search_id = "parentSearch1"
+            query            = "error OR warn"
+            sample_rate      = 0.5
+            timezone         = "UTC"
             type             = "inline"
           }
         }
-        title = "...my_title..."
+        title = "HTTP 5xx errors"
         type  = "chart.line"
         value = {
           key = jsonencode("value")
         }
-        variant = "input"
+        variant = "markdown"
       }
     }
   ]
-  id           = "...my_id..."
-  modified     = 3.77
-  modified_by  = "...my_modified_by..."
-  name         = "...my_name..."
-  pack_id      = "...my_pack_id..."
-  refresh_rate = 2.1
+  id           = "dashboard123"
+  modified     = 1696170000
+  modified_by  = "user456"
+  name         = "System Metrics Dashboard"
+  pack_id      = "New Pack Id"
+  refresh_rate = 60
   resolved_dataset_ids = [
-    "..."
+    "string",
+    "int",
   ]
   schedule = {
-    cron_schedule = "...my_cron_schedule..."
+    cron_schedule = "0 * * * *"
     enabled       = true
-    keep_last_n   = 5.1
+    keep_last_n   = 5
     notifications = {
       disabled = false
     }
-    tz = "...my_tz..."
+    tz = "UTC"
   }
 }

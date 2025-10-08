@@ -16,116 +16,116 @@ AppscopeConfig Resource
 resource "criblio_appscope_config" "my_appscopeconfig" {
   config = {
     cribl = {
-      authtoken = "...my_authtoken..."
+      authtoken = "myAuthToken123"
       enable    = true
       transport = {
         buffer = "line"
-        host   = "...my_host..."
-        path   = "...my_path..."
-        port   = 1.73
+        host   = "localhost"
+        path   = "/var/run/appscope.sock"
+        port   = 8080
         tls = {
-          cacertpath     = "...my_cacertpath..."
-          enable         = false
-          validateserver = true
+          cacertpath     = "/etc/ssl/certs/ca-certificates.crt"
+          enable         = true
+          validateserver = false
         }
-        type = "...my_type..."
+        type = "tcp"
       }
-      use_scope_source_transport = true
+      use_scope_source_transport = false
     }
     custom = [
       {
-        ancestor = "...my_ancestor..."
-        arg      = "...my_arg..."
+        ancestor = "parentProcess"
+        arg      = "--debug"
         config = {
           cribl = {
-            authtoken = "...my_authtoken..."
-            enable    = false
+            authtoken = "myAuthToken123"
+            enable    = true
             transport = {
-              buffer = "full"
-              host   = "...my_host..."
-              path   = "...my_path..."
-              port   = 9.85
+              buffer = "line"
+              host   = "localhost"
+              path   = "/var/run/appscope.sock"
+              port   = 8080
               tls = {
-                cacertpath     = "...my_cacertpath..."
-                enable         = false
+                cacertpath     = "/etc/ssl/certs/ca-certificates.crt"
+                enable         = true
                 validateserver = false
               }
-              type = "...my_type..."
+              type = "tcp"
             }
-            use_scope_source_transport = true
+            use_scope_source_transport = false
           }
           event = {
             enable = true
             format = {
-              enhancefs      = true
-              maxeventpersec = 5.37
+              enhancefs      = false
+              maxeventpersec = 100
             }
             transport = {
               buffer = "line"
-              host   = "...my_host..."
-              path   = "...my_path..."
-              port   = 4.5
+              host   = "localhost"
+              path   = "/var/run/appscope.sock"
+              port   = 8080
               tls = {
-                cacertpath     = "...my_cacertpath..."
+                cacertpath     = "/etc/ssl/certs/ca-certificates.crt"
                 enable         = true
-                validateserver = true
+                validateserver = false
               }
-              type = "...my_type..."
+              type = "tcp"
             }
             type = "ndjson"
             watch = [
               {
-                allowbinary = true
+                allowbinary = false
                 enabled     = true
-                field       = "...my_field..."
+                field       = "http.method"
                 headers = [
-                  "..."
+                  "Content-Type"
                 ]
-                name  = "...my_name..."
-                type  = "...my_type..."
-                value = "...my_value..."
+                name  = "RequestEvents"
+                type  = "match"
+                value = "GET"
               }
             ]
           }
           libscope = {
-            commanddir  = "...my_commanddir..."
+            commanddir  = "/opt/appscope"
             configevent = false
             log = {
               level = "info"
               transport = {
                 buffer = "line"
-                host   = "...my_host..."
-                path   = "...my_path..."
-                port   = 2.31
+                host   = "localhost"
+                path   = "/var/run/appscope.sock"
+                port   = 8080
                 tls = {
-                  cacertpath     = "...my_cacertpath..."
-                  enable         = false
+                  cacertpath     = "/etc/ssl/certs/ca-certificates.crt"
+                  enable         = true
                   validateserver = false
                 }
-                type = "...my_type..."
+                type = "tcp"
               }
             }
-            summaryperiod = 9.88
+            summaryperiod = 60
           }
           metric = {
             enable = true
             format = {
-              statsdmaxlen = 8.61
-              statsdprefix = "...my_statsdprefix..."
-              type         = "...my_type..."
-              verbosity    = 4.06
+              statsdmaxlen = 512
+              statsdprefix = "webshop.prod."
+              type         = "statsd"
+              verbosity    = 3
             }
             transport = {
               buffer = "line"
-              host   = "...my_host..."
-              path   = "...my_path..."
-              port   = 3.15
+              host   = "localhost"
+              path   = "/var/run/appscope.sock"
+              port   = 8080
               tls = {
-                cacertpath     = "...my_cacertpath..."
-                enable         = false
-                validateserver = true
+                cacertpath     = "/etc/ssl/certs/ca-certificates.crt"
+                enable         = true
+                validateserver = false
               }
-              type = "...my_type..."
+              type = "tcp"
             }
             watch = [
               {
@@ -134,104 +134,104 @@ resource "criblio_appscope_config" "my_appscopeconfig" {
             ]
           }
           payload = {
-            dir    = "...my_dir..."
-            enable = false
+            dir    = "/var/lib/appscope/payloads"
+            enable = true
           }
           protocol = [
             {
               binary  = false
-              detect  = false
-              len     = 1.8
-              name    = "...my_name..."
+              detect  = true
+              len     = 128
+              name    = "http"
               payload = true
-              regex   = "...my_regex..."
+              regex   = ".*"
             }
           ]
           tags = [
             {
-              key   = "...my_key..."
-              value = "...my_value..."
+              key   = "env"
+              value = "prod"
             }
           ]
         }
-        env      = "...my_env..."
-        hostname = "...my_hostname..."
-        procname = "...my_procname..."
-        username = "...my_username..."
+        env      = "production"
+        hostname = "host123.example.com"
+        procname = "myprocess"
+        username = "appuser"
       }
     ]
     event = {
-      enable = false
+      enable = true
       format = {
-        enhancefs      = true
-        maxeventpersec = 3.37
+        enhancefs      = false
+        maxeventpersec = 100
       }
       transport = {
         buffer = "line"
-        host   = "...my_host..."
-        path   = "...my_path..."
-        port   = 6.04
+        host   = "localhost"
+        path   = "/var/run/appscope.sock"
+        port   = 8080
         tls = {
-          cacertpath     = "...my_cacertpath..."
+          cacertpath     = "/etc/ssl/certs/ca-certificates.crt"
           enable         = true
-          validateserver = true
+          validateserver = false
         }
-        type = "...my_type..."
+        type = "tcp"
       }
       type = "ndjson"
       watch = [
         {
-          allowbinary = true
+          allowbinary = false
           enabled     = true
-          field       = "...my_field..."
+          field       = "http.method"
           headers = [
-            "..."
+            "Content-Type"
           ]
-          name  = "...my_name..."
-          type  = "...my_type..."
-          value = "...my_value..."
+          name  = "RequestEvents"
+          type  = "match"
+          value = "GET"
         }
       ]
     }
     libscope = {
-      commanddir  = "...my_commanddir..."
+      commanddir  = "/var/run/appscope/commands"
       configevent = true
       log = {
-        level = "none"
+        level = "info"
         transport = {
           buffer = "line"
-          host   = "...my_host..."
-          path   = "...my_path..."
-          port   = 9.86
+          host   = "localhost"
+          path   = "/var/run/appscope.sock"
+          port   = 8080
           tls = {
-            cacertpath     = "...my_cacertpath..."
+            cacertpath     = "/etc/ssl/certs/ca-certificates.crt"
             enable         = true
-            validateserver = true
+            validateserver = false
           }
-          type = "...my_type..."
+          type = "tcp"
         }
       }
-      summaryperiod = 9.16
+      summaryperiod = 60
     }
     metric = {
-      enable = false
+      enable = true
       format = {
-        statsdmaxlen = 5.96
-        statsdprefix = "...my_statsdprefix..."
-        type         = "...my_type..."
-        verbosity    = 1.33
+        statsdmaxlen = 512
+        statsdprefix = "webshop.prod."
+        type         = "statsd"
+        verbosity    = 3
       }
       transport = {
-        buffer = "full"
-        host   = "...my_host..."
-        path   = "...my_path..."
-        port   = 5.7
+        buffer = "line"
+        host   = "localhost"
+        path   = "/var/run/appscope.sock"
+        port   = 8080
         tls = {
-          cacertpath     = "...my_cacertpath..."
+          cacertpath     = "/etc/ssl/certs/ca-certificates.crt"
           enable         = true
-          validateserver = true
+          validateserver = false
         }
-        type = "...my_type..."
+        type = "tcp"
       }
       watch = [
         {
@@ -240,31 +240,31 @@ resource "criblio_appscope_config" "my_appscopeconfig" {
       ]
     }
     payload = {
-      dir    = "...my_dir..."
+      dir    = "/var/lib/appscope/payloads"
       enable = true
     }
     protocol = [
       {
-        binary  = true
+        binary  = false
         detect  = true
-        len     = 9.26
-        name    = "...my_name..."
+        len     = 128
+        name    = "http"
         payload = true
-        regex   = "...my_regex..."
+        regex   = ".*"
       }
     ]
     tags = [
       {
-        key   = "...my_key..."
-        value = "...my_value..."
+        key   = "env"
+        value = "prod"
       }
     ]
   }
-  description = "...my_description..."
-  group_id    = "...my_group_id..."
-  id          = "...my_id..."
+  description = "Custom Appscope configuration for nginx"
+  group_id    = "Cribl"
+  id          = "appscopeConfig1"
   lib         = "cribl"
-  tags        = "...my_tags..."
+  tags        = "scope,nginx"
 }
 ```
 
@@ -274,14 +274,18 @@ resource "criblio_appscope_config" "my_appscopeconfig" {
 ### Required
 
 - `config` (Attributes) (see [below for nested schema](#nestedatt--config))
-- `description` (String)
 - `group_id` (String) The consumer group to which this instance belongs. Defaults to 'Cribl'.
-- `id` (String) Unique ID to PATCH
-- `lib` (String) must be one of ["cribl", "cribl-custom", "custom"]
+- `id` (String) Unique ID for this Appscope config
 
 ### Optional
 
+- `description` (String)
+- `lib` (String) must be one of ["cribl", "cribl-custom", "custom"]
 - `tags` (String)
+
+### Read-Only
+
+- `items` (Attributes List) (see [below for nested schema](#nestedatt--items))
 
 <a id="nestedatt--config"></a>
 ### Nested Schema for `config`
@@ -754,6 +758,490 @@ Optional:
 - `key` (String) Not Null
 - `value` (String) Not Null
 
+
+
+<a id="nestedatt--items"></a>
+### Nested Schema for `items`
+
+Read-Only:
+
+- `config` (Attributes) (see [below for nested schema](#nestedatt--items--config))
+- `description` (String)
+- `id` (String) Unique ID for this Appscope config
+- `lib` (String) must be one of ["cribl", "cribl-custom", "custom"]
+- `tags` (String)
+
+<a id="nestedatt--items--config"></a>
+### Nested Schema for `items.config`
+
+Read-Only:
+
+- `cribl` (Attributes) (see [below for nested schema](#nestedatt--items--config--cribl))
+- `custom` (Attributes List) (see [below for nested schema](#nestedatt--items--config--custom))
+- `event` (Attributes) (see [below for nested schema](#nestedatt--items--config--event))
+- `libscope` (Attributes) (see [below for nested schema](#nestedatt--items--config--libscope))
+- `metric` (Attributes) (see [below for nested schema](#nestedatt--items--config--metric))
+- `payload` (Attributes) (see [below for nested schema](#nestedatt--items--config--payload))
+- `protocol` (Attributes List) (see [below for nested schema](#nestedatt--items--config--protocol))
+- `tags` (Attributes List) (see [below for nested schema](#nestedatt--items--config--tags))
+
+<a id="nestedatt--items--config--cribl"></a>
+### Nested Schema for `items.config.cribl`
+
+Read-Only:
+
+- `authtoken` (String)
+- `enable` (Boolean)
+- `transport` (Attributes) (see [below for nested schema](#nestedatt--items--config--cribl--transport))
+- `use_scope_source_transport` (Boolean)
+
+<a id="nestedatt--items--config--cribl--transport"></a>
+### Nested Schema for `items.config.cribl.transport`
+
+Read-Only:
+
+- `buffer` (String) must be one of ["line", "full"]
+- `host` (String)
+- `path` (String)
+- `port` (Number)
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--items--config--cribl--transport--tls))
+- `type` (String)
+
+<a id="nestedatt--items--config--cribl--transport--tls"></a>
+### Nested Schema for `items.config.cribl.transport.tls`
+
+Read-Only:
+
+- `cacertpath` (String)
+- `enable` (Boolean)
+- `validateserver` (Boolean)
+
+
+
+
+<a id="nestedatt--items--config--custom"></a>
+### Nested Schema for `items.config.custom`
+
+Read-Only:
+
+- `ancestor` (String)
+- `arg` (String)
+- `config` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config))
+- `env` (String)
+- `hostname` (String)
+- `procname` (String)
+- `username` (String)
+
+<a id="nestedatt--items--config--custom--config"></a>
+### Nested Schema for `items.config.custom.config`
+
+Read-Only:
+
+- `cribl` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--cribl))
+- `event` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--event))
+- `libscope` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--libscope))
+- `metric` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--metric))
+- `payload` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--payload))
+- `protocol` (Attributes List) (see [below for nested schema](#nestedatt--items--config--custom--config--protocol))
+- `tags` (Attributes List) (see [below for nested schema](#nestedatt--items--config--custom--config--tags))
+
+<a id="nestedatt--items--config--custom--config--cribl"></a>
+### Nested Schema for `items.config.custom.config.cribl`
+
+Read-Only:
+
+- `authtoken` (String)
+- `enable` (Boolean)
+- `transport` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--cribl--transport))
+- `use_scope_source_transport` (Boolean)
+
+<a id="nestedatt--items--config--custom--config--cribl--transport"></a>
+### Nested Schema for `items.config.custom.config.cribl.transport`
+
+Read-Only:
+
+- `buffer` (String) must be one of ["line", "full"]
+- `host` (String)
+- `path` (String)
+- `port` (Number)
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--cribl--transport--tls))
+- `type` (String)
+
+<a id="nestedatt--items--config--custom--config--cribl--transport--tls"></a>
+### Nested Schema for `items.config.custom.config.cribl.transport.tls`
+
+Read-Only:
+
+- `cacertpath` (String)
+- `enable` (Boolean)
+- `validateserver` (Boolean)
+
+
+
+
+<a id="nestedatt--items--config--custom--config--event"></a>
+### Nested Schema for `items.config.custom.config.event`
+
+Read-Only:
+
+- `enable` (Boolean)
+- `format` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--event--format))
+- `transport` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--event--transport))
+- `type` (String) must be "ndjson"
+- `watch` (Attributes List) (see [below for nested schema](#nestedatt--items--config--custom--config--event--watch))
+
+<a id="nestedatt--items--config--custom--config--event--format"></a>
+### Nested Schema for `items.config.custom.config.event.format`
+
+Read-Only:
+
+- `enhancefs` (Boolean)
+- `maxeventpersec` (Number)
+
+
+<a id="nestedatt--items--config--custom--config--event--transport"></a>
+### Nested Schema for `items.config.custom.config.event.transport`
+
+Read-Only:
+
+- `buffer` (String) must be one of ["line", "full"]
+- `host` (String)
+- `path` (String)
+- `port` (Number)
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--event--transport--tls))
+- `type` (String)
+
+<a id="nestedatt--items--config--custom--config--event--transport--tls"></a>
+### Nested Schema for `items.config.custom.config.event.transport.tls`
+
+Read-Only:
+
+- `cacertpath` (String)
+- `enable` (Boolean)
+- `validateserver` (Boolean)
+
+
+
+<a id="nestedatt--items--config--custom--config--event--watch"></a>
+### Nested Schema for `items.config.custom.config.event.watch`
+
+Read-Only:
+
+- `allowbinary` (Boolean)
+- `enabled` (Boolean)
+- `field` (String)
+- `headers` (List of String)
+- `name` (String)
+- `type` (String)
+- `value` (String)
+
+
+
+<a id="nestedatt--items--config--custom--config--libscope"></a>
+### Nested Schema for `items.config.custom.config.libscope`
+
+Read-Only:
+
+- `commanddir` (String)
+- `configevent` (Boolean)
+- `log` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--libscope--log))
+- `summaryperiod` (Number)
+
+<a id="nestedatt--items--config--custom--config--libscope--log"></a>
+### Nested Schema for `items.config.custom.config.libscope.log`
+
+Read-Only:
+
+- `level` (String) must be one of ["error", "debug", "info", "warning", "none"]
+- `transport` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--libscope--log--transport))
+
+<a id="nestedatt--items--config--custom--config--libscope--log--transport"></a>
+### Nested Schema for `items.config.custom.config.libscope.log.transport`
+
+Read-Only:
+
+- `buffer` (String) must be one of ["line", "full"]
+- `host` (String)
+- `path` (String)
+- `port` (Number)
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--libscope--log--transport--tls))
+- `type` (String)
+
+<a id="nestedatt--items--config--custom--config--libscope--log--transport--tls"></a>
+### Nested Schema for `items.config.custom.config.libscope.log.transport.tls`
+
+Read-Only:
+
+- `cacertpath` (String)
+- `enable` (Boolean)
+- `validateserver` (Boolean)
+
+
+
+
+
+<a id="nestedatt--items--config--custom--config--metric"></a>
+### Nested Schema for `items.config.custom.config.metric`
+
+Read-Only:
+
+- `enable` (Boolean)
+- `format` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--metric--format))
+- `transport` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--metric--transport))
+- `watch` (Attributes List) (see [below for nested schema](#nestedatt--items--config--custom--config--metric--watch))
+
+<a id="nestedatt--items--config--custom--config--metric--format"></a>
+### Nested Schema for `items.config.custom.config.metric.format`
+
+Read-Only:
+
+- `statsdmaxlen` (Number)
+- `statsdprefix` (String)
+- `type` (String)
+- `verbosity` (Number)
+
+
+<a id="nestedatt--items--config--custom--config--metric--transport"></a>
+### Nested Schema for `items.config.custom.config.metric.transport`
+
+Read-Only:
+
+- `buffer` (String) must be one of ["line", "full"]
+- `host` (String)
+- `path` (String)
+- `port` (Number)
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--items--config--custom--config--metric--transport--tls))
+- `type` (String)
+
+<a id="nestedatt--items--config--custom--config--metric--transport--tls"></a>
+### Nested Schema for `items.config.custom.config.metric.transport.tls`
+
+Read-Only:
+
+- `cacertpath` (String)
+- `enable` (Boolean)
+- `validateserver` (Boolean)
+
+
+
+<a id="nestedatt--items--config--custom--config--metric--watch"></a>
+### Nested Schema for `items.config.custom.config.metric.watch`
+
+
+
+<a id="nestedatt--items--config--custom--config--payload"></a>
+### Nested Schema for `items.config.custom.config.payload`
+
+Read-Only:
+
+- `dir` (String)
+- `enable` (Boolean)
+
+
+<a id="nestedatt--items--config--custom--config--protocol"></a>
+### Nested Schema for `items.config.custom.config.protocol`
+
+Read-Only:
+
+- `binary` (Boolean)
+- `detect` (Boolean)
+- `len` (Number)
+- `name` (String)
+- `payload` (Boolean)
+- `regex` (String)
+
+
+<a id="nestedatt--items--config--custom--config--tags"></a>
+### Nested Schema for `items.config.custom.config.tags`
+
+Read-Only:
+
+- `key` (String)
+- `value` (String)
+
+
+
+
+<a id="nestedatt--items--config--event"></a>
+### Nested Schema for `items.config.event`
+
+Read-Only:
+
+- `enable` (Boolean)
+- `format` (Attributes) (see [below for nested schema](#nestedatt--items--config--event--format))
+- `transport` (Attributes) (see [below for nested schema](#nestedatt--items--config--event--transport))
+- `type` (String) must be "ndjson"
+- `watch` (Attributes List) (see [below for nested schema](#nestedatt--items--config--event--watch))
+
+<a id="nestedatt--items--config--event--format"></a>
+### Nested Schema for `items.config.event.format`
+
+Read-Only:
+
+- `enhancefs` (Boolean)
+- `maxeventpersec` (Number)
+
+
+<a id="nestedatt--items--config--event--transport"></a>
+### Nested Schema for `items.config.event.transport`
+
+Read-Only:
+
+- `buffer` (String) must be one of ["line", "full"]
+- `host` (String)
+- `path` (String)
+- `port` (Number)
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--items--config--event--transport--tls))
+- `type` (String)
+
+<a id="nestedatt--items--config--event--transport--tls"></a>
+### Nested Schema for `items.config.event.transport.tls`
+
+Read-Only:
+
+- `cacertpath` (String)
+- `enable` (Boolean)
+- `validateserver` (Boolean)
+
+
+
+<a id="nestedatt--items--config--event--watch"></a>
+### Nested Schema for `items.config.event.watch`
+
+Read-Only:
+
+- `allowbinary` (Boolean)
+- `enabled` (Boolean)
+- `field` (String)
+- `headers` (List of String)
+- `name` (String)
+- `type` (String)
+- `value` (String)
+
+
+
+<a id="nestedatt--items--config--libscope"></a>
+### Nested Schema for `items.config.libscope`
+
+Read-Only:
+
+- `commanddir` (String)
+- `configevent` (Boolean)
+- `log` (Attributes) (see [below for nested schema](#nestedatt--items--config--libscope--log))
+- `summaryperiod` (Number)
+
+<a id="nestedatt--items--config--libscope--log"></a>
+### Nested Schema for `items.config.libscope.log`
+
+Read-Only:
+
+- `level` (String) must be one of ["error", "debug", "info", "warning", "none"]
+- `transport` (Attributes) (see [below for nested schema](#nestedatt--items--config--libscope--log--transport))
+
+<a id="nestedatt--items--config--libscope--log--transport"></a>
+### Nested Schema for `items.config.libscope.log.transport`
+
+Read-Only:
+
+- `buffer` (String) must be one of ["line", "full"]
+- `host` (String)
+- `path` (String)
+- `port` (Number)
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--items--config--libscope--log--transport--tls))
+- `type` (String)
+
+<a id="nestedatt--items--config--libscope--log--transport--tls"></a>
+### Nested Schema for `items.config.libscope.log.transport.tls`
+
+Read-Only:
+
+- `cacertpath` (String)
+- `enable` (Boolean)
+- `validateserver` (Boolean)
+
+
+
+
+
+<a id="nestedatt--items--config--metric"></a>
+### Nested Schema for `items.config.metric`
+
+Read-Only:
+
+- `enable` (Boolean)
+- `format` (Attributes) (see [below for nested schema](#nestedatt--items--config--metric--format))
+- `transport` (Attributes) (see [below for nested schema](#nestedatt--items--config--metric--transport))
+- `watch` (Attributes List) (see [below for nested schema](#nestedatt--items--config--metric--watch))
+
+<a id="nestedatt--items--config--metric--format"></a>
+### Nested Schema for `items.config.metric.format`
+
+Read-Only:
+
+- `statsdmaxlen` (Number)
+- `statsdprefix` (String)
+- `type` (String)
+- `verbosity` (Number)
+
+
+<a id="nestedatt--items--config--metric--transport"></a>
+### Nested Schema for `items.config.metric.transport`
+
+Read-Only:
+
+- `buffer` (String) must be one of ["line", "full"]
+- `host` (String)
+- `path` (String)
+- `port` (Number)
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--items--config--metric--transport--tls))
+- `type` (String)
+
+<a id="nestedatt--items--config--metric--transport--tls"></a>
+### Nested Schema for `items.config.metric.transport.tls`
+
+Read-Only:
+
+- `cacertpath` (String)
+- `enable` (Boolean)
+- `validateserver` (Boolean)
+
+
+
+<a id="nestedatt--items--config--metric--watch"></a>
+### Nested Schema for `items.config.metric.watch`
+
+
+
+<a id="nestedatt--items--config--payload"></a>
+### Nested Schema for `items.config.payload`
+
+Read-Only:
+
+- `dir` (String)
+- `enable` (Boolean)
+
+
+<a id="nestedatt--items--config--protocol"></a>
+### Nested Schema for `items.config.protocol`
+
+Read-Only:
+
+- `binary` (Boolean)
+- `detect` (Boolean)
+- `len` (Number)
+- `name` (String)
+- `payload` (Boolean)
+- `regex` (String)
+
+
+<a id="nestedatt--items--config--tags"></a>
+### Nested Schema for `items.config.tags`
+
+Read-Only:
+
+- `key` (String)
+- `value` (String)
+
 ## Import
 
 Import is supported using the following syntax:
@@ -764,8 +1252,8 @@ In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.
 import {
   to = criblio_appscope_config.my_criblio_appscope_config
   id = jsonencode({
-    group_id = "..."
-    id = "..."
+    group_id = "Cribl"
+    id = "scope-default"
   })
 }
 ```
@@ -773,5 +1261,5 @@ import {
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import criblio_appscope_config.my_criblio_appscope_config '{"group_id": "...", "id": "..."}'
+terraform import criblio_appscope_config.my_criblio_appscope_config '{"group_id": "Cribl", "id": "scope-default"}'
 ```

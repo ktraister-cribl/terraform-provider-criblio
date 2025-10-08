@@ -14,28 +14,29 @@ Notification Resource
 
 ```terraform
 resource "criblio_notification" "my_notification" {
-  condition = "...my_condition..."
+  condition = "true"
   conf = {
-    message            = "...my_message..."
-    saved_query_id     = "...my_saved_query_id..."
-    trigger_comparator = "...my_trigger_comparator..."
-    trigger_count      = 0.24
-    trigger_type       = "...my_trigger_type..."
+    message            = "Message for notification"
+    saved_query_id     = "savedQueryId"
+    trigger_comparator = ">"
+    trigger_count      = 10
+    trigger_type       = "resultsCount"
   }
   disabled = false
-  group    = "...my_group..."
-  id       = "...my_id..."
+  group    = "myNotificationGroup"
+  id       = "myUniqueNotificationId"
   target_configs = [
     {
       conf = {
-        attachment_type = "inline"
-        include_results = false
+        attachment_type = "attachment"
+        include_results = true
       }
-      id = "...my_id..."
+      id = "myTargetConfigId"
     }
   ]
   targets = [
-    "..."
+    "target1",
+    "target2",
   ]
 }
 ```
@@ -54,7 +55,7 @@ resource "criblio_notification" "my_notification" {
 - `disabled` (Boolean) Whether the notification is disabled. Default: false
 - `group` (String) Group identifier for the notification. Default: "default_search"
 - `target_configs` (Attributes List) Configuration for notification targets (see [below for nested schema](#nestedatt--target_configs))
-- `targets` (List of String) Targets to send any notifications to
+- `targets` (List of String) Targets to send any notifications to. Default: []
 
 <a id="nestedatt--conf"></a>
 ### Nested Schema for `conf`
@@ -93,12 +94,12 @@ In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.
 ```terraform
 import {
   to = criblio_notification.my_criblio_notification
-  id = "..."
+  id = "notif-001"
 }
 ```
 
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import criblio_notification.my_criblio_notification "..."
+terraform import criblio_notification.my_criblio_notification "notif-001"
 ```

@@ -14,7 +14,7 @@ SearchDataset DataSource
 
 ```terraform
 data "criblio_search_dataset" "my_searchdataset" {
-  id = "...my_id..."
+  id = "web-logs"
 }
 ```
 
@@ -390,7 +390,7 @@ Read-Only:
 Read-Only:
 
 - `name` (String) S3 bucket name
-- `region` (String) Region where the bucket is located
+- `region` (String) AWS region where the bucket is located
 
 
 
@@ -416,9 +416,9 @@ Read-Only:
 
 Read-Only:
 
-- `container_name` (String) Azure Blob Storage container name
+- `container_name` (String) Name of the additional container
 - `filter` (String) A JavaScript filter expression to be evaluated against the provided path
-- `path` (String) The templated path under which to look for data
+- `path` (String) Path inside the additional container
 
 
 <a id="nestedatt--azure_blob_dataset--metadata"></a>
@@ -469,7 +469,7 @@ Read-Only:
 - `filter` (String) A JavaScript filter expression to be evaluated against the provided path
 - `id` (String) Unique identifier for the dataset
 - `metadata` (Attributes) (see [below for nested schema](#nestedatt--cribl_leader_dataset--metadata))
-- `path` (String) The directory from which to collect data. Environment variables are supported. Supports templating.
+- `path` (String) The directory from which to collect data
 - `provider_id` (String) Dataset provider ID
 - `type` (String) Dataset provider type, set automatically from the dataset provider
 
@@ -544,7 +544,7 @@ Read-Only:
 
 - `bucket` (String) Google Cloud Storage bucket path
 - `filter` (String) A JavaScript filter expression to be evaluated against the provided path
-- `region` (String) Where the bucket is located
+- `region` (String) Where the extra bucket is located
 
 
 <a id="nestedatt--gcs_dataset--metadata"></a>
@@ -589,7 +589,7 @@ Read-Only:
 Read-Only:
 
 - `description` (String) Description of the dataset
-- `desired_num_data_points` (Number) Number of data points you want in each result set. Defaults to 250. Can be overridden on the query with a "step" predicate.
+- `desired_num_data_points` (Number) Number of data points you want in each result set. Defaults to 250. Can be overridden on the query with a 'step' predicate.
 - `id` (String) Unique identifier for the dataset
 - `metadata` (Attributes) (see [below for nested schema](#nestedatt--prometheus_dataset--metadata))
 - `metric_name_pattern` (String) Optional regular expression used to filter metric names. When defined, only metrics whose name matches this pattern will be searched.

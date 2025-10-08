@@ -85,7 +85,7 @@ func (r *SubscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"id": schema.StringAttribute{
 				Required:    true,
-				Description: `pipeline to be used`,
+				Description: `new Id to be used for subscription to be created`,
 			},
 			"pipeline": schema.StringAttribute{
 				Required: true,
@@ -345,17 +345,17 @@ func (r *SubscriptionResource) ImportState(ctx context.Context, req resource.Imp
 	}
 
 	if err := dec.Decode(&data); err != nil {
-		resp.Diagnostics.AddError("Invalid ID", `The import ID is not valid. It is expected to be a JSON object string with the format: '{"group_id": "...", "id": "..."}': `+err.Error())
+		resp.Diagnostics.AddError("Invalid ID", `The import ID is not valid. It is expected to be a JSON object string with the format: '{"group_id": "myExistingGroupId", "id": "myUniqueSubscriptionId"}': `+err.Error())
 		return
 	}
 
 	if len(data.GroupID) == 0 {
-		resp.Diagnostics.AddError("Missing required field", `The field group_id is required but was not found in the json encoded ID. It's expected to be a value alike '""`)
+		resp.Diagnostics.AddError("Missing required field", `The field group_id is required but was not found in the json encoded ID. It's expected to be a value alike '"myExistingGroupId"`)
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("group_id"), data.GroupID)...)
 	if len(data.ID) == 0 {
-		resp.Diagnostics.AddError("Missing required field", `The field id is required but was not found in the json encoded ID. It's expected to be a value alike '""`)
+		resp.Diagnostics.AddError("Missing required field", `The field id is required but was not found in the json encoded ID. It's expected to be a value alike '"myUniqueSubscriptionId"`)
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), data.ID)...)

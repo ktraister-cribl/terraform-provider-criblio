@@ -14,10 +14,10 @@ SearchDashboardCategory Resource
 
 ```terraform
 resource "criblio_search_dashboard_category" "my_searchdashboardcategory" {
-  description = "...my_description..."
-  id          = "...my_id..."
-  is_pack     = true
-  name        = "...my_name..."
+  description = "My dashboard category description"
+  id          = "myDashboardCategoryId"
+  is_pack     = false
+  name        = "MyDashboardCategoryName"
 }
 ```
 
@@ -33,3 +33,22 @@ resource "criblio_search_dashboard_category" "my_searchdashboardcategory" {
 
 - `description` (String)
 - `is_pack` (Boolean)
+
+## Import
+
+Import is supported using the following syntax:
+
+In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.com/terraform/language/import) can be used with the `id` attribute, for example:
+
+```terraform
+import {
+  to = criblio_search_dashboard_category.my_criblio_search_dashboard_category
+  id = "observability"
+}
+```
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+terraform import criblio_search_dashboard_category.my_criblio_search_dashboard_category "observability"
+```

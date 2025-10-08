@@ -17,7 +17,7 @@ resource "criblio_search_macro" "my_searchmacro" {
   created     = 0.82
   created_by  = "...my_created_by..."
   description = "...my_description..."
-  id          = "...my_id..."
+  id          = "macro-errors"
   modified    = 8.62
   replacement = "...my_replacement..."
   tags        = "...my_tags..."
@@ -39,3 +39,22 @@ resource "criblio_search_macro" "my_searchmacro" {
 - `description` (String)
 - `modified` (Number)
 - `tags` (String)
+
+## Import
+
+Import is supported using the following syntax:
+
+In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.com/terraform/language/import) can be used with the `id` attribute, for example:
+
+```terraform
+import {
+  to = criblio_search_macro.my_criblio_search_macro
+  id = "macro-errors"
+}
+```
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+terraform import criblio_search_macro.my_criblio_search_macro "macro-errors"
+```

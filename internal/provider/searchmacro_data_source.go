@@ -58,7 +58,8 @@ func (r *SearchMacroDataSource) Schema(ctx context.Context, req datasource.Schem
 				Computed: true,
 			},
 			"id": schema.StringAttribute{
-				Computed: true,
+				Required:    true,
+				Description: `Unique ID to GET`,
 			},
 			"modified": schema.Float64Attribute{
 				Computed: true,
@@ -111,7 +112,13 @@ func (r *SearchMacroDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	res, err := r.client.Macros.ListSearchMacro(ctx)
+	request, requestDiags := data.ToOperationsGetSearchMacroByIDRequest(ctx)
+	resp.Diagnostics.Append(requestDiags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	res, err := r.client.Macros.GetSearchMacroByID(ctx, *request)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", err.Error())
 		if res != nil && res.RawResponse != nil {
