@@ -6,7 +6,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type Cloud struct {
-	Provider types.String `tfsdk:"provider"`
-	Region   types.String `tfsdk:"region"`
+type GrokFile struct {
+	Content types.String `tfsdk:"content"`
+	ID      types.String `tfsdk:"id"`
+	Tags    types.String `tfsdk:"tags"`
 }

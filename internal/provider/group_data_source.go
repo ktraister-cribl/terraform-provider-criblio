@@ -5,7 +5,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	tfTypes "github.com/criblio/terraform-provider-criblio/internal/provider/types"
 	"github.com/criblio/terraform-provider-criblio/internal/sdk"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -29,9 +28,8 @@ type GroupDataSource struct {
 
 // GroupDataSourceModel describes the data model.
 type GroupDataSourceModel struct {
-	Fields types.String    `queryParam:"style=form,explode=true,name=fields" tfsdk:"fields"`
-	ID     types.String    `tfsdk:"id"`
-	Items  []tfTypes.Group `tfsdk:"items"`
+	Fields types.String `queryParam:"style=form,explode=true,name=fields" tfsdk:"fields"`
+	ID     types.String `tfsdk:"id"`
 }
 
 // Metadata returns the data source type name.
@@ -52,50 +50,6 @@ func (r *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 			"id": schema.StringAttribute{
 				Required:    true,
 				Description: `Group id`,
-			},
-			"items": schema.ListNestedAttribute{
-				Computed: true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"cloud": schema.SingleNestedAttribute{
-							Computed: true,
-							Attributes: map[string]schema.Attribute{
-								"provider": schema.StringAttribute{
-									Computed: true,
-								},
-								"region": schema.StringAttribute{
-									Computed: true,
-								},
-							},
-						},
-						"estimated_ingest_rate": schema.Float64Attribute{
-							Computed: true,
-						},
-						"id": schema.StringAttribute{
-							Computed: true,
-						},
-						"is_fleet": schema.BoolAttribute{
-							Computed:    true,
-							Description: `Must be true if product is 'edge'`,
-						},
-						"name": schema.StringAttribute{
-							Computed: true,
-						},
-						"on_prem": schema.BoolAttribute{
-							Computed: true,
-						},
-						"provisioned": schema.BoolAttribute{
-							Computed: true,
-						},
-						"streamtags": schema.ListAttribute{
-							Computed:    true,
-							ElementType: types.StringType,
-						},
-						"worker_remote_access": schema.BoolAttribute{
-							Computed: true,
-						},
-					},
-				},
 			},
 		},
 	}
