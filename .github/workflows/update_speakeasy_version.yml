@@ -46,8 +46,6 @@ jobs:
 
           yq eval ".speakeasyVersion = \"$version\"" -i .speakeasy/workflow.yaml
 
-          speakeasy run --frozen-workflow-lockfile
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         env:
