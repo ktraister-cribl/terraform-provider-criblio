@@ -48,7 +48,7 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
-        env:
+        with:
           commit-message: "Updating speakeasy version"
           title: "Automation: Update Speakeasy Version"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
