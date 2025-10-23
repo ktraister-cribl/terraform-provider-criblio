@@ -50,4 +50,5 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         env:
           commit-message: "Updating speakeasy version"
+          title: "Automation: Update Speakeasy Version"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
