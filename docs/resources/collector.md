@@ -279,7 +279,7 @@ resource "criblio_collector" "my_collector" {
         max_batch_size              = 200
         path                        = "logs/2025/10/"
         recurse                     = true
-        service_account_credentials = "-----BEGIN PRIVATE KEY-----\nMIIEv...example...IDAQAB\n-----END PRIVATE KEY-----\n"
+        service_account_credentials = "***REDACTED***"
       }
       type = "gcs"
     }
@@ -853,6 +853,10 @@ resource "criblio_collector" "my_collector" {
 - `input_collector_rest` (Attributes) (see [below for nested schema](#nestedatt--input_collector_rest))
 - `input_collector_s3` (Attributes) (see [below for nested schema](#nestedatt--input_collector_s3))
 - `input_collector_splunk` (Attributes) (see [below for nested schema](#nestedatt--input_collector_splunk))
+
+### Read-Only
+
+- `items` (List of Map of String)
 
 <a id="nestedatt--input_collector_azure_blob"></a>
 ### Nested Schema for `input_collector_azure_blob`
