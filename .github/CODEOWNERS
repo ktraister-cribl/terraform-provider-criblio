@@ -1,0 +1,3 @@
+# CODEOWNERS for terraform-provider-criblio.
+# Require at least two approvals from these owners for hooks changes.
+/internal/sdk/internal/hooks/ @ktraister-cribl @wnoonan @kkorathaluri
