@@ -20293,5 +20293,20 @@ func (r *DestinationResourceModel) ToSharedOutput(ctx context.Context) (*shared.
 		}
 	}
 
+	if r.OutputGrafanaCloud != nil && outputGrafanaCloud == nil {
+		diags.AddError(
+			"Grafana Cloud output requires a variant",
+			"Set output_grafana_cloud.output_grafana_cloud_grafana_cloud1 or output_grafana_cloud.output_grafana_cloud_grafana_cloud2.",
+		)
+		return nil, diags
+	}
+	if out == (shared.Output{}) {
+		diags.AddError(
+			"Missing output configuration",
+			"Set exactly one of the output_* attributes on the destination (for example output_grafana_cloud.output_grafana_cloud_grafana_cloud2).",
+		)
+		return nil, diags
+	}
+
 	return &out, diags
 }
