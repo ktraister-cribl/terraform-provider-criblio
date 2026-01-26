@@ -219,29 +219,32 @@ func (r *PipelineResourceModel) ToSharedPipeline(ctx context.Context) (*shared.P
 			GroupID:     groupID,
 		})
 	}
-	groups := make(map[string]shared.PipelineGroups)
-	for groupsKey, groupsValue := range r.Conf.Groups {
-		var name string
-		name = groupsValue.Name.ValueString()
+	var groups map[string]shared.PipelineGroups
+	if len(r.Conf.Groups) > 0 {
+		groups = make(map[string]shared.PipelineGroups, len(r.Conf.Groups))
+		for groupsKey, groupsValue := range r.Conf.Groups {
+			var name string
+			name = groupsValue.Name.ValueString()
 
-		description2 := new(string)
-		if !groupsValue.Description.IsUnknown() && !groupsValue.Description.IsNull() {
-			*description2 = groupsValue.Description.ValueString()
-		} else {
-			description2 = nil
+			description2 := new(string)
+			if !groupsValue.Description.IsUnknown() && !groupsValue.Description.IsNull() {
+				*description2 = groupsValue.Description.ValueString()
+			} else {
+				description2 = nil
+			}
+			disabled1 := new(bool)
+			if !groupsValue.Disabled.IsUnknown() && !groupsValue.Disabled.IsNull() {
+				*disabled1 = groupsValue.Disabled.ValueBool()
+			} else {
+				disabled1 = nil
+			}
+			groupsInst := shared.PipelineGroups{
+				Name:        name,
+				Description: description2,
+				Disabled:    disabled1,
+			}
+			groups[groupsKey] = groupsInst
 		}
-		disabled1 := new(bool)
-		if !groupsValue.Disabled.IsUnknown() && !groupsValue.Disabled.IsNull() {
-			*disabled1 = groupsValue.Disabled.ValueBool()
-		} else {
-			disabled1 = nil
-		}
-		groupsInst := shared.PipelineGroups{
-			Name:        name,
-			Description: description2,
-			Disabled:    disabled1,
-		}
-		groups[groupsKey] = groupsInst
 	}
 	conf := shared.PipelineConf{
 		AsyncFuncTimeout: asyncFuncTimeout,
