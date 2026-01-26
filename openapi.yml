@@ -54785,6 +54785,7 @@ components:
                     format: json
             groups:
               type: object
+              nullable: true
               additionalProperties:
                 type: object
                 required:
