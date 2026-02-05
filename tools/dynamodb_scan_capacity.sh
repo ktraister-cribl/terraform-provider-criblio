@@ -10,7 +10,7 @@ Options:
   -t, --table           DynamoDB table name (required)
   -k, --partition-key   Partition key attribute name (required)
   -c, --contains        Substring to match (repeatable or comma-separated)
-  -a, --capacity-attr   Attribute that must exist (default: capacity)
+  -a, --capacity-attr   Attribute that must NOT exist (default: capacity)
   -r, --region          AWS region override
   -p, --profile         AWS profile name
   -m, --max-items       Stop after returning this many items
@@ -130,7 +130,7 @@ if [[ ${#expr_parts[@]} -eq 0 ]]; then
 fi
 
 pk_expr="$(join_by " OR " "${expr_parts[@]}")"
-filter_expression="attribute_exists(#cap) AND (${pk_expr})"
+filter_expression="attribute_not_exists(#cap) AND (${pk_expr})"
 expr_names="$(printf '{"#pk":"%s","#cap":"%s"}' "$partition_key" "$capacity_attr")"
 expr_values="{"
 expr_values+="$(join_by "," "${expr_values_entries[@]}")"
