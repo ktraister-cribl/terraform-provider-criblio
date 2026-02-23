@@ -62,5 +62,5 @@ terraform import -no-color criblio_pack_destination.my_packdest '{"group_id": "d
 echo
 terraform import -no-color criblio_pack_routes.my_packroutes '{"group_id": "default", "pack": "pack-with-routes"}' 
 echo
-terraform import -no-color criblio_pack_pipeline.my_packpipeline '{"group_id": "default", "pack": "pack-with-pipeline"}'
+terraform import -no-color criblio_pack_pipeline.my_packpipeline '{"group_id": "default", "pack": "pack-with-pipeline", "id": "my_id"}'
 echo
